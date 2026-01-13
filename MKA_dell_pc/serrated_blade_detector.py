@@ -653,7 +653,7 @@ class SerratedBladeAnalyzer:
 def main():
     """Main execution function"""
     # Load and analyze the blade image
-    image_path = 'untitled3.png'
+    image_path = 'results/untitled3.png'
 
     # Calibration: pixels per millimeter (you need to calibrate this based on your camera setup)
     PIXELS_PER_MM = 86.96  # Default value - adjust based on your calibration!
@@ -723,7 +723,7 @@ Example pseudocode:
 
     # Visualize results
     print("\nGenerating visualization...")
-    viz_path = 'blade_analysis_results.png'
+    viz_path = 'results/blade_analysis_results.png'
     analyzer.visualize_results(save_path=viz_path)
 
     print("\n" + "=" * 80)
