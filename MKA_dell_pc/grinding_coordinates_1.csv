@@ -1,0 +1,4 @@
+tooth_id,groove_x_px,groove_y_px,grinder_tip_x_px,grinder_tip_y_px,move_x_px,move_y_px,move_x_mm,move_y_mm,distance_to_grinder_px,distance_to_grinder_mm,groove_angle_deg,groove_depth_px,top_peak_x,top_peak_y,bottom_peak_x,bottom_peak_y
+1,276,108,1036,544,760,436,10.92,6.27,876.2,12.59,63.09,215.0,413,14,569,268
+2,290,452,1036,544,746,92,10.72,1.32,751.7,10.8,63.11,285.0,569,268,581,618
+3,304,796,1036,544,732,-252,10.52,-3.62,774.2,11.13,62.64,284.5,581,618,596,964
