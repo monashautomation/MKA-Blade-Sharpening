@@ -1,0 +1,84 @@
+# movel(posx(System_grinder_app), vel=10, acc=10)
+c
+
+
+# s_sock = client_socket_open(172.24.70.40, 20002)
+s_sock = client_socket_open("172.24.9.15",5000)
+
+current_pos = get_current_posx(DR_WORLD, DR_FIX_XYZ)
+
+while 1:
+    # Read data (default buffer is fine)
+    res, rx_data = client_socket_read(s_sock)
+    
+    tp_log("Res val:" + str(res))
+    
+    if res > 0:
+        tp_log("rx msg" + str(rx_data))
+        if res == 9 and rx_data[0] == 1:
+            
+            # Unpack: >Bff (Byte, Float, Float)
+            val_x = int.from_bytes(rx_data[1:5], byteorder='big', signed=True)
+            val_y = int.from_bytes(rx_data[5:9], byteorder='big', signed=True)
+            
+            tp_log("Binary Move Received: X={0}, Y={1}".format(val_x, val_y))
+            
+            # Execute Relative Move (based on X/Y inputs)
+            # We assume these are offsets in mm
+            delta_x = [val_x/100, 0, 0, 0, 0, 0]
+            delta_y = [0, val_y/100, 0, 0, 0, 0]
+            delta_neg_y = [0, -val_y/100, 0, 0, 0, 0]
+            movel(posx(delta_x), vel=100, acc=10,mod=DR_MV_MOD_REL)
+            wait(0.5)
+            movel(posx(delta_y), vel=100, acc=10,mod=DR_MV_MOD_REL)
+            wait(0.5)
+            movel(posx(delta_neg_y), vel=100, acc=10,mod=DR_MV_MOD_REL)
+            
+            client_socket_write(s_sock, b"Done\n")
+            continue # Skip the rest of the loop
+
+        # --- PATH B: TEXT COMMAND HANDLING ---
+        # If it wasn't a binary packet, try to read it as text
+        else:
+            try:
+                rx_msg = rx_data.decode() # .strip() cleans up spaces/newlines
+            except:
+                tp_log("Error: Received data that is not text or valid binary.")
+                continue
+
+            # Existing Logic
+            if rx_msg == "init":
+                movej(System_init_j, 100, 20)
+                client_socket_write(s_sock, b"Done")
+                
+            elif rx_msg == "btop":
+                movel(System_blades_top_new, 100, 20)
+                client_socket_write(s_sock, b"Done")
+                
+            elif rx_msg == "pos1":
+                movel(System_blade1_new, 100, 20)
+                client_socket_write(s_sock, b"Done")
+                
+            elif rx_msg == "gtop":
+                movel(System_grinder_top, 100, 20)
+                client_socket_write(s_sock, b"Done")
+                
+            elif rx_msg == "grind":
+                movel(System_grinder, 100, 20)
+                client_socket_write(s_sock, b"Done")
+                
+            elif rx_msg == "gapp":
+                movel(System_grinder_app, 100, 20)
+                client_socket_write(s_sock, b"Done")
+                
+            elif rx_msg == "bye":
+                tp_log("Closing connection.")
+                break
+                
+            else:
+                tp_log("Unknown Command")
+            
+    # CRITICAL: Reduced wait time so robot responds quickly
+    wait(5) 
+
+client_socket_close(s_sock)

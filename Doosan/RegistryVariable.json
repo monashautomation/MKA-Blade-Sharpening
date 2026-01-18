@@ -1,0 +1,15 @@
+{
+  "Count": "2",
+  "Variable0": {
+    "Type": "Registry",
+    "Name": "test_val",
+    "ValueType": "Posx",
+    "Value": "posx(0,0,0,0,0,0)"
+  },
+  "Variable1": {
+    "Type": "Registry",
+    "Name": "test_val1",
+    "ValueType": "Posx",
+    "Value": "posx(0,0,0,0,0,0)"
+  }
+}
