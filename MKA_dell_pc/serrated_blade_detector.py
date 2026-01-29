@@ -1,37 +1,546 @@
+# """
+# Optimized Serrated Blade Analyzer - TOOTH POINT DETECTION
+# Detects sharp tooth points (peaks) instead of grooves (valleys)
+# """
+#
+# import cv2
+# import numpy as np
+# from scipy import ndimage
+# from dataclasses import dataclass
+# from typing import List, Tuple, Union
+#
+#
+# @dataclass
+# class ToothProfile:
+#     """Data class to store tooth point information"""
+#     tooth_id: int
+#     apex_point: Tuple[int, int]  # Tooth tip (peak - the grinding target)
+#     top_valley: Tuple[int, int]
+#     bottom_valley: Tuple[int, int]
+#     angle: float
+#     grinding_point: Tuple[int, int]
+#     height: float  # Height of the tooth from valleys
+#     move_to_grinder: Tuple[float, float]
+#
+#
+# class SerratedBladeAnalyzer:
+#     """Optimized analyzer for serrated blade tooth point detection"""
+#
+#     def __init__(self, image_input: Union[str, np.ndarray]):
+#         """
+#         Initialize analyzer with image path or numpy array
+#
+#         Args:
+#             image_input: Path to image file OR numpy array (BGR format)
+#         """
+#         if isinstance(image_input, str):
+#             self.image = cv2.imread(image_input)
+#             if self.image is None:
+#                 raise ValueError(f"Could not load image from {image_input}")
+#         elif isinstance(image_input, np.ndarray):
+#             self.image = image_input
+#         else:
+#             raise ValueError("image_input must be string path or numpy array")
+#
+#         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+#         self.height, self.width = self.gray.shape
+#         self.teeth_profiles = []
+#         self.blade_edge_points = None
+#         self.grinder_tip = None
+#         self.grinder_center = None
+#
+#     def preprocess_image(self, blur_kernel=31):
+#         """Preprocess image for edge detection"""
+#         self.blurred = cv2.GaussianBlur(self.gray, (blur_kernel, blur_kernel), 0)
+#         self.binary = cv2.adaptiveThreshold(
+#             self.blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+#             cv2.THRESH_BINARY_INV, 11, 2
+#         )
+#         return self.binary
+#
+#     def detect_edges(self, canny_low=100, canny_high=150):
+#         """Detect edges using Canny"""
+#         self.edges = cv2.Canny(self.blurred, canny_low, canny_high)
+#         return self.edges
+#
+#     def find_blade_contours(self):
+#         """Find blade contours"""
+#         contours, _ = cv2.findContours(
+#             self.binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+#         )
+#         self.blade_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 50]
+#         return self.blade_contours
+#
+#     def detect_blade_and_grinder(self, sampling_step=3):
+#         """Detect blade edge and grinder tip"""
+#         blade_edge = []
+#         grinder_points = []
+#
+#         for y in range(0, self.height, sampling_step):
+#             row = self.binary[y, :]
+#             white_pixels = np.where(row > 90)[0]
+#
+#             if len(white_pixels) > 0:
+#                 blade_edge.append((white_pixels[0], y))
+#
+#                 if len(white_pixels) > 10:
+#                     rightmost_region = white_pixels[white_pixels > self.width // 3 * 2]
+#                     if len(rightmost_region) > 0:
+#                         grinder_points.append((rightmost_region[0], y))
+#
+#         self.blade_edge_points = np.array(blade_edge) if blade_edge else None
+#         self.grinder_edge_points = np.array(grinder_points) if grinder_points else None
+#
+#         # Find grinder tip (leftmost point)
+#         if self.grinder_edge_points is not None and len(self.grinder_edge_points) > 0:
+#             min_x_idx = np.argmin(self.grinder_edge_points[:, 0])
+#             self.grinder_tip = tuple(self.grinder_edge_points[min_x_idx])
+#
+#             # Average nearby points for accuracy
+#             min_x = self.grinder_edge_points[min_x_idx, 0]
+#             tip_points = self.grinder_edge_points[
+#                 np.abs(self.grinder_edge_points[:, 0] - min_x) < 15
+#                 ]
+#
+#             self.grinder_edge_center = (
+#                 int(np.mean(tip_points[:, 0])),
+#                 int(np.mean(tip_points[:, 1]))
+#             )
+#
+#         return self.blade_edge_points, self.grinder_tip
+#
+#     def extract_tooth_profiles(self, window_size=10, min_height_px=100):
+#         """
+#         Extract tooth POINTS (peaks) from blade edge
+#         NOW DETECTS SHARP TOOTH TIPS INSTEAD OF GROOVES
+#
+#         Args:
+#             window_size: Window size for local maxima/minima detection
+#             min_height_px: Minimum tooth height in pixels to filter out noise
+#         """
+#         if self.blade_edge_points is None or len(self.blade_edge_points) == 0:
+#             return []
+#
+#         x_coords = self.blade_edge_points[:, 0]
+#         y_coords = self.blade_edge_points[:, 1]
+#
+#         # Smooth x-coordinates
+#         x_smooth = ndimage.gaussian_filter1d(x_coords, sigma=3)
+#
+#         # Find peaks (TOOTH TIPS - what we want!) and valleys (grooves between teeth)
+#         peaks = []  # TOOTH TIPS - the grinding targets!
+#         valleys = []  # Grooves between teeth
+#
+#         mean_x = np.mean(x_smooth)
+#
+#         for i in range(window_size, len(x_smooth) - window_size):
+#             window = x_smooth[i - window_size:i + window_size]
+#
+#             # PEAKS are tooth tips (pointing right = higher x values) - GRINDING TARGETS
+#             if x_smooth[i] == np.max(window) and x_smooth[i] > mean_x + 20:
+#                 peaks.append(i)
+#             # Valleys are grooves between teeth (lower x values)
+#             elif x_smooth[i] == np.min(window) and x_smooth[i] < mean_x - 20:
+#                 valleys.append(i)
+#
+#         # Filter close points
+#         peaks = self._filter_close_points(peaks, window_size)
+#         valleys = self._filter_close_points(valleys, window_size)
+#
+#         # Create tooth profiles - each PEAK becomes a grinding target
+#         tooth_profiles = []
+#         tooth_id = 1
+#
+#         for peak_idx in peaks:
+#             # Find valleys above and below this peak
+#             valleys_above = [v for v in valleys if v < peak_idx]
+#             valleys_below = [v for v in valleys if v > peak_idx]
+#
+#             # Handle edge cases
+#             if len(valleys_above) == 0 and len(valleys_below) > 0:
+#                 # Top edge tooth - sample points above the peak
+#                 sample_size = min(window_size // 2, 50)
+#                 sample_end = min(sample_size, peak_idx)
+#                 sample_indices = range(0, sample_end)
+#
+#                 sampled_x = [x_smooth[idx] for idx in sample_indices if idx < len(x_smooth)]
+#                 sampled_y = [y_coords[idx] for idx in sample_indices if idx < len(y_coords)]
+#
+#                 top_valley = (int(np.mean(sampled_x)), int(np.mean(sampled_y))) if sampled_x else (int(x_smooth[0]),
+#                                                                                                    int(y_coords[0]))
+#                 bottom_valley = (int(x_smooth[valleys_below[0]]), int(y_coords[valleys_below[0]]))
+#
+#             elif len(valleys_below) == 0 and len(valleys_above) > 0:
+#                 # Bottom edge tooth - sample points below the peak
+#                 sample_start = peak_idx
+#                 sample_end = min(len(x_smooth) - 1, peak_idx + window_size * 2)
+#                 sample_indices = range(sample_start, sample_end)
+#
+#                 sampled_x = [x_smooth[idx] for idx in sample_indices if idx < len(x_smooth)]
+#                 sampled_y = [y_coords[idx] for idx in sample_indices if idx < len(y_coords)]
+#
+#                 top_valley = (int(x_smooth[valleys_above[-1]]), int(y_coords[valleys_above[-1]]))
+#                 bottom_valley = (int(np.mean(sampled_x)), int(np.mean(sampled_y))) if sampled_x else (
+#                     int(x_smooth[sample_end]), int(y_coords[sample_end]))
+#
+#             elif len(valleys_above) > 0 and len(valleys_below) > 0:
+#                 # Middle tooth - normal case
+#                 top_valley = (int(x_smooth[valleys_above[-1]]), int(y_coords[valleys_above[-1]]))
+#                 bottom_valley = (int(x_smooth[valleys_below[0]]), int(y_coords[valleys_below[0]]))
+#             else:
+#                 continue
+#
+#             # Average nearby peak points for accuracy
+#             peak_sample_size = max(3, window_size // 10)
+#             peak_start = max(0, peak_idx - peak_sample_size)
+#             peak_end = min(len(x_smooth), peak_idx + peak_sample_size + 1)
+#
+#             peak_x_samples = x_smooth[peak_start:peak_end]
+#             peak_y_samples = y_coords[peak_start:peak_end]
+#
+#             tooth_point = (int(np.mean(peak_x_samples)), int(np.mean(peak_y_samples))) if len(peak_x_samples) > 0 else (
+#                 int(x_smooth[peak_idx]), int(y_coords[peak_idx]))
+#
+#             # Calculate tooth height (distance from valleys to peak)
+#             height = abs(tooth_point[0] - ((top_valley[0] + bottom_valley[0]) / 2))
+#
+#             # Calculate angle
+#             angle = self._calculate_tooth_angle(top_valley, tooth_point, bottom_valley)
+#
+#             # Calculate movement to grinder
+#             if hasattr(self, 'grinder_tip') and self.grinder_tip is not None:
+#                 move_to_grinder = (
+#                     self.grinder_tip[0] - tooth_point[0],
+#                     self.grinder_tip[1] - tooth_point[1]
+#                 )
+#             else:
+#                 move_to_grinder = (0, 0)
+#
+#             tooth_profiles.append(ToothProfile(
+#                 tooth_id=tooth_id,
+#                 apex_point=tooth_point,
+#                 top_valley=top_valley,
+#                 bottom_valley=bottom_valley,
+#                 angle=angle,
+#                 grinding_point=tooth_point,
+#                 height=height,
+#                 move_to_grinder=move_to_grinder
+#             ))
+#
+#             tooth_id += 1
+#
+#         return tooth_profiles
+#
+#     def _filter_close_points(self, points, min_distance):
+#         """Filter out points too close together"""
+#         if len(points) == 0:
+#             return points
+#
+#         filtered = [points[0]]
+#         for p in points[1:]:
+#             if abs(p - filtered[-1]) >= min_distance:
+#                 filtered.append(p)
+#         return filtered
+#
+#     def _calculate_tooth_angle(self, top_valley, apex, bottom_valley):
+#         """Calculate tooth angle in degrees"""
+#         v1 = np.array([top_valley[0] - apex[0], top_valley[1] - apex[1]], dtype=float)
+#         v2 = np.array([bottom_valley[0] - apex[0], bottom_valley[1] - apex[1]], dtype=float)
+#
+#         dot_product = np.dot(v1, v2)
+#         magnitude = np.linalg.norm(v1) * np.linalg.norm(v2)
+#
+#         if magnitude == 0:
+#             return 0
+#
+#         angle = np.arccos(np.clip(dot_product / magnitude, -1.0, 1.0))
+#         return float(np.degrees(angle))
+#
+#     def calculate_blade_orientation(self):
+#         """Calculate blade edge orientation"""
+#         if self.blade_edge_points is None or len(self.blade_edge_points) == 0:
+#             return 0
+#
+#         fit_result = cv2.fitLine(
+#             self.blade_edge_points.astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01
+#         )
+#
+#         vx, vy = fit_result[0][0], fit_result[1][0]
+#         angle = np.degrees(np.arctan2(vy, vx))
+#         return float(angle)
+#
+#     def generate_grinding_coordinates(self, pixels_per_mm=1.0):
+#         """Generate grinding coordinates for robot control - TOOTH POINTS"""
+#         grinding_coords = []
+#         grinder_ref = self.grinder_tip if hasattr(self, 'grinder_tip') else None
+#
+#         for tooth in self.teeth_profiles:
+#             move_x_px = tooth.move_to_grinder[0]
+#             move_y_px = tooth.move_to_grinder[1]
+#
+#             move_x_mm = move_x_px / pixels_per_mm
+#             move_y_mm = move_y_px / pixels_per_mm
+#
+#             distance_px = np.sqrt(move_x_px ** 2 + move_y_px ** 2)
+#             distance_mm = distance_px / pixels_per_mm
+#
+#             grinding_coords.append({
+#                 'tooth_id': tooth.tooth_id,
+#                 'tooth_tip_x_px': tooth.grinding_point[0],  # Tooth tip X
+#                 'tooth_tip_y_px': tooth.grinding_point[1],  # Tooth tip Y
+#                 'groove_position_x_px': tooth.grinding_point[0],  # Keep for compatibility
+#                 'groove_position_y_px': tooth.grinding_point[1],  # Keep for compatibility
+#                 'grinder_tip_x_px': grinder_ref[0] if grinder_ref else 0,
+#                 'grinder_tip_y_px': grinder_ref[1] if grinder_ref else 0,
+#                 'move_x_pixels': int(move_x_px),
+#                 'move_y_pixels': int(move_y_px),
+#                 'move_x_mm': round(move_x_mm, 2),
+#                 'move_y_mm': round(move_y_mm, 2),
+#                 'distance_to_grinder_px': round(distance_px, 1),
+#                 'distance_to_grinder_mm': round(distance_mm, 2),
+#                 'tooth_angle_degrees': round(tooth.angle, 2),
+#                 'tooth_height_px': round(tooth.height, 1),
+#                 'groove_angle_degrees': round(tooth.angle, 2),  # Keep for compatibility
+#                 'groove_depth_px': round(tooth.height, 1),  # Keep for compatibility
+#                 'top_peak': tooth.top_valley,
+#                 'bottom_peak': tooth.bottom_valley
+#             })
+#
+#         return grinding_coords
+#
+#     def analyze_blade(self, pixels_per_mm=1.0):
+#         """Run complete analysis pipeline"""
+#         self.preprocess_image()
+#         self.detect_edges()
+#         self.find_blade_contours()
+#         self.detect_blade_and_grinder()
+#         self.teeth_profiles = self.extract_tooth_profiles()
+#         blade_angle = self.calculate_blade_orientation()
+#         grinding_coords = self.generate_grinding_coordinates(pixels_per_mm=pixels_per_mm)
+#
+#         return {
+#             'blade_angle': blade_angle,
+#             'num_grooves': len(self.teeth_profiles),  # Keep name for compatibility
+#             'num_teeth': len(self.teeth_profiles),
+#             'grinder_tip': self.grinder_tip if hasattr(self, 'grinder_tip') else None,
+#             'grinder_center': self.grinder_center if hasattr(self, 'grinder_center') else None,
+#             'grinding_coordinates': grinding_coords,
+#             'tooth_profiles': self.teeth_profiles
+#         }
+#
+#     def visualize_results(self, save_path=None):
+#         """Visualize detection results - TOOTH POINTS"""
+#         import matplotlib.pyplot as plt
+#
+#         fig, axes = plt.subplots(2, 3, figsize=(20, 13))
+#
+#         # Original image
+#         axes[0, 0].imshow(cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB))
+#         axes[0, 0].set_title('Original Image', fontsize=12, fontweight='bold')
+#         axes[0, 0].axis('off')
+#
+#         # Binary image
+#         axes[0, 1].imshow(self.binary, cmap='gray')
+#         axes[0, 1].set_title('Binary Image', fontsize=12, fontweight='bold')
+#         axes[0, 1].axis('off')
+#
+#         # Edge detection
+#         axes[0, 2].imshow(self.edges, cmap='gray')
+#         axes[0, 2].set_title('Edge Detection', fontsize=12, fontweight='bold')
+#         axes[0, 2].axis('off')
+#
+#         # Detected edges
+#         viz_image1 = cv2.cvtColor(self.image.copy(), cv2.COLOR_BGR2RGB)
+#         if self.blade_edge_points is not None:
+#             for point in self.blade_edge_points[::3]:
+#                 cv2.circle(viz_image1, tuple(point), 2, (255, 0, 0), -1)
+#
+#         if self.grinder_edge_points is not None:
+#             for point in self.grinder_edge_points[::3]:
+#                 cv2.circle(viz_image1, tuple(point), 2, (0, 255, 0), -1)
+#
+#         if hasattr(self, 'grinder_tip') and self.grinder_tip is not None:
+#             cv2.circle(viz_image1, self.grinder_tip, 10, (255, 255, 0), -1)
+#             cv2.circle(viz_image1, self.grinder_tip, 12, (0, 0, 0), 2)
+#             cv2.putText(viz_image1, "GRINDER TIP", (self.grinder_tip[0] + 15, self.grinder_tip[1] - 10),
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+#
+#         axes[1, 0].imshow(viz_image1)
+#         axes[1, 0].set_title('Detected Edges', fontsize=11)
+#         axes[1, 0].axis('off')
+#
+#         # Tooth profiles - PEAKS highlighted
+#         viz_image2 = cv2.cvtColor(self.image.copy(), cv2.COLOR_BGR2RGB)
+#         for tooth in self.teeth_profiles:
+#             # Draw TOOTH TIP (peak) - LARGE and BRIGHT
+#             cv2.circle(viz_image2, tooth.grinding_point, 8, (0, 255, 255), -1)  # Cyan for tooth tip
+#             cv2.circle(viz_image2, tooth.grinding_point, 10, (255, 255, 255), 2)  # White outline
+#
+#             # Draw valleys (grooves) - smaller
+#             cv2.circle(viz_image2, tooth.top_valley, 5, (255, 0, 0), -1)  # Red for valleys
+#             cv2.circle(viz_image2, tooth.bottom_valley, 5, (255, 0, 0), -1)
+#
+#             # Draw tooth outline
+#             cv2.line(viz_image2, tooth.top_valley, tooth.grinding_point, (255, 255, 0), 2)
+#             cv2.line(viz_image2, tooth.grinding_point, tooth.bottom_valley, (255, 255, 0), 2)
+#
+#             label_pos = (tooth.grinding_point[0] + 15, tooth.grinding_point[1])
+#             cv2.putText(viz_image2, f"TOOTH #{tooth.tooth_id}", label_pos,
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+#
+#         if hasattr(self, 'grinder_tip') and self.grinder_tip is not None:
+#             cv2.circle(viz_image2, self.grinder_tip, 12, (255, 128, 0), 3)
+#
+#         axes[1, 1].imshow(viz_image2)
+#         axes[1, 1].set_title('Tooth Points (Cyan: Tips, Red: Valleys)', fontsize=11)
+#         axes[1, 1].axis('off')
+#
+#         # Movement vectors
+#         viz_image3 = cv2.cvtColor(self.image.copy(), cv2.COLOR_BGR2RGB)
+#         grinder_ref = self.grinder_tip if hasattr(self, 'grinder_tip') else None
+#
+#         for tooth in self.teeth_profiles:
+#             cv2.circle(viz_image3, tooth.grinding_point, 8, (0, 255, 255), -1)
+#             cv2.circle(viz_image3, tooth.grinding_point, 10, (255, 255, 255), 2)
+#
+#             if grinder_ref is not None:
+#                 cv2.arrowedLine(viz_image3, tooth.grinding_point, grinder_ref,
+#                                 (0, 255, 255), 3, tipLength=0.03)
+#
+#         if grinder_ref is not None:
+#             cv2.circle(viz_image3, grinder_ref, 15, (255, 128, 0), 4)
+#             cv2.drawMarker(viz_image3, grinder_ref, (255, 255, 0),
+#                            cv2.MARKER_CROSS, 30, 4)
+#
+#         axes[1, 2].imshow(viz_image3)
+#         axes[1, 2].set_title('Grinding Path: Tooth Tips → Grinder', fontsize=11)
+#         axes[1, 2].axis('off')
+#
+#         plt.tight_layout()
+#
+#         if save_path:
+#             plt.savefig(save_path, dpi=150, bbox_inches='tight')
+#
+#         plt.show()
+#
+#     def export_coordinates_to_csv(self, filename='grinding_coordinates.csv', pixels_per_mm=1.0):
+#         """Export grinding coordinates to CSV"""
+#         import csv
+#
+#         grinding_coords = self.generate_grinding_coordinates(pixels_per_mm=pixels_per_mm)
+#
+#         with open(filename, 'w', newline='') as csvfile:
+#             fieldnames = ['tooth_id', 'tooth_tip_x_px', 'tooth_tip_y_px',
+#                           'grinder_tip_x_px', 'grinder_tip_y_px',
+#                           'move_x_px', 'move_y_px', 'move_x_mm', 'move_y_mm',
+#                           'distance_to_grinder_px', 'distance_to_grinder_mm',
+#                           'tooth_angle_deg', 'tooth_height_px',
+#                           'top_valley_x', 'top_valley_y', 'bottom_valley_x', 'bottom_valley_y']
+#
+#             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#             writer.writeheader()
+#
+#             for coord in grinding_coords:
+#                 writer.writerow({
+#                     'tooth_id': coord['tooth_id'],
+#                     'tooth_tip_x_px': coord['tooth_tip_x_px'],
+#                     'tooth_tip_y_px': coord['tooth_tip_y_px'],
+#                     'grinder_tip_x_px': coord['grinder_tip_x_px'],
+#                     'grinder_tip_y_px': coord['grinder_tip_y_px'],
+#                     'move_x_px': coord['move_x_pixels'],
+#                     'move_y_px': coord['move_y_pixels'],
+#                     'move_x_mm': coord['move_x_mm'],
+#                     'move_y_mm': coord['move_y_mm'],
+#                     'distance_to_grinder_px': coord['distance_to_grinder_px'],
+#                     'distance_to_grinder_mm': coord['distance_to_grinder_mm'],
+#                     'tooth_angle_deg': coord['tooth_angle_degrees'],
+#                     'tooth_height_px': coord['tooth_height_px'],
+#                     'top_valley_x': coord['top_peak'][0],
+#                     'top_valley_y': coord['top_peak'][1],
+#                     'bottom_valley_x': coord['bottom_peak'][0],
+#                     'bottom_valley_y': coord['bottom_peak'][1]
+#                 })
+#
+#
+# def main():
+#     """Main execution"""
+#     image_path = 'results/untitled3.png'
+#     PIXELS_PER_MM = 86.96
+#
+#     print("=" * 80)
+#     print("SERRATED BLADE ANALYZER - TOOTH POINT DETECTION")
+#     print("=" * 80)
+#
+#     analyzer = SerratedBladeAnalyzer(image_path)
+#     results = analyzer.analyze_blade(pixels_per_mm=PIXELS_PER_MM)
+#
+#     print(f"\nBlade orientation: {results['blade_angle']:.2f}°")
+#     print(f"Teeth detected: {results['num_teeth']}")
+#
+#     if results['grinder_tip']:
+#         print(f"Grinder tip: {results['grinder_tip']}")
+#
+#     print(f"\n{'Tooth':>6} | {'Tip Position':>14} | {'Move (mm)':>14} | {'Distance':>10}")
+#     print("-" * 55)
+#
+#     for coord in results['grinding_coordinates']:
+#         print(f"{coord['tooth_id']:>6} | "
+#               f"({coord['tooth_tip_x_px']:>4},{coord['tooth_tip_y_px']:>4}) | "
+#               f"({coord['move_x_mm']:>5.1f},{coord['move_y_mm']:>5.1f}) | "
+#               f"{coord['distance_to_grinder_mm']:>6.1f}mm")
+#
+#     analyzer.export_coordinates_to_csv('grinding_coordinates.csv', pixels_per_mm=PIXELS_PER_MM)
+#     analyzer.visualize_results(save_path='blade_analysis_results.png')
+#
+#     print("\n✓ Analysis complete!")
+#
+#
+# if __name__ == "__main__":
+#     main()
+
+"""
+Optimized Serrated Blade Analyzer - TOOTH POINT DETECTION
+Detects sharp tooth points (peaks) instead of grooves (valleys)
+"""
+
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy import ndimage
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 
 @dataclass
 class ToothProfile:
-    """Data class to store information about each tooth/serration"""
-    tooth_id: int  # Tooth number
-    apex_point: Tuple[int, int]  # GROOVE CENTER (valley - the grinding target!)
-    top_valley: Tuple[int, int]  # Top tooth peak
-    bottom_valley: Tuple[int, int]  # Bottom tooth peak
-    angle: float  # Angle of the groove in degrees
-    grinding_point: Tuple[int, int]  # Point to align with grinder (the groove center)
-    depth: float  # Depth of the groove
-    move_to_grinder: Tuple[float, float]  # X,Y movement to align groove with grinder tip
+    """Data class to store tooth point information"""
+    tooth_id: int
+    apex_point: Tuple[int, int]  # Tooth tip (peak - the grinding target)
+    top_valley: Tuple[int, int]
+    bottom_valley: Tuple[int, int]
+    angle: float
+    grinding_point: Tuple[int, int]
+    height: float  # Height of the tooth from valleys
+    move_to_grinder: Tuple[float, float]
 
 
 class SerratedBladeAnalyzer:
-    """Analyzer for detecting serrated blade edges and calculating grinding coordinates"""
+    """Optimized analyzer for serrated blade tooth point detection"""
 
-    def __init__(self, image_path: str):
+    def __init__(self, image_input: Union[str, np.ndarray]):
         """
-        Initialize the analyzer with an image
+        Initialize analyzer with image path or numpy array
 
         Args:
-            image_path: Path to the blade image
+            image_input: Path to image file OR numpy array (BGR format)
         """
-        self.image = cv2.imread(image_path)
-        if self.image is None:
-            raise ValueError(f"Could not load image from {image_path}")
+        if isinstance(image_input, str):
+            self.image = cv2.imread(image_input)
+            if self.image is None:
+                raise ValueError(f"Could not load image from {image_input}")
+        elif isinstance(image_input, np.ndarray):
+            self.image = image_input
+        else:
+            raise ValueError("image_input must be string path or numpy array")
 
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         self.height, self.width = self.gray.shape
@@ -40,97 +549,61 @@ class SerratedBladeAnalyzer:
         self.grinder_tip = None
         self.grinder_center = None
 
-    def preprocess_image(self, blur_kernel=31, threshold_method='adaptive'):
-        """
-        Preprocess the image for edge detection
-
-        Args:
-            blur_kernel: Size of Gaussian blur kernel
-            threshold_method: 'adaptive' or 'otsu'
-        """
-        # Apply Gaussian blur to reduce noise
+    def preprocess_image(self, blur_kernel=31):
+        """Preprocess image for edge detection"""
         self.blurred = cv2.GaussianBlur(self.gray, (blur_kernel, blur_kernel), 0)
-
-        # Apply thresholding
-        if threshold_method == 'adaptive':
-            self.binary = cv2.adaptiveThreshold(
-                self.blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                cv2.THRESH_BINARY_INV, 11, 2
-            )
-        else:
-            _, self.binary = cv2.threshold(
-                self.blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
-            )
-
+        self.binary = cv2.adaptiveThreshold(
+            self.blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV, 11, 2
+        )
         return self.binary
 
     def detect_edges(self, canny_low=100, canny_high=150):
-        """
-        Detect edges using Canny edge detection
-
-        Args:
-            canny_low: Lower threshold for Canny
-            canny_high: Upper threshold for Canny
-        """
+        """Detect edges using Canny"""
         self.edges = cv2.Canny(self.blurred, canny_low, canny_high)
         return self.edges
 
     def find_blade_contours(self):
-        """Find contours of the serrated blade"""
-        contours, hierarchy = cv2.findContours(
+        """Find blade contours"""
+        contours, _ = cv2.findContours(
             self.binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
-
-        # Filter contours by area to get significant ones
-        min_area = 50
-        self.blade_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
-
+        self.blade_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 50]
         return self.blade_contours
 
-    def detect_blade_and_grinder(self, sampling_step=3):
+    def detect_blade_and_grinder(self, sampling_step=1):
         """
-        Detect the blade edge (left side) and grinder tip (right side)
-        The grinder tip is the sharp point facing the blade
+        Detect blade edge and grinder tip
 
         Args:
-            sampling_step: Step size for scanning (in pixels)
+            sampling_step: Step size for scanning in pixels
+                          Use 1 for most precise edge detection
+                          Use 3-5 for faster but less precise detection
         """
         blade_edge = []
         grinder_points = []
 
-        # Scan each row to find edge transitions
         for y in range(0, self.height, sampling_step):
             row = self.binary[y, :]
-
-            # Find white pixels (object pixels)
             white_pixels = np.where(row > 170)[0]
 
             if len(white_pixels) > 0:
-                # Leftmost white pixel = blade edge (serrated side)
-                blade_x = white_pixels[0]
-                blade_edge.append((blade_x, y))
+                blade_edge.append((white_pixels[0], y))
 
-                # For grinder: collect the leftmost points on the right side
-                # (the points facing the blade)
-                if len(white_pixels) > 20:  # Make sure it's the grinder, not noise
-                    grinder_x = white_pixels[-1]
-                    # Also get the leftmost point of the grinder (facing blade)
+                if len(white_pixels) > 20:
                     rightmost_region = white_pixels[white_pixels > self.width // 3 * 2]
                     if len(rightmost_region) > 0:
-                        grinder_left_x = rightmost_region[0]
-                        grinder_points.append((grinder_left_x, y))
+                        grinder_points.append((rightmost_region[0], y))
 
         self.blade_edge_points = np.array(blade_edge) if blade_edge else None
         self.grinder_edge_points = np.array(grinder_points) if grinder_points else None
 
-        # Find grinder TIP - the leftmost point of the grinder (pointing toward blade)
+        # Find grinder tip (leftmost point)
         if self.grinder_edge_points is not None and len(self.grinder_edge_points) > 0:
-            # The tip is the leftmost point (minimum X) of the grinder
             min_x_idx = np.argmin(self.grinder_edge_points[:, 0])
             self.grinder_tip = tuple(self.grinder_edge_points[min_x_idx])
-            self.grinder_edge = self.grinder_tip  # The tip IS the edge we care about
 
-            # Calculate average of points near the tip for better accuracy
+            # Average nearby points for accuracy
             min_x = self.grinder_edge_points[min_x_idx, 0]
             tip_points = self.grinder_edge_points[
                 np.abs(self.grinder_edge_points[:, 0] - min_x) < 15
@@ -141,18 +614,16 @@ class SerratedBladeAnalyzer:
                 int(np.mean(tip_points[:, 1]))
             )
 
-            print(f"   Grinder tip (sharp edge facing blade): {self.grinder_tip}")
-
         return self.blade_edge_points, self.grinder_tip
 
-    def extract_tooth_profiles(self, window_size=30, min_depth_px=100):
+    def extract_tooth_profiles(self, window_size=30, min_height_px=100):
         """
-        Extract individual tooth profiles from blade edge points
-        Identifies grooves (valleys) as the grinding points
+        Extract tooth POINTS (peaks) from blade edge
+        NOW DETECTS SHARP TOOTH TIPS INSTEAD OF GROOVES
 
         Args:
             window_size: Window size for local maxima/minima detection
-            min_depth_px: Minimum groove depth in pixels to filter out noise
+            min_height_px: Minimum tooth height in pixels to filter out noise
         """
         if self.blade_edge_points is None or len(self.blade_edge_points) == 0:
             return []
@@ -160,140 +631,107 @@ class SerratedBladeAnalyzer:
         x_coords = self.blade_edge_points[:, 0]
         y_coords = self.blade_edge_points[:, 1]
 
-        # Smooth the x-coordinates to reduce noise
+        # Smooth x-coordinates
         x_smooth = ndimage.gaussian_filter1d(x_coords, sigma=3)
 
-        # Find local maxima (peaks - tooth tips pointing right) and minima (valleys/grooves)
-        peaks = []  # Tooth tips (points furthest right)
-        valleys = []  # Grooves (points furthest left) - THESE ARE WHAT WE GRIND
+        # Find peaks (TOOTH TIPS - what we want!) and valleys (grooves between teeth)
+        peaks = []  # TOOTH TIPS - the grinding targets!
+        valleys = []  # Grooves between teeth
+
+        mean_x = np.mean(x_smooth)
 
         for i in range(window_size, len(x_smooth) - window_size):
             window = x_smooth[i - window_size:i + window_size]
 
-            # Tooth tips are local maxima (pointing right = higher x values)
-            if x_smooth[i] == np.max(window) and x_smooth[i] > np.mean(x_smooth) + 20:
+            # PEAKS are tooth tips (pointing right = higher x values) - GRINDING TARGETS
+            if x_smooth[i] == np.max(window) and x_smooth[i] > mean_x + 20:
                 peaks.append(i)
-            # Valleys/GROOVES are local minima (lower x values) - THE GRINDING TARGETS
-            elif x_smooth[i] == np.min(window) and x_smooth[i] < np.mean(x_smooth) - 20:
+            # Valleys are grooves between teeth (lower x values)
+            elif x_smooth[i] == np.min(window) and x_smooth[i] < mean_x - 20:
                 valleys.append(i)
 
-        # Remove duplicate peaks/valleys that are too close
-        peaks = self._filter_close_points(peaks, min_distance=window_size)
-        valleys = self._filter_close_points(valleys, min_distance=window_size)
+        # Filter close points
+        peaks = self._filter_close_points(peaks, window_size)
+        valleys = self._filter_close_points(valleys, window_size)
 
-        print(f"   Found {len(peaks)} tooth peaks and {len(valleys)} grooves/valleys")
-
-        # Create tooth profiles - each valley (groove) becomes a grinding target
+        # Create tooth profiles - each PEAK becomes a grinding target
         tooth_profiles = []
         tooth_id = 1
 
-        # Each valley (groove) becomes a grinding target
-        for i, valley_idx in enumerate(valleys):
-            # Find peaks above and below this valley
-            peaks_above = [p for p in peaks if p < valley_idx]
-            peaks_below = [p for p in peaks if p > valley_idx]
+        for peak_idx in peaks:
+            # Find valleys above and below this peak
+            valleys_above = [v for v in valleys if v < peak_idx]
+            valleys_below = [v for v in valleys if v > peak_idx]
 
-            # Handle edge cases by sampling actual edge points
-            if len(peaks_above) == 0 and len(peaks_below) > 0:
-                # TOP EDGE GROOVE - sample points above the valley and average them
-                edge_sample_size = min(window_size // 2, 50)  # Max 20 points
-                sample_start = 0  # Start from absolute top
-                sample_end = min(edge_sample_size, valley_idx)
-                # sample_start = max(0, valley_idx - window_size * 2)
-                # sample_end = valley_idx
-                sample_indices = range(sample_start, sample_end)
+            # Handle edge cases
+            if len(valleys_above) == 0 and len(valleys_below) > 0:
+                # Top edge tooth - sample points above the peak
+                sample_size = min(window_size // 2, 50)
+                sample_end = min(sample_size, peak_idx)
+                sample_indices = range(0, sample_end)
 
-                # Average the actual edge points in this region
                 sampled_x = [x_smooth[idx] for idx in sample_indices if idx < len(x_smooth)]
                 sampled_y = [y_coords[idx] for idx in sample_indices if idx < len(y_coords)]
 
-                if sampled_x and sampled_y:
-                    top_peak = (int(np.mean(sampled_x)), int(np.mean(sampled_y)))
-                else:
-                    top_peak = (int(x_smooth[sample_start]), int(y_coords[sample_start]))
+                top_valley = (int(np.mean(sampled_x)), int(np.mean(sampled_y))) if sampled_x else (int(x_smooth[0]),
+                                                                                                   int(y_coords[0]))
+                bottom_valley = (int(x_smooth[valleys_below[0]]), int(y_coords[valleys_below[0]]))
 
-                bottom_peak_idx = peaks_below[0]
-                bottom_peak = (int(x_smooth[bottom_peak_idx]), int(y_coords[bottom_peak_idx]))
-
-                print(f"   Top edge groove: sampled {len(sampled_x)} points for top boundary")
-
-            elif len(peaks_below) == 0 and len(peaks_above) > 0:
-                # BOTTOM EDGE GROOVE - sample points below the valley and average them
-                sample_start = valley_idx
-                sample_end = min(len(x_smooth) - 1, valley_idx + window_size * 2)
+            elif len(valleys_below) == 0 and len(valleys_above) > 0:
+                # Bottom edge tooth - sample points below the peak
+                sample_start = peak_idx
+                sample_end = min(len(x_smooth) - 1, peak_idx + window_size * 2)
                 sample_indices = range(sample_start, sample_end)
 
-                # Average the actual edge points in this region
                 sampled_x = [x_smooth[idx] for idx in sample_indices if idx < len(x_smooth)]
                 sampled_y = [y_coords[idx] for idx in sample_indices if idx < len(y_coords)]
 
-                top_peak_idx = peaks_above[-1]
-                top_peak = (int(x_smooth[top_peak_idx]), int(y_coords[top_peak_idx]))
+                top_valley = (int(x_smooth[valleys_above[-1]]), int(y_coords[valleys_above[-1]]))
+                bottom_valley = (int(np.mean(sampled_x)), int(np.mean(sampled_y))) if sampled_x else (
+                    int(x_smooth[sample_end]), int(y_coords[sample_end]))
 
-                if sampled_x and sampled_y:
-                    bottom_peak = (int(np.mean(sampled_x)), int(np.mean(sampled_y)))
-                else:
-                    bottom_peak = (int(x_smooth[sample_end]), int(y_coords[sample_end]))
-
-                print(f"   Bottom edge groove: sampled {len(sampled_x)} points for bottom boundary")
-
-            elif len(peaks_above) > 0 and len(peaks_below) > 0:
-                # MIDDLE GROOVE - normal case, use detected peaks
-                top_peak_idx = peaks_above[-1]
-                bottom_peak_idx = peaks_below[0]
-
-                top_peak = (int(x_smooth[top_peak_idx]), int(y_coords[top_peak_idx]))
-                bottom_peak = (int(x_smooth[bottom_peak_idx]), int(y_coords[bottom_peak_idx]))
-
+            elif len(valleys_above) > 0 and len(valleys_below) > 0:
+                # Middle tooth - normal case
+                top_valley = (int(x_smooth[valleys_above[-1]]), int(y_coords[valleys_above[-1]]))
+                bottom_valley = (int(x_smooth[valleys_below[0]]), int(y_coords[valleys_below[0]]))
             else:
-                # No peaks found - skip this groove
                 continue
 
-            # The GROOVE is our grinding point (the valley)
-            # Instead of using just the single valley point, average nearby points for accuracy
-            groove_sample_size = max(3, window_size // 10)  # Sample 3-5 points around valley
-            groove_start = max(0, valley_idx - groove_sample_size)
-            groove_end = min(len(x_smooth), valley_idx + groove_sample_size + 1)
+            # Use exact peak point for precise edge detection
+            # OPTION 1: No averaging - most precise (use this for exact edge)
+            tooth_point = (int(x_smooth[peak_idx]), int(y_coords[peak_idx]))
 
-            groove_x_samples = x_smooth[groove_start:groove_end]
-            groove_y_samples = y_coords[groove_start:groove_end]
+            # OPTION 2: Minimal averaging (uncomment if you want slight smoothing)
+            # peak_sample_size = 2  # Only average 2-3 points
+            # peak_start = max(0, peak_idx - peak_sample_size)
+            # peak_end = min(len(x_smooth), peak_idx + peak_sample_size + 1)
+            # peak_x_samples = x_smooth[peak_start:peak_end]
+            # peak_y_samples = y_coords[peak_start:peak_end]
+            # tooth_point = (int(np.mean(peak_x_samples)), int(np.mean(peak_y_samples))) if len(peak_x_samples) > 0 else (int(x_smooth[peak_idx]), int(y_coords[peak_idx]))
 
-            if len(groove_x_samples) > 0:
-                groove_point = (int(np.mean(groove_x_samples)), int(np.mean(groove_y_samples)))
-                print(f"   Groove at y≈{groove_point[1]}: averaged {len(groove_x_samples)} points")
-            else:
-                groove_point = (int(x_smooth[valley_idx]), int(y_coords[valley_idx]))
+            # Calculate tooth height (distance from valleys to peak)
+            height = abs(tooth_point[0] - ((top_valley[0] + bottom_valley[0]) / 2))
 
-            # Calculate groove depth (distance from peaks to valley)
-            depth = abs(groove_point[0] - ((top_peak[0] + bottom_peak[0]) / 2))
+            # Calculate angle
+            angle = self._calculate_tooth_angle(top_valley, tooth_point, bottom_valley)
 
-            # Filter out shallow grooves (noise)
-            # if depth < 100:
-            #     print(f"   Skipping shallow groove at y={groove_point[1]} (depth={depth:.0f}px < {min_depth_px}px)")
-            #     continue
-
-            # Calculate angle of the groove (angle between the two peaks through the valley)
-            angle = self._calculate_tooth_angle(top_peak, groove_point, bottom_peak)
-
-            # The grinding point is the GROOVE (valley), not the apex!
-            grinding_point = groove_point
-
-            # Calculate movement needed to align this GROOVE with grinder tip
+            # Calculate movement to grinder
             if hasattr(self, 'grinder_tip') and self.grinder_tip is not None:
-                move_x = self.grinder_tip[0] - groove_point[0]
-                move_y = self.grinder_tip[1] - groove_point[1]
-                move_to_grinder = (move_x, move_y)
+                move_to_grinder = (
+                    self.grinder_tip[0] - tooth_point[0],
+                    self.grinder_tip[1] - tooth_point[1]
+                )
             else:
                 move_to_grinder = (0, 0)
 
             tooth_profiles.append(ToothProfile(
                 tooth_id=tooth_id,
-                apex_point=groove_point,  # This is actually the groove/valley!
-                top_valley=top_peak,  # Top tooth peak (or averaged boundary)
-                bottom_valley=bottom_peak,  # Bottom tooth peak (or averaged boundary)
+                apex_point=tooth_point,
+                top_valley=top_valley,
+                bottom_valley=bottom_valley,
                 angle=angle,
-                grinding_point=grinding_point,  # The groove center
-                depth=depth,
+                grinding_point=tooth_point,
+                height=height,
                 move_to_grinder=move_to_grinder
             ))
 
@@ -302,7 +740,7 @@ class SerratedBladeAnalyzer:
         return tooth_profiles
 
     def _filter_close_points(self, points, min_distance):
-        """Filter out points that are too close to each other"""
+        """Filter out points too close together"""
         if len(points) == 0:
             return points
 
@@ -310,26 +748,13 @@ class SerratedBladeAnalyzer:
         for p in points[1:]:
             if abs(p - filtered[-1]) >= min_distance:
                 filtered.append(p)
-
         return filtered
 
     def _calculate_tooth_angle(self, top_valley, apex, bottom_valley):
-        """
-        Calculate the angle of a tooth
+        """Calculate tooth angle in degrees"""
+        v1 = np.array([top_valley[0] - apex[0], top_valley[1] - apex[1]], dtype=float)
+        v2 = np.array([bottom_valley[0] - apex[0], bottom_valley[1] - apex[1]], dtype=float)
 
-        Args:
-            top_valley: Top valley point
-            apex: Apex point (tooth tip)
-            bottom_valley: Bottom valley point
-
-        Returns:
-            Angle in degrees
-        """
-        # Calculate vectors from apex to valleys
-        v1 = np.array([top_valley[0] - apex[0], top_valley[1] - apex[1]])
-        v2 = np.array([bottom_valley[0] - apex[0], bottom_valley[1] - apex[1]])
-
-        # Calculate angle between vectors
         dot_product = np.dot(v1, v2)
         magnitude = np.linalg.norm(v1) * np.linalg.norm(v2)
 
@@ -337,57 +762,42 @@ class SerratedBladeAnalyzer:
             return 0
 
         angle = np.arccos(np.clip(dot_product / magnitude, -1.0, 1.0))
-        angle_degrees = np.degrees(angle)
-
-        return angle_degrees
+        return float(np.degrees(angle))
 
     def calculate_blade_orientation(self):
-        """Calculate the overall orientation/angle of the blade edge"""
+        """Calculate blade edge orientation"""
         if self.blade_edge_points is None or len(self.blade_edge_points) == 0:
             return 0
 
-        # Fit a line to the blade edge points
-        [vx, vy, x0, y0] = cv2.fitLine(
+        fit_result = cv2.fitLine(
             self.blade_edge_points.astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01
         )
 
-        # Calculate angle from vertical (since blade is oriented vertically)
+        vx, vy = fit_result[0][0], fit_result[1][0]
         angle = np.degrees(np.arctan2(vy, vx))
-
-        return float(angle[0])
+        return float(angle)
 
     def generate_grinding_coordinates(self, pixels_per_mm=1.0):
-        """
-        Generate grinding coordinates for robot control
-        Coordinates align each GROOVE with the GRINDER TIP
-
-        Args:
-            pixels_per_mm: Calibration factor (pixels per millimeter)
-
-        Returns:
-            List of grinding coordinate dictionaries for each groove
-        """
+        """Generate grinding coordinates for robot control - TOOTH POINTS"""
         grinding_coords = []
-
         grinder_ref = self.grinder_tip if hasattr(self, 'grinder_tip') else None
 
         for tooth in self.teeth_profiles:
-            # Movement needed in pixels to align GROOVE with GRINDER TIP
             move_x_px = tooth.move_to_grinder[0]
             move_y_px = tooth.move_to_grinder[1]
 
-            # Convert to millimeters
             move_x_mm = move_x_px / pixels_per_mm
             move_y_mm = move_y_px / pixels_per_mm
 
-            # Distance to grinder
             distance_px = np.sqrt(move_x_px ** 2 + move_y_px ** 2)
             distance_mm = distance_px / pixels_per_mm
 
             grinding_coords.append({
                 'tooth_id': tooth.tooth_id,
-                'groove_position_x_px': tooth.grinding_point[0],  # Groove center X
-                'groove_position_y_px': tooth.grinding_point[1],  # Groove center Y
+                'tooth_tip_x_px': tooth.grinding_point[0],  # Tooth tip X
+                'tooth_tip_y_px': tooth.grinding_point[1],  # Tooth tip Y
+                'groove_position_x_px': tooth.grinding_point[0],  # Keep for compatibility
+                'groove_position_y_px': tooth.grinding_point[1],  # Keep for compatibility
                 'grinder_tip_x_px': grinder_ref[0] if grinder_ref else 0,
                 'grinder_tip_y_px': grinder_ref[1] if grinder_ref else 0,
                 'move_x_pixels': int(move_x_px),
@@ -396,64 +806,30 @@ class SerratedBladeAnalyzer:
                 'move_y_mm': round(move_y_mm, 2),
                 'distance_to_grinder_px': round(distance_px, 1),
                 'distance_to_grinder_mm': round(distance_mm, 2),
-                'groove_angle_degrees': round(tooth.angle, 2),
-                'groove_depth_px': round(tooth.depth, 1),
-                'top_peak': tooth.top_valley,  # Top tooth peak
-                'bottom_peak': tooth.bottom_valley  # Bottom tooth peak
+                'tooth_angle_degrees': round(tooth.angle, 2),
+                'tooth_height_px': round(tooth.height, 1),
+                'groove_angle_degrees': round(tooth.angle, 2),  # Keep for compatibility
+                'groove_depth_px': round(tooth.height, 1),  # Keep for compatibility
+                'top_peak': tooth.top_valley,
+                'bottom_peak': tooth.bottom_valley
             })
 
         return grinding_coords
 
     def analyze_blade(self, pixels_per_mm=1.0):
-        """
-        Run complete analysis pipeline
-        Detects grooves (grinding targets) and grinder edge
-
-        Args:
-            pixels_per_mm: Calibration factor for converting pixels to mm
-        """
-        print("Starting blade analysis...")
-
-        # Step 1: Preprocess
-        print("1. Preprocessing image...")
+        """Run complete analysis pipeline"""
         self.preprocess_image()
-
-        # Step 2: Detect edges
-        print("2. Detecting edges...")
         self.detect_edges()
-
-        # Step 3: Find contours
-        print("3. Finding blade contours...")
         self.find_blade_contours()
-
-        # Step 4: Detect blade edge and grinder tip
-        print("4. Detecting blade edge and grinder tip...")
-        blade_points, grinder_tip = self.detect_blade_and_grinder()
-
-        if blade_points is not None:
-            print(f"   Blade edge detected with {len(blade_points)} points")
-        if grinder_tip is not None:
-            print(f"   Grinder tip (pointing at blade) detected at {grinder_tip}")
-
-        # Step 5: Extract groove profiles from blade edge
-        print("5. Extracting groove profiles (grinding targets)...")
+        self.detect_blade_and_grinder()
         self.teeth_profiles = self.extract_tooth_profiles()
-        print(f"   Found {len(self.teeth_profiles)} grooves to grind")
-
-        # Step 6: Calculate blade orientation
-        print("6. Calculating blade orientation...")
         blade_angle = self.calculate_blade_orientation()
-        print(f"   Blade orientation: {blade_angle:.2f} degrees from vertical")
-
-        # Step 7: Generate grinding coordinates
-        print("7. Generating grinding coordinates...")
         grinding_coords = self.generate_grinding_coordinates(pixels_per_mm=pixels_per_mm)
-
-        print(f"\nAnalysis complete! Found {len(self.teeth_profiles)} grooves to grind")
 
         return {
             'blade_angle': blade_angle,
-            'num_grooves': len(self.teeth_profiles),
+            'num_grooves': len(self.teeth_profiles),  # Keep name for compatibility
+            'num_teeth': len(self.teeth_profiles),
             'grinder_tip': self.grinder_tip if hasattr(self, 'grinder_tip') else None,
             'grinder_center': self.grinder_center if hasattr(self, 'grinder_center') else None,
             'grinding_coordinates': grinding_coords,
@@ -461,18 +837,14 @@ class SerratedBladeAnalyzer:
         }
 
     def visualize_results(self, save_path=None):
-        """
-        Visualize the detection results
-        Shows grooves (grinding targets) and grinder edge
+        """Visualize detection results - TOOTH POINTS"""
+        import matplotlib.pyplot as plt
 
-        Args:
-            save_path: Path to save the visualization (optional)
-        """
         fig, axes = plt.subplots(2, 3, figsize=(20, 13))
 
         # Original image
         axes[0, 0].imshow(cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB))
-        axes[0, 0].set_title('Original Image\n(Blade Left, Grinder Right)', fontsize=12, fontweight='bold')
+        axes[0, 0].set_title('Original Image', fontsize=12, fontweight='bold')
         axes[0, 0].axis('off')
 
         # Binary image
@@ -485,152 +857,102 @@ class SerratedBladeAnalyzer:
         axes[0, 2].set_title('Edge Detection', fontsize=12, fontweight='bold')
         axes[0, 2].axis('off')
 
-        # Detected blade edge and grinder edge
+        # Detected edges
         viz_image1 = cv2.cvtColor(self.image.copy(), cv2.COLOR_BGR2RGB)
         if self.blade_edge_points is not None:
-            for point in self.blade_edge_points[::3]:  # Sample every 3rd point
-                cv2.circle(viz_image1, (point[0], point[1]), 2, (255, 0, 0), -1)
+            for point in self.blade_edge_points[::3]:
+                cv2.circle(viz_image1, tuple(point), 2, (255, 0, 0), -1)
 
         if self.grinder_edge_points is not None:
             for point in self.grinder_edge_points[::3]:
-                cv2.circle(viz_image1, (point[0], point[1]), 2, (0, 255, 0), -1)
+                cv2.circle(viz_image1, tuple(point), 2, (0, 255, 0), -1)
 
-        # Mark grinder TIP (sharp point facing blade)
         if hasattr(self, 'grinder_tip') and self.grinder_tip is not None:
             cv2.circle(viz_image1, self.grinder_tip, 10, (255, 255, 0), -1)
             cv2.circle(viz_image1, self.grinder_tip, 12, (0, 0, 0), 2)
-            cv2.putText(viz_image1, "GRINDER TIP",
-                        (self.grinder_tip[0] + 15, self.grinder_tip[1] - 10),
+            cv2.putText(viz_image1, "GRINDER TIP", (self.grinder_tip[0] + 15, self.grinder_tip[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-            cv2.putText(viz_image1, "(pointing at blade)",
-                        (self.grinder_tip[0] + 15, self.grinder_tip[1] + 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
 
         axes[1, 0].imshow(viz_image1)
-        axes[1, 0].set_title('Detected Edges\n(Red: Blade, Green: Grinder, Yellow: Grinder Tip)', fontsize=11)
+        axes[1, 0].set_title('Detected Edges', fontsize=11)
         axes[1, 0].axis('off')
 
-        # Tooth profiles with grooves highlighted
+        # Tooth profiles - PEAKS highlighted
         viz_image2 = cv2.cvtColor(self.image.copy(), cv2.COLOR_BGR2RGB)
-        for i, tooth in enumerate(self.teeth_profiles):
-            # Draw GROOVE (the grinding target) - LARGE and BRIGHT
-            cv2.circle(viz_image2, tooth.grinding_point, 8, (255, 0, 255), -1)  # Magenta for groove
+        for tooth in self.teeth_profiles:
+            # Draw TOOTH TIP (peak) - LARGE and BRIGHT
+            cv2.circle(viz_image2, tooth.grinding_point, 8, (0, 255, 255), -1)  # Cyan for tooth tip
             cv2.circle(viz_image2, tooth.grinding_point, 10, (255, 255, 255), 2)  # White outline
 
-            # Draw tooth peaks (smaller)
-            cv2.circle(viz_image2, tooth.top_valley, 5, (0, 255, 0), -1)
-            cv2.circle(viz_image2, tooth.bottom_valley, 5, (0, 255, 0), -1)
+            # Draw valleys (grooves) - smaller
+            cv2.circle(viz_image2, tooth.top_valley, 5, (255, 0, 0), -1)  # Red for valleys
+            cv2.circle(viz_image2, tooth.bottom_valley, 5, (255, 0, 0), -1)
 
             # Draw tooth outline
             cv2.line(viz_image2, tooth.top_valley, tooth.grinding_point, (255, 255, 0), 2)
             cv2.line(viz_image2, tooth.grinding_point, tooth.bottom_valley, (255, 255, 0), 2)
 
-            # Add labels
-            label_pos = (tooth.grinding_point[0] - 70, tooth.grinding_point[1])
-            cv2.putText(viz_image2, f"GROOVE #{tooth.tooth_id}",
-                        label_pos,
+            label_pos = (tooth.grinding_point[0] + 15, tooth.grinding_point[1])
+            cv2.putText(viz_image2, f"TOOTH #{tooth.tooth_id}", label_pos,
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-            cv2.putText(viz_image2, f"{tooth.angle:.1f}°",
-                        (label_pos[0], label_pos[1] + 20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-        # Mark grinder tip
         if hasattr(self, 'grinder_tip') and self.grinder_tip is not None:
             cv2.circle(viz_image2, self.grinder_tip, 12, (255, 128, 0), 3)
-            cv2.putText(viz_image2, "GRINDER TIP",
-                        (self.grinder_tip[0] + 15, self.grinder_tip[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 128, 0), 2)
 
         axes[1, 1].imshow(viz_image2)
-        axes[1, 1].set_title('Tooth Grooves & Angles\n(Magenta: Grooves to Grind, Green: Peaks, Orange: Grinder Tip)',
-                             fontsize=11)
+        axes[1, 1].set_title('Tooth Points (Cyan: Tips, Red: Valleys)', fontsize=11)
         axes[1, 1].axis('off')
 
-        # Movement vectors from grooves to grinder tip
+        # Movement vectors
         viz_image3 = cv2.cvtColor(self.image.copy(), cv2.COLOR_BGR2RGB)
-
         grinder_ref = self.grinder_tip if hasattr(self, 'grinder_tip') else None
 
-        for i, tooth in enumerate(self.teeth_profiles):
-            # Draw groove point (grinding target)
-            cv2.circle(viz_image3, tooth.grinding_point, 8, (255, 0, 255), -1)
+        for tooth in self.teeth_profiles:
+            cv2.circle(viz_image3, tooth.grinding_point, 8, (0, 255, 255), -1)
             cv2.circle(viz_image3, tooth.grinding_point, 10, (255, 255, 255), 2)
 
-            # Draw movement arrow from GROOVE to GRINDER EDGE
             if grinder_ref is not None:
                 cv2.arrowedLine(viz_image3, tooth.grinding_point, grinder_ref,
                                 (0, 255, 255), 3, tipLength=0.03)
 
-                # Add movement details
-                mid_x = (tooth.grinding_point[0] + grinder_ref[0]) // 2
-                mid_y = (tooth.grinding_point[1] + grinder_ref[1]) // 2
-                distance_px = np.sqrt(tooth.move_to_grinder[0] ** 2 + tooth.move_to_grinder[1] ** 2)
-
-                # Background box for text
-                cv2.rectangle(viz_image3, (mid_x - 55, mid_y - 35), (mid_x + 55, mid_y + 35),
-                              (0, 0, 0), -1)
-                cv2.rectangle(viz_image3, (mid_x - 55, mid_y - 35), (mid_x + 55, mid_y + 35),
-                              (255, 255, 255), 2)
-
-                cv2.putText(viz_image3, f"Groove #{tooth.tooth_id}",
-                            (mid_x - 50, mid_y - 15),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 0), 2)
-                cv2.putText(viz_image3, f"{distance_px:.0f}px",
-                            (mid_x - 30, mid_y + 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-                cv2.putText(viz_image3, f"dx:{tooth.move_to_grinder[0]:.0f}",
-                            (mid_x - 50, mid_y + 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 255), 1)
-                cv2.putText(viz_image3, f"dy:{tooth.move_to_grinder[1]:.0f}",
-                            (mid_x - 50, mid_y + 32),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 255), 1)
-
-        # Mark grinder tip with crosshair
         if grinder_ref is not None:
             cv2.circle(viz_image3, grinder_ref, 15, (255, 128, 0), 4)
             cv2.drawMarker(viz_image3, grinder_ref, (255, 255, 0),
                            cv2.MARKER_CROSS, 30, 4)
-            cv2.putText(viz_image3, "GRINDER TIP",
-                        (grinder_ref[0] + 20, grinder_ref[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 128, 0), 2)
 
         axes[1, 2].imshow(viz_image3)
-        axes[1, 2].set_title('Grinding Path: Groove → Grinder Tip\n(Cyan Arrows: Move Blade to Align Grooves)',
-                             fontsize=11)
+        axes[1, 2].set_title('Grinding Path: Tooth Tips → Grinder', fontsize=11)
         axes[1, 2].axis('off')
 
         plt.tight_layout()
 
         if save_path:
             plt.savefig(save_path, dpi=150, bbox_inches='tight')
-            print(f"Visualization saved to {save_path}")
 
         plt.show()
 
     def export_coordinates_to_csv(self, filename='grinding_coordinates.csv', pixels_per_mm=1.0):
-        """Export grinding coordinates to CSV file"""
+        """Export grinding coordinates to CSV"""
         import csv
 
         grinding_coords = self.generate_grinding_coordinates(pixels_per_mm=pixels_per_mm)
 
         with open(filename, 'w', newline='') as csvfile:
-            fieldnames = ['tooth_id',
-                          'groove_x_px', 'groove_y_px',
+            fieldnames = ['tooth_id', 'tooth_tip_x_px', 'tooth_tip_y_px',
                           'grinder_tip_x_px', 'grinder_tip_y_px',
-                          'move_x_px', 'move_y_px',
-                          'move_x_mm', 'move_y_mm',
+                          'move_x_px', 'move_y_px', 'move_x_mm', 'move_y_mm',
                           'distance_to_grinder_px', 'distance_to_grinder_mm',
-                          'groove_angle_deg', 'groove_depth_px',
-                          'top_peak_x', 'top_peak_y',
-                          'bottom_peak_x', 'bottom_peak_y']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                          'tooth_angle_deg', 'tooth_height_px',
+                          'top_valley_x', 'top_valley_y', 'bottom_valley_x', 'bottom_valley_y']
 
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
+
             for coord in grinding_coords:
                 writer.writerow({
                     'tooth_id': coord['tooth_id'],
-                    'groove_x_px': coord['groove_position_x_px'],
-                    'groove_y_px': coord['groove_position_y_px'],
+                    'tooth_tip_x_px': coord['tooth_tip_x_px'],
+                    'tooth_tip_y_px': coord['tooth_tip_y_px'],
                     'grinder_tip_x_px': coord['grinder_tip_x_px'],
                     'grinder_tip_y_px': coord['grinder_tip_y_px'],
                     'move_x_px': coord['move_x_pixels'],
@@ -639,100 +961,46 @@ class SerratedBladeAnalyzer:
                     'move_y_mm': coord['move_y_mm'],
                     'distance_to_grinder_px': coord['distance_to_grinder_px'],
                     'distance_to_grinder_mm': coord['distance_to_grinder_mm'],
-                    'groove_angle_deg': coord['groove_angle_degrees'],
-                    'groove_depth_px': coord['groove_depth_px'],
-                    'top_peak_x': coord['top_peak'][0],
-                    'top_peak_y': coord['top_peak'][1],
-                    'bottom_peak_x': coord['bottom_peak'][0],
-                    'bottom_peak_y': coord['bottom_peak'][1]
+                    'tooth_angle_deg': coord['tooth_angle_degrees'],
+                    'tooth_height_px': coord['tooth_height_px'],
+                    'top_valley_x': coord['top_peak'][0],
+                    'top_valley_y': coord['top_peak'][1],
+                    'bottom_valley_x': coord['bottom_peak'][0],
+                    'bottom_valley_y': coord['bottom_peak'][1]
                 })
-
-        print(f"Coordinates exported to {filename}")
 
 
 def main():
-    """Main execution function"""
-    # Load and analyze the blade image
+    """Main execution"""
     image_path = 'results/untitled3.png'
-
-    # Calibration: pixels per millimeter (you need to calibrate this based on your camera setup)
-    PIXELS_PER_MM = 86.96  # Default value - adjust based on your calibration!
+    PIXELS_PER_MM = 86.96
 
     print("=" * 80)
-    print(" " * 20 + "SERRATED BLADE SHARPENING ANALYZER")
+    print("SERRATED BLADE ANALYZER - TOOTH POINT DETECTION")
     print("=" * 80)
-    print(f"\nCalibration: {PIXELS_PER_MM} pixels per millimeter")
-    print("(Adjust PIXELS_PER_MM in the code based on your camera calibration)\n")
 
-    # Create analyzer instance
     analyzer = SerratedBladeAnalyzer(image_path)
-
-    # Run analysis
     results = analyzer.analyze_blade(pixels_per_mm=PIXELS_PER_MM)
 
-    # Print results
-    print("\n" + "=" * 80)
-    print(" " * 30 + "ANALYSIS RESULTS")
-    print("=" * 80)
-    print(f"\nBlade Configuration:")
-    print(f"  • Blade orientation: {results['blade_angle']:.2f}° from vertical")
-    print(f"  • Number of grooves detected: {results['num_grooves']}")
+    print(f"\nBlade orientation: {results['blade_angle']:.2f}°")
+    print(f"Teeth detected: {results['num_teeth']}")
 
     if results['grinder_tip']:
-        print(f"\nGrinder Tip Position:")
-        print(f"  • Grinder tip location: ({results['grinder_tip'][0]}, {results['grinder_tip'][1]}) pixels")
+        print(f"Grinder tip: {results['grinder_tip']}")
 
-    print("\n" + "-" * 80)
-    print("ROBOT MOVEMENT COORDINATES FOR EACH GROOVE:")
-    print("-" * 80)
-    print(
-        f"{'Groove':>6} | {'Current Pos (px)':>18} | {'Move X':>10} | {'Move Y':>10} | {'Distance':>12} | {'Angle':>8}")
-    print(f"{'ID':>6} | {'(X, Y)':>18} | {'(px/mm)':>10} | {'(px/mm)':>10} | {'(px/mm)':>12} | {'(deg)':>8}")
-    print("-" * 80)
+    print(f"\n{'Tooth':>6} | {'Tip Position':>14} | {'Move (mm)':>14} | {'Distance':>10}")
+    print("-" * 55)
 
     for coord in results['grinding_coordinates']:
         print(f"{coord['tooth_id']:>6} | "
-              f"({coord['groove_position_x_px']:>4}, {coord['groove_position_y_px']:>4}){' ':>5} | "
-              f"{coord['move_x_pixels']:>4}/{coord['move_x_mm']:>4.1f} | "
-              f"{coord['move_y_pixels']:>4}/{coord['move_y_mm']:>4.1f} | "
-              f"{coord['distance_to_grinder_px']:>5.0f}/{coord['distance_to_grinder_mm']:>4.1f} | "
-              f"{coord['groove_angle_degrees']:>7.1f}°")
+              f"({coord['tooth_tip_x_px']:>4},{coord['tooth_tip_y_px']:>4}) | "
+              f"({coord['move_x_mm']:>5.1f},{coord['move_y_mm']:>5.1f}) | "
+              f"{coord['distance_to_grinder_mm']:>6.1f}mm")
 
-    print("\n" + "=" * 80)
-    print("INSTRUCTIONS FOR ROBOT CONTROL:")
-    print("=" * 80)
-    print("""
-For each groove, move the blade by the specified (move_x, move_y) coordinates
-to align the groove with the grinder edge. Then activate grinding.
+    analyzer.export_coordinates_to_csv('grinding_coordinates.csv', pixels_per_mm=PIXELS_PER_MM)
+    analyzer.visualize_results(save_path='blade_analysis_results.png')
 
-Example pseudocode:
-    for each groove in grinding_coordinates:
-        robot.move_blade_relative(
-            x = groove.move_x_mm,
-            y = groove.move_y_mm
-        )
-        robot.activate_grinder()
-        robot.wait(grinding_time_seconds)
-        robot.deactivate_grinder()
-        robot.move_to_home_position()
-""")
-
-    # Export to CSV
-    csv_path = 'grinding_coordinates.csv'
-    analyzer.export_coordinates_to_csv(csv_path, pixels_per_mm=PIXELS_PER_MM)
-
-    # Visualize results
-    print("\nGenerating visualization...")
-    viz_path = 'results/blade_analysis_results.png'
-    analyzer.visualize_results(save_path=viz_path)
-
-    print("\n" + "=" * 80)
-    print("✓ Analysis complete!")
-    print("=" * 80)
-    print(f"\nOutput files:")
-    print(f"  • Coordinates CSV: {csv_path}")
-    print(f"  • Visualization: {viz_path}")
-    print("\n")
+    print("\n✓ Analysis complete!")
 
 
 if __name__ == "__main__":
