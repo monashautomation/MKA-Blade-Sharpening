@@ -190,6 +190,7 @@ class BladeDataTCPServer:
         try:
             # Find tooth profiles to calculate middle points (valleys)
             teeth_profiles = blade_results.get('teeth_profiles', [])
+            # teeth_profiles = blade_results.get('grinding_coordinates',[])
             grinder_tip = blade_results.get('grinder_tip')
             pixels_per_mm = 86.96  # Default calibration
 
@@ -203,18 +204,17 @@ class BladeDataTCPServer:
 
                     # Calculate middle point between current tooth tip and next tooth tip
                     # This is the valley/groove between the teeth
-                    valley_x = (current_tooth.grinding_point[0] + next_tooth.grinding_point[0]) // 2
-                    valley_y = (current_tooth.grinding_point[1] + next_tooth.grinding_point[1]) // 2
-
+                    valley_x = (current_tooth.grinding_point[0] + next_tooth.grinding_point[0]) / 2
+                    valley_y = (current_tooth.grinding_point[1] + next_tooth.grinding_point[1]) / 2
                     # Calculate movement to grinder from valley
                     move_x_px = grinder_tip[0] - valley_x
                     move_y_px = grinder_tip[1] - valley_y
-
+                    #
                     move_x_mm = move_x_px / pixels_per_mm
                     move_y_mm = move_y_px / pixels_per_mm
 
                     # Check if valley is above grinder (positive Y offset)
-                    if move_y_mm > 0:
+                    if move_y_mm > 1:
                         distance_mm = ((move_x_mm ** 2 + move_y_mm ** 2) ** 0.5)
 
                         if distance_mm < min_distance:
@@ -223,8 +223,8 @@ class BladeDataTCPServer:
                                 'valley_x': valley_x,
                                 'valley_y': valley_y,
                                 'move_x_mm': move_x_mm,
-                                'move_y_mm': move_y_mm,
-                                'between_teeth': f"{current_tooth.tooth_id}-{next_tooth.tooth_id}"
+                                'move_y_mm': move_y_mm
+                                # 'between_teeth': f"{current_tooth.tooth_id}-{next_tooth.tooth_id}"
                             }
 
             # Create binary data packet
@@ -237,7 +237,7 @@ class BladeDataTCPServer:
                 x_bytes = x_value.to_bytes(4, 'big', signed=True)
 
                 # Y coordinate (apply offset and convert)
-                y_value = int((float(closest_valley['move_x_mm']) - 2) * 100)
+                y_value = int((float(closest_valley['move_x_mm'])) * 100)
                 y_bytes = y_value.to_bytes(4, 'big', signed=True)
 
                 # Combine into single packet (9 bytes total)

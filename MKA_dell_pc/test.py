@@ -786,7 +786,6 @@ class RealtimeBladeDetector:
                     with self.results_lock:
                         self.latest_results = results
 
-                    # Publish to TCP clients
                     if self.tcp_server and self.tcp_server.running and self.tcp_server.get_client_count() > 0:
                         self.tcp_server.publish_data(results)
 
@@ -993,11 +992,11 @@ def main():
     config = {
         'pixels_per_mm': 86.96,
         'window_size': 20,
-        'min_height_px': 100,  # Changed from min_depth_px
-        'min_depth_px': 100,   # Keep for backward compatibility
+        'min_height_px': 50,  # Changed from min_depth_px
+        'min_depth_px': 50,   # Keep for backward compatibility
         'detection_fps': 2.0,
         'frame_rate': 10.0,
-        'exposure_time': 7000,
+        'exposure_time': 5000,
         'gain': 0.0,
         'grinder_position_file': 'grinder_position.json',
         'tcp_enabled': True,
