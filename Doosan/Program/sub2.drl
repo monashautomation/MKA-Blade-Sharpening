@@ -1,2 +1,13 @@
-movel(System_grinder_app, 20, 20)
-movel(System_grinder, 20, 20)
+#movel(System_grinder_app, 20, 20)
+movel(System_blade1_new, 20, 20)
+set_ref_coord(DR_TOOL)
+
+movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
+movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
+movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+
+set_ref_coord(DR_BASE)
+
+movel(System_blades_top, 20, 20)

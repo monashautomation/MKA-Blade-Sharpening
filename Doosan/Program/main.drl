@@ -1,26 +1,33 @@
 s_sock = client_socket_open("172.24.9.15",5000)
 
-#x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-#
-#tp_log("Current Pos: " + str(x1))
-#
-#dist1 = get_distance(x1, System_grinder_top)
-#dist2 = get_distance(x1, fkin(System_init_j))
-#dist3 = get_distance(x1, System_blades_top)
+x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+
+tp_log("Current Pos: " + str(x1))
+
+dist1 = get_distance(x1, System_grinder_top)
+dist2 = get_distance(x1, fkin(System_init_j))
+dist3 = get_distance(x1, System_blades_top)
 #
 #if dist1 < dist2:
     #movel(System_grinder_top, 20, 20)
 #elif dist3 < dist2:
     #movel(System_blades_top, 20, 20)
 #
-#movej(System_init_j, 100, 20)
-##movel(System_blades_top_new, 100, 20)
-#movel(System_blade1_new, 50, 20)
-#movel(posx(0,0,-5,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
+#movel(System_blades_top, 20, 20)
+#movel(System_blade1_new, 20, 20)
+#set_ref_coord(DR_TOOL)
+#
+#movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
+#movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
+#movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+#movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+#movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+#
+#set_ref_coord(DR_BASE)
 ##Turn on magnets
-#movel(System_blades_top_new, 100, 20)
+#movel(System_blades_top, 100, 20)
 #movel(IR_sensor, 50, 20)
-##
+###
 #set_digital_output(1, ON)
 #
 #amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
@@ -43,13 +50,13 @@ s_sock = client_socket_open("172.24.9.15",5000)
 #blade_right, sol = get_current_posx(ref=DR_WORLD)
 #
 #blade_l = blade_left[1] - blade_right[1] - 10
-#
-#movej(System_init_j, 20, 20)
+##
+###movej(System_init_j, 20, 20)
 #movel(System_grinder_top, 20, 20)
-movel(System_grinder_app, 20, 20)
-movel(System_grinder, 20, 20)
-
-movel(posx(blade_right[1], 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+#movel(System_grinder_app, 20, 20)
+#movel(System_grinder_invert, 20, 20)
+#
+movel(posx(blade_right[1]+125, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
 while 1:
     # Read data (default buffer is fine)
     res, rx_data = client_socket_read(s_sock)
@@ -70,14 +77,28 @@ while 1:
             # Execute Relative Move (based on X/Y inputs)
             # We assume these are offsets in mm
             delta_x = [val_x/100, 0, 0, 0, 0, 0]
-            delta_y = [0, (val_y/100)+1, 0, 0, 0, 0]
-            delta_neg_y = [0, (-val_y/100)-1, 0, 0, 0, 0]
-            movel(posx(delta_x), vel=100, acc=10,mod=DR_MV_MOD_REL)
-            wait(0.5)
-            movel(posx(delta_y), vel=100, acc=10,mod=DR_MV_MOD_REL)
-            wait(0.5)
-            movel(posx(delta_neg_y), vel=100, acc=10,mod=DR_MV_MOD_REL)
             
+            delta_y_mid = [0, (val_y/100)+0.7, 0, 0, 0, 0]
+            
+            delta_y = [0, (val_y/100)+1.4, 0, 0, 0, 0]
+            delta_neg_y = [0, -(val_y/100)-1.4, 0, 0, 0, 0]
+            delta_up =  [0, 0, 15, 0, 0, 0]
+            delta_down =  [0, 0, -30, 0, 0, 0]
+            
+            movel(posx(delta_x), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            wait(0.1)
+            movel(posx(delta_y), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            wait(0.1)
+            
+            movel(posx(delta_up), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            wait(0.1)
+            movel(posx(delta_down), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            wait(0.1)
+            movel(posx(delta_up), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            wait(0.1)
+            movel(posx(delta_neg_y), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            
+            wait(1)
             client_socket_write(s_sock, b"Done\n")
             continue # Skip the rest of the loop
 
@@ -92,27 +113,27 @@ while 1:
 
             # Existing Logic
             if rx_msg == "init":
-                movej(System_init_j, 100, 20)
+                movej(System_init_j, 100, 40)
                 client_socket_write(s_sock, b"Done")
                 
             elif rx_msg == "btop":
-                movel(System_blades_top_new, 100, 20)
+                movel(System_blades_top_new, 100, 40)
                 client_socket_write(s_sock, b"Done")
                 
             elif rx_msg == "pos1":
-                movel(System_blade1_new, 100, 20)
+                movel(System_blade1_new, 100, 40)
                 client_socket_write(s_sock, b"Done")
                 
             elif rx_msg == "gtop":
-                movel(System_grinder_top, 100, 20)
+                movel(System_grinder_top, 100, 40)
                 client_socket_write(s_sock, b"Done")
                 
             elif rx_msg == "grind":
-                movel(System_grinder, 100, 20)
+                movel(System_grinder, 100, 40)
                 client_socket_write(s_sock, b"Done")
                 
             elif rx_msg == "gapp":
-                movel(System_grinder_app, 100, 20)
+                movel(System_grinder_app, 100, 40)
                 client_socket_write(s_sock, b"Done")
                 
             elif rx_msg == "bye":
