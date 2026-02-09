@@ -1,10 +1,10 @@
 {
-  "Count": "11",
+  "Count": "15",
   "Variable0": {
     "Type": "Registry",
-    "Name": "test_val",
+    "Name": "IR_sensor",
     "ValueType": "Posx",
-    "Value": "posx(416.34, 251.71, 442.39, 19.23, 173.21, -24.75)"
+    "Value": "posx(-550,0,250,135,180,90)"
   },
   "Variable1": {
     "Type": "Registry",
@@ -16,7 +16,7 @@
     "Type": "Registry",
     "Name": "System_init",
     "ValueType": "Posx",
-    "Value": "posx(-329.61, 20.49, 631.65, 176.0, 142.22, -44.54)"
+    "Value": "posx(-330, -20, 630, 0, -135, -45)"
   },
   "Variable3": {
     "Type": "Registry",
@@ -28,7 +28,7 @@
     "Type": "Registry",
     "Name": "System_blades_top",
     "ValueType": "Posx",
-    "Value": "posx(-0.23, -330.25, 631.65, 89.52, -142.22, 135.46)"
+    "Value": "posx(-0.23, -330.25, 631.65, 90, -135, -45)"
   },
   "Variable5": {
     "Type": "Registry",
@@ -46,24 +46,48 @@
     "Type": "Registry",
     "Name": "System_blade1_new",
     "ValueType": "Posx",
-    "Value": "posx(0.0, -502.41, 25.18, 87.75, 137.56, -46.51)"
+    "Value": "posx(0.0, -380, 200, 90, 140, -45)"
   },
   "Variable8": {
     "Type": "Registry",
     "Name": "System_grinder_top",
     "ValueType": "Posx",
-    "Value": "posx(0.0, 330.46, 609.19, 89.28, 145.55, 133.74)"
+    "Value": "posx(0.0, 330.46, 609.19, 90, 120, 135)"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "System_grinder",
     "ValueType": "Posx",
-    "Value": "posx(0.0, 466.11, 182.39, 88.35, 153.21, 134.17)"
+    "Value": "posx(-20.0, 470, 138, 90, 120, 135)"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "System_grinder_app",
     "ValueType": "Posx",
     "Value": "posx(0.0, 368.11, 182.39, 88.35, 153.21, 134.17)"
+  },
+  "Variable11": {
+    "Type": "Registry",
+    "Name": "blade_right",
+    "ValueType": "Posx",
+    "Value": "[-550.027,-180.724,249.969,69.544,-179.999,24.532]"
+  },
+  "Variable12": {
+    "Type": "Registry",
+    "Name": "blade_left",
+    "ValueType": "Posx",
+    "Value": "[-550.000,185.246,249.896,158.439,-179.990,113.453]"
+  },
+  "Variable13": {
+    "Type": "Registry",
+    "Name": "blade_l",
+    "ValueType": "Float",
+    "Value": "355.97021484375"
+  },
+  "Variable14": {
+    "Type": "Registry",
+    "Name": "System_grinder_invert",
+    "ValueType": "Posx",
+    "Value": "posx(0,480,138,90,115,135)"
   }
 }

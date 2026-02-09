@@ -1,0 +1,25 @@
+d = IR_sensor
+movel(d, vel=60, acc=20)
+set_digital_output(1, ON)
+
+amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+while (get_digital_input(1) == 0):
+    wait(0.01)
+
+stop(DR_SSTOP)
+
+blade_left, sol = get_current_posx(ref=DR_WORLD)
+
+movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
+
+amovel(posx(0,-500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+
+while (get_digital_input(1) == 0):
+    wait(0.01)
+
+stop(DR_SSTOP)
+
+blade_right, sol = get_current_posx(ref=DR_WORLD)
+
+blade_l = blade_left[1] - blade_right[1]
+    
