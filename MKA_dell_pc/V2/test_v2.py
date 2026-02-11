@@ -1,7 +1,9 @@
 """
-Optimized Real-Time Tooth Point Detection System
-Detects sharp tooth points (peaks) instead of grooves
-Performance optimized for real-time operation
+Restructured Real-Time Blade Detection System
+Protocol:
+1. Get configuration from user via CLI
+2. Start system and send configuration to clients
+3. Wait for client requests before sending detection data
 """
 
 import cv2
@@ -13,14 +15,15 @@ from threading import Thread, Lock
 from serrated_blade_detector import SerratedBladeAnalyzer
 import json
 import os
-from tcp_blade_server import BladeDataTCPServer
+from tcp_blade_server_v2 import BladeDataTCPServerV2
 
 
-class RealtimeBladeDetector:
-    """Optimized real-time tooth point detection with network publishing"""
+class RealtimeBladeDetectorV2:
+    """Restructured real-time detector with request-response protocol"""
 
-    def __init__(self, config):
+    def __init__(self, config, blade_config):
         self.config = config
+        self.blade_config = blade_config  # BAY_ID, GRINDER_ID, etc.
         self.running = False
         self.frame = None
         self.frame_lock = Lock()
@@ -43,13 +46,22 @@ class RealtimeBladeDetector:
         self.detect_grinder_flag = False
         self.grinder_lock = Lock()
 
-        # TCP/IP Server
+        # TCP/IP Server V2 with request-response protocol
         self.tcp_server = None
         if config.get('tcp_enabled', True):
-            self.tcp_server = BladeDataTCPServer(
+            self.tcp_server = BladeDataTCPServerV2(
                 host=config.get('tcp_host', '0.0.0.0'),
                 port=config.get('tcp_port', 5000),
                 max_clients=config.get('tcp_max_clients', 5)
+            )
+            
+            # Set configuration data
+            self.tcp_server.set_configuration(
+                bay_id=blade_config['bay_id'],
+                grinder_id=blade_config['grinder_id'],
+                angle=blade_config['angle'],
+                depth=blade_config['depth'],
+                length=blade_config['length']
             )
 
         self.load_grinder_position()
@@ -155,7 +167,6 @@ class RealtimeBladeDetector:
         """Thread for continuously capturing frames"""
         print("Starting capture thread...")
 
-        # Pre-create processor for efficiency
         processor = PySpin.ImageProcessor()
         processor.SetColorProcessing(PySpin.SPINNAKER_COLOR_PROCESSING_ALGORITHM_HQ_LINEAR)
 
@@ -166,17 +177,14 @@ class RealtimeBladeDetector:
                 if not image_result.IsIncomplete():
                     pixel_format = image_result.GetPixelFormat()
 
-                    # Fast conversion based on pixel format
                     if pixel_format == PySpin.PixelFormat_BGR8:
                         frame = image_result.GetNDArray()
                     elif pixel_format == PySpin.PixelFormat_Mono8:
                         frame = cv2.cvtColor(image_result.GetNDArray(), cv2.COLOR_GRAY2BGR)
                     else:
-                        # Use pre-created processor
                         image_converted = processor.Convert(image_result, PySpin.PixelFormat_BGR8)
                         frame = image_converted.GetNDArray()
 
-                    # Single rotation operation
                     frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
                     with self.frame_lock:
@@ -200,107 +208,65 @@ class RealtimeBladeDetector:
         while self.running:
             current_time = time.time()
 
-            if current_time - last_detection_time >= detection_interval:
-                # Quick frame grab
-                with self.frame_lock:
-                    frame_to_process = self.frame
+            if current_time - last_detection_time < detection_interval:
+                time.sleep(0.01)
+                continue
 
-                if frame_to_process is None:
-                    time.sleep(0.1)
-                    continue
+            last_detection_time = current_time
 
-                # Check grinder update flag
+            with self.frame_lock:
+                frame_to_process = self.frame
+
+            if frame_to_process is None:
+                continue
+
+            try:
+                # Check if grinder update is requested
+                update_grinder = False
                 with self.grinder_lock:
-                    should_update_grinder = self.detect_grinder_flag
-                    if should_update_grinder:
+                    if self.detect_grinder_flag:
+                        update_grinder = True
                         self.detect_grinder_flag = False
 
-                try:
-                    # Pass frame directly to analyzer
-                    analyzer = SerratedBladeAnalyzer(frame_to_process)
-                    analyzer.preprocess_image()
-                    analyzer.detect_edges()
-                    analyzer.find_blade_contours()
-                    analyzer.detect_blade_and_grinder()
+                # Run detection
+                analyzer = SerratedBladeAnalyzer(frame_to_process)
+                results = analyzer.analyze_blade(pixels_per_mm=self.config['pixels_per_mm'])
 
-                    # Update grinder position if requested
-                    if should_update_grinder and analyzer.grinder_tip is not None:
-                        detected_grinder_tip = (int(analyzer.grinder_tip[0]), int(analyzer.grinder_tip[1]))
-                        with self.grinder_lock:
-                            self.grinder_tip_stored = detected_grinder_tip
-                        self.save_grinder_position(detected_grinder_tip)
-                        print(f"✓ Grinder updated: {detected_grinder_tip}")
+                # Grinder tip logic
+                if update_grinder and results.get('grinder_tip'):
+                    self.grinder_tip_stored = results['grinder_tip']
+                    self.save_grinder_position(self.grinder_tip_stored)
+                    results['grinder_updated_this_cycle'] = True
+                elif self.grinder_tip_stored:
+                    results['grinder_tip'] = self.grinder_tip_stored
+                    results['grinder_updated_this_cycle'] = False
 
-                    # Get stored grinder position
-                    with self.grinder_lock:
-                        grinder_tip_to_use = self.grinder_tip_stored
+                # Update results
+                with self.results_lock:
+                    self.latest_results = results
 
-                    # Calculate blade angle
-                    blade_angle_info = None
-                    if hasattr(analyzer, "blade_edge_points") and analyzer.blade_edge_points is not None:
-                        pts = np.array(analyzer.blade_edge_points)
-                        if len(pts) > 2:
-                            fit_result = cv2.fitLine(pts, cv2.DIST_L2, 0, 0.01, 0.01)
-                            vx, vy = float(fit_result[0][0]), float(fit_result[1][0])
-                            x0, y0 = float(fit_result[2][0]), float(fit_result[3][0])
-                            angle_deg = float(np.degrees(np.pi / 2 - np.arctan2(vy, vx)))
+                # Publish to TCP clients (they will request when ready)
+                if self.tcp_server:
+                    self.tcp_server.publish_data(results)
 
-                            blade_angle_info = {
-                                'vx': vx, 'vy': vy, 'x0': x0, 'y0': y0,
-                                'angle_from_y_deg': angle_deg
-                            }
-
-                    # Extract tooth profiles (TOOTH POINTS now!)
-                    analyzer.teeth_profiles = analyzer.extract_tooth_profiles(
-                        window_size=self.config['window_size'],
-                        min_height_px=self.config.get('min_height_px', self.config.get('min_depth_px', 100))
-                    )
-
-                    # Generate coordinates
-                    analyzer.grinder_tip = grinder_tip_to_use
-                    grinding_coords = analyzer.generate_grinding_coordinates(
-                        pixels_per_mm=self.config['pixels_per_mm']
-                    )
-
-                    # Store results
-                    results = {
-                        'timestamp': datetime.now(),
-                        'num_grooves': len(analyzer.teeth_profiles),  # Keep for compatibility
-                        'num_teeth': len(analyzer.teeth_profiles),
-                        'grinding_coordinates': grinding_coords,
-                        'grinder_tip': grinder_tip_to_use,
-                        'blade_edge_points': analyzer.blade_edge_points,
-                        'teeth_profiles': analyzer.teeth_profiles,
-                        'blade_angle': blade_angle_info,
-                        'grinder_updated_this_cycle': should_update_grinder
-                    }
-
-                    with self.results_lock:
-                        self.latest_results = results
-
-                    if self.tcp_server and self.tcp_server.running and self.tcp_server.get_client_count() > 0:
-                        self.tcp_server.publish_data(results)
-
-                except Exception as e:
-                    print(f"Detection error: {e}")
-
-                last_detection_time = current_time
-            else:
-                time.sleep(0.01)
+            except Exception as e:
+                print(f"Detection error: {e}")
 
     def draw_overlay(self, frame):
-        """Draw detection overlay on frame - TOOTH POINTS"""
+        """Draw detection overlay on frame"""
         overlay = frame.copy()
 
-        with self.results_lock:
-            if self.latest_results is None:
-                return overlay
-            results = self.latest_results.copy()
-
         try:
+            with self.results_lock:
+                results = self.latest_results
+
+            if results is None:
+                return overlay
+
+            grinder_tip = results.get('grinder_tip')
+
             # Draw grinder tip
-            grinder_tip = results['grinder_tip']
-            if grinder_tip is not None:
+            if grinder_tip:
                 cv2.circle(overlay, grinder_tip, 12, (0, 255, 255), 3)
                 cv2.circle(overlay, grinder_tip, 15, (0, 0, 0), 2)
 
@@ -319,15 +285,13 @@ class RealtimeBladeDetector:
                 cv2.putText(overlay, f"Angle: {blade_angle['angle_from_y_deg']:.2f}°",
                             (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
-            # Tooth points (cyan circles)
+            # Tooth points
             for coord in results['grinding_coordinates']:
-                # Use tooth_tip if available, otherwise groove_position for compatibility
                 pos_x = coord.get('tooth_tip_x_px', coord.get('groove_position_x_px'))
                 pos_y = coord.get('tooth_tip_y_px', coord.get('groove_position_y_px'))
                 pos = (pos_x, pos_y)
 
-                # Cyan for tooth tips
-                cv2.circle(overlay, pos, 10, (255, 255, 0), -1)  # Yellow/cyan
+                cv2.circle(overlay, pos, 10, (255, 255, 0), -1)
                 cv2.circle(overlay, pos, 12, (255, 255, 255), 2)
 
                 cv2.putText(overlay, f"T#{coord['tooth_id']}", (pos[0] - 30, pos[1] - 15),
@@ -350,10 +314,12 @@ class RealtimeBladeDetector:
             # Info panel
             tcp_clients = self.tcp_server.get_client_count() if self.tcp_server else 0
             num_items = results.get('num_teeth', results.get('num_grooves', 0))
-            panel_height = 90 + (num_items * 30)
+            
+            # Add blade config to panel
+            panel_height = 150 + (num_items * 30)
 
-            cv2.rectangle(overlay, (10, 10), (500, panel_height), (0, 0, 0), -1)
-            cv2.rectangle(overlay, (10, 10), (500, panel_height), (255, 255, 255), 2)
+            cv2.rectangle(overlay, (10, 10), (550, panel_height), (0, 0, 0), -1)
+            cv2.rectangle(overlay, (10, 10), (550, panel_height), (255, 255, 255), 2)
 
             y = 30
             cv2.putText(overlay, f"FPS: {self.fps:.1f}", (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -361,6 +327,14 @@ class RealtimeBladeDetector:
 
             tcp_color = (0, 255, 0) if tcp_clients > 0 else (128, 128, 128)
             cv2.putText(overlay, f"TCP Clients: {tcp_clients}", (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, tcp_color, 2)
+            y += 30
+            
+            # Display blade configuration
+            cv2.putText(overlay, f"Bay: {self.blade_config['bay_id']} | Grinder: {self.blade_config['grinder_id']}", 
+                        (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 200, 0), 2)
+            y += 30
+            cv2.putText(overlay, f"Angle: {self.blade_config['angle']:.1f}° | Depth: {self.blade_config['depth']:.2f} | Len: {self.blade_config['length']}", 
+                        (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 200, 0), 2)
             y += 30
 
             cv2.putText(overlay, f"Teeth: {num_items}", (20, y),
@@ -384,8 +358,14 @@ class RealtimeBladeDetector:
     def run(self):
         """Main run loop"""
         print("\n" + "=" * 70)
-        print("REAL-TIME TOOTH POINT DETECTION")
+        print("REAL-TIME TOOTH POINT DETECTION - REQUEST/RESPONSE PROTOCOL")
         print("=" * 70)
+        print(f"\nBlade Configuration:")
+        print(f"  Bay ID:      {self.blade_config['bay_id']}")
+        print(f"  Grinder ID:  {self.blade_config['grinder_id']}")
+        print(f"  Angle:       {self.blade_config['angle']:.1f}°")
+        print(f"  Depth:       {self.blade_config['depth']:.2f}")
+        print(f"  Length:      {self.blade_config['length']}")
 
         if not self.initialize_camera():
             print("Failed to initialize camera!")
@@ -405,6 +385,7 @@ class RealtimeBladeDetector:
         print("  'q' = quit | 's' = save | 'g' = update grinder | 'r' = reset")
         if self.tcp_server:
             print(f"  TCP: {self.config.get('tcp_host')}:{self.config.get('tcp_port')}")
+        print("  Clients will receive config first, then request detection data")
 
         cv2.namedWindow('Tooth Point Detection', cv2.WINDOW_NORMAL)
 
@@ -480,12 +461,88 @@ class RealtimeBladeDetector:
         print("✓ Cleanup complete")
 
 
-def main():
+def get_user_configuration():
+    """Get blade configuration from user via CLI"""
+    print("\n" + "=" * 70)
+    print("BLADE CONFIGURATION")
+    print("=" * 70)
+    
+    while True:
+        try:
+            bay_id = int(input("Enter BAY ID (1-10): "))
+            if 1 <= bay_id <= 10:
+                break
+            print("❌ BAY ID must be between 1 and 10")
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    while True:
+        try:
+            grinder_id = int(input("Enter GRINDER ID (1-3): "))
+            if 1 <= grinder_id <= 3:
+                break
+            print("❌ GRINDER ID must be between 1 and 3")
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    while True:
+        try:
+            angle = float(input("Enter ANGLE (degrees, e.g., 45.5): "))
+            break
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    while True:
+        try:
+            depth = float(input("Enter DEPTH (e.g., 1.25): "))
+            break
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    while True:
+        try:
+            length = int(input("Enter LENGTH (0-999): "))
+            if 0 <= length <= 999:
+                break
+            print("❌ LENGTH must be between 0 and 999")
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
     config = {
+        'bay_id': bay_id,
+        'grinder_id': grinder_id,
+        'angle': angle,
+        'depth': depth,
+        'length': length
+    }
+    
+    print("\n" + "=" * 70)
+    print("Configuration Summary:")
+    print(f"  Bay ID:      {config['bay_id']}")
+    print(f"  Grinder ID:  {config['grinder_id']}")
+    print(f"  Angle:       {config['angle']:.1f}°")
+    print(f"  Depth:       {config['depth']:.2f}")
+    print(f"  Length:      {config['length']}")
+    print("=" * 70)
+    
+    confirm = input("\nProceed with this configuration? (y/n): ").lower()
+    if confirm != 'y':
+        print("Configuration cancelled. Exiting.")
+        exit(0)
+    
+    return config
+
+
+def main():
+    # Get blade configuration from user
+    blade_config = get_user_configuration()
+    
+    # Camera and detection configuration
+    system_config = {
         'pixels_per_mm': 86.96,
         'window_size': 20,
-        'min_height_px': 50,  # Changed from min_depth_px
-        'min_depth_px': 50,   # Keep for backward compatibility
+        'min_height_px': 50,
+        'min_depth_px': 50,
         'detection_fps': 2.0,
         'frame_rate': 10.0,
         'exposure_time': 5000,
@@ -497,7 +554,7 @@ def main():
         'tcp_max_clients': 5,
     }
 
-    detector = RealtimeBladeDetector(config)
+    detector = RealtimeBladeDetectorV2(system_config, blade_config)
     detector.run()
 
 

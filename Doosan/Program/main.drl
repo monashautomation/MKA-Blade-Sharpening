@@ -1,62 +1,61 @@
 s_sock = client_socket_open("172.24.9.15",5000)
 
 x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-
 tp_log("Current Pos: " + str(x1))
 
 dist1 = get_distance(x1, System_grinder_top)
 dist2 = get_distance(x1, fkin(System_init_j))
 dist3 = get_distance(x1, System_blades_top)
 #
-#if dist1 < dist2:
-    #movel(System_grinder_top, 20, 20)
-#elif dist3 < dist2:
-    #movel(System_blades_top, 20, 20)
-#
-#movel(System_blades_top, 20, 20)
-#movel(System_blade1_new, 20, 20)
-#set_ref_coord(DR_TOOL)
-#
-#movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
-#movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
-#movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
-#movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
-#movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
-#
-#set_ref_coord(DR_BASE)
-##Turn on magnets
-#movel(System_blades_top, 100, 20)
-#movel(IR_sensor, 50, 20)
-###
-#set_digital_output(1, ON)
-#
-#amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
-#while (get_digital_input(1) == 0):
-    #wait(0.01)
-#
-#stop(DR_SSTOP)
-#
-#blade_left, sol = get_current_posx(ref=DR_WORLD)
-#
-#movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
-#
-#amovel(posx(0,-400,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
-#
-#while (get_digital_input(1) == 0):
-    #wait(0.01)
-#
-#stop(DR_SSTOP)
-#
-#blade_right, sol = get_current_posx(ref=DR_WORLD)
-#
-#blade_l = blade_left[1] - blade_right[1] - 10
+if dist1 < dist2:
+    movel(System_grinder_top, 20, 20)
+elif dist3 < dist2:
+    movel(System_blades_top, 20, 20)
+
+movel(System_blades_top, 20, 20)
+movel(System_blade1_new, 20, 20)
+set_ref_coord(DR_TOOL)
+
+movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
+movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
+movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+
+set_ref_coord(DR_BASE)
+#Turn on magnets
+movel(System_blades_top, 100, 20)
+movel(IR_sensor, 50, 20)
 ##
-###movej(System_init_j, 20, 20)
-#movel(System_grinder_top, 20, 20)
-#movel(System_grinder_app, 20, 20)
-#movel(System_grinder_invert, 20, 20)
+set_digital_output(1, ON)
+
+amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+while (get_digital_input(1) == 0):
+    wait(0.005)
+
+stop(DR_SSTOP)
+
+blade_left, sol = get_current_posx(ref=DR_WORLD)
+
+movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
+
+amovel(posx(0,-400,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+
+while (get_digital_input(1) == 0):
+    wait(0.005)
+
+stop(DR_SSTOP)
+
+blade_right, sol = get_current_posx(ref=DR_WORLD)
+
+blade_l = blade_left[1] - blade_right[1] - 10
+
+#movej(System_init_j, 20, 20)
+movel(System_grinder_top, 20, 20)
+movel(System_grinder_app, 20, 20)
+movel(System_grinder_invert, 20, 20)
 #
-movel(posx(blade_right[1]+125, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+#movel(posx(blade_right[1]+125, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
 while 1:
     # Read data (default buffer is fine)
     res, rx_data = client_socket_read(s_sock)
@@ -82,21 +81,21 @@ while 1:
             
             delta_y = [0, (val_y/100)+1.4, 0, 0, 0, 0]
             delta_neg_y = [0, -(val_y/100)-1.4, 0, 0, 0, 0]
-            delta_up =  [0, 0, 15, 0, 0, 0]
-            delta_down =  [0, 0, -30, 0, 0, 0]
+            delta_up =  [0, 0, 10, 0, 0, 0]
+            delta_down =  [0, 0, -20, 0, 0, 0]
             
             movel(posx(delta_x), vel=300, acc=100,mod=DR_MV_MOD_REL)
             wait(0.1)
             movel(posx(delta_y), vel=300, acc=100,mod=DR_MV_MOD_REL)
             wait(0.1)
             
-            movel(posx(delta_up), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
             wait(0.1)
-            movel(posx(delta_down), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
             wait(0.1)
-            movel(posx(delta_up), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
             wait(0.1)
-            movel(posx(delta_neg_y), vel=300, acc=100,mod=DR_MV_MOD_REL)
+            movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
             
             wait(1)
             client_socket_write(s_sock, b"Done\n")
@@ -142,12 +141,11 @@ while 1:
                 
             else:
                 tp_log("Unknown Command")
-    while (res < 0):
+                
+    if (res < 0):
         client_socket_close(sock)
-        wait(10)
+        wait(5)
         s_sock = client_socket_open("172.24.9.15",5000)
-        wait(10)
-        res, rx_data = client_socket_read(s_sock)
             
     # CRITICAL: Reduced wait time so robot responds quickly
     wait(5) 

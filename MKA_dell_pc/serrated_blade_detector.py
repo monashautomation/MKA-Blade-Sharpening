@@ -313,17 +313,7 @@ class SerratedBladeAnalyzer:
             else:
                 continue
 
-            # Use exact peak point for precise edge detection
-            # OPTION 1: No averaging - most precise (use this for exact edge)
             tooth_point = (int(x_smooth[peak_idx]), int(y_coords[peak_idx]))
-
-            # OPTION 2: Minimal averaging (uncomment if you want slight smoothing)
-            # peak_sample_size = 2  # Only average 2-3 points
-            # peak_start = max(0, peak_idx - peak_sample_size)
-            # peak_end = min(len(x_smooth), peak_idx + peak_sample_size + 1)
-            # peak_x_samples = x_smooth[peak_start:peak_end]
-            # peak_y_samples = y_coords[peak_start:peak_end]
-            # tooth_point = (int(np.mean(peak_x_samples)), int(np.mean(peak_y_samples))) if len(peak_x_samples) > 0 else (int(x_smooth[peak_idx]), int(y_coords[peak_idx]))
 
             # Calculate tooth height (distance from valleys to peak)
             height = abs(tooth_point[0] - ((top_valley[0] + bottom_valley[0]) / 2))
