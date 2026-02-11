@@ -22,6 +22,8 @@ This is a restructured version of the blade detection system with a new request-
 4. Client sends REQUEST when ready (1 byte)
 5. Server responds with DETECTION DATA (5 bytes) or NO DETECTION (1 byte)
 6. Repeat steps 4-5 as needed
+7. [NEW] Server can send NEW CONFIGURATION at any time (step 2 repeated)
+8. Client receives and processes new config, continues requesting data
 ```
 
 ---
@@ -141,6 +143,12 @@ Enter LENGTH (0-999): 150
 - Send configuration to connected clients
 - Process detection requests
 
+**During operation, press 'c' to update configuration**:
+- System will prompt for new blade parameters
+- New configuration is broadcasted to all connected clients
+- Clients automatically receive and process the update
+- No reconnection needed!
+
 ### 2. Connect Client
 
 ```bash
@@ -178,6 +186,13 @@ python test_client.py
 - **Old**: 0.01mm resolution, ±21474mm range (excessive)
 - **New**: 0.1mm resolution, ±3276mm range (practical)
 - **Benefit**: Half the bytes, still more than enough precision
+
+### 5. Dynamic Configuration Updates
+- **NEW**: Server can broadcast new configurations mid-operation
+- Client automatically receives and processes updates
+- No need to disconnect/reconnect
+- Perfect for multi-blade workflows (finish blade 1, move to blade 2)
+- Press 'c' key on server to send new configuration to all clients
 
 ---
 
@@ -316,6 +331,51 @@ except socket.timeout:
 | **Data Resolution** | 0.01mm | 0.1mm |
 | **Client Control** | No | Yes (requests data) |
 | **Buffer Friendly** | No | Yes (small packets) |
+
+---
+
+## Multiple Configuration Workflow
+
+### Typical Use Case: Processing Multiple Blades
+
+1. **Start System** with first blade configuration:
+   ```
+   Bay=1, Grinder=1, Angle=45.0°, Depth=1.50, Length=100
+   ```
+
+2. **Client Connects** and receives initial config
+
+3. **Process First Blade** - Client requests detection data repeatedly
+
+4. **Blade Finished** - Operator presses 'c' on server
+
+5. **Enter New Configuration**:
+   ```
+   Bay=2, Grinder=1, Angle=30.0°, Depth=1.25, Length=120
+   ```
+
+6. **Client Automatically Receives** new config (no reconnection!)
+
+7. **Continue Processing** - Client now uses new parameters
+
+8. **Repeat** as needed for additional blades
+
+### Server-Side Commands
+
+While running, you can press:
+- **'c'** - Update configuration (prompts for new values, broadcasts to all clients)
+- **'g'** - Update grinder position
+- **'s'** - Save current frame
+- **'r'** - Reset detection
+- **'q'** - Quit
+
+### Client-Side Behavior
+
+The client automatically:
+- Detects new configuration packets
+- Displays update notification
+- Continues operating with new parameters
+- Tracks number of configuration updates received
 
 ---
 

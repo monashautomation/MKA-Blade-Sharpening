@@ -83,6 +83,34 @@ class BladeDataTCPServerV2:
         print(f"✓ Configuration set: Bay={bay_id}, Grinder={grinder_id}, " +
               f"Angle={angle:.1f}°, Depth={depth:.2f}, Length={length}")
 
+    def broadcast_new_configuration(self):
+        """
+        Broadcast new configuration to all connected clients
+        This allows updating configuration mid-operation
+        """
+        if self.config_data is None:
+            print("⚠ No configuration data to broadcast")
+            return
+        
+        broadcast_count = 0
+        failed_count = 0
+        
+        with self.clients_lock:
+            for client in self.clients:
+                try:
+                    client['socket'].sendall(self.config_data)
+                    # Mark that this client has received new config
+                    self.config_sent[client['id']] = True
+                    broadcast_count += 1
+                except Exception as e:
+                    print(f"✗ Failed to send config to {client['address']}: {e}")
+                    failed_count += 1
+        
+        if broadcast_count > 0:
+            print(f"✓ Configuration broadcasted to {broadcast_count} client(s)")
+        if failed_count > 0:
+            print(f"⚠ Failed to send to {failed_count} client(s)")
+
     def start(self):
         """Start the TCP server"""
         try:

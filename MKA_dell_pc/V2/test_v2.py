@@ -21,9 +21,9 @@ from tcp_blade_server_v2 import BladeDataTCPServerV2
 class RealtimeBladeDetectorV2:
     """Restructured real-time detector with request-response protocol"""
 
-    def __init__(self, config, blade_config):
+    def __init__(self, config, initial_blade_config):
         self.config = config
-        self.blade_config = blade_config  # BAY_ID, GRINDER_ID, etc.
+        self.blade_config = initial_blade_config  # Current BAY_ID, GRINDER_ID, etc.
         self.running = False
         self.frame = None
         self.frame_lock = Lock()
@@ -46,6 +46,10 @@ class RealtimeBladeDetectorV2:
         self.detect_grinder_flag = False
         self.grinder_lock = Lock()
 
+        # Configuration update control
+        self.config_update_requested = False
+        self.config_lock = Lock()
+
         # TCP/IP Server V2 with request-response protocol
         self.tcp_server = None
         if config.get('tcp_enabled', True):
@@ -55,13 +59,13 @@ class RealtimeBladeDetectorV2:
                 max_clients=config.get('tcp_max_clients', 5)
             )
             
-            # Set configuration data
+            # Set initial configuration data
             self.tcp_server.set_configuration(
-                bay_id=blade_config['bay_id'],
-                grinder_id=blade_config['grinder_id'],
-                angle=blade_config['angle'],
-                depth=blade_config['depth'],
-                length=blade_config['length']
+                bay_id=initial_blade_config['bay_id'],
+                grinder_id=initial_blade_config['grinder_id'],
+                angle=initial_blade_config['angle'],
+                depth=initial_blade_config['depth'],
+                length=initial_blade_config['length']
             )
 
         self.load_grinder_position()
@@ -92,6 +96,39 @@ class RealtimeBladeDetectorV2:
             print(f"✓ Saved grinder position: {grinder_tip}")
         except Exception as e:
             print(f"⚠ Could not save grinder position: {e}")
+
+    def update_blade_configuration(self, new_config):
+        """
+        Update blade configuration and broadcast to all connected clients
+        
+        Args:
+            new_config: Dictionary with bay_id, grinder_id, angle, depth, length
+        """
+        with self.config_lock:
+            self.blade_config = new_config
+        
+        if self.tcp_server:
+            # Update server configuration
+            self.tcp_server.set_configuration(
+                bay_id=new_config['bay_id'],
+                grinder_id=new_config['grinder_id'],
+                angle=new_config['angle'],
+                depth=new_config['depth'],
+                length=new_config['length']
+            )
+            
+            # Broadcast new configuration to all connected clients
+            self.tcp_server.broadcast_new_configuration()
+        
+        print("\n" + "="*70)
+        print("✓ CONFIGURATION UPDATED AND BROADCASTED TO CLIENTS")
+        print("="*70)
+        print(f"  Bay ID:      {new_config['bay_id']}")
+        print(f"  Grinder ID:  {new_config['grinder_id']}")
+        print(f"  Angle:       {new_config['angle']:.1f}°")
+        print(f"  Depth:       {new_config['depth']:.2f}")
+        print(f"  Length:      {new_config['length']}")
+        print("="*70 + "\n")
 
     def initialize_camera(self):
         """Initialize FLIR camera using PySpin"""
@@ -382,7 +419,7 @@ class RealtimeBladeDetectorV2:
         Thread(target=self.detection_thread, daemon=True).start()
 
         print("\n✓ System running!")
-        print("  'q' = quit | 's' = save | 'g' = update grinder | 'r' = reset")
+        print("  'q' = quit | 's' = save | 'g' = update grinder | 'r' = reset | 'c' = new config")
         if self.tcp_server:
             print(f"  TCP: {self.config.get('tcp_host')}:{self.config.get('tcp_port')}")
         print("  Clients will receive config first, then request detection data")
@@ -429,6 +466,14 @@ class RealtimeBladeDetectorV2:
                     with self.results_lock:
                         self.latest_results = None
                     print("✓ Detection reset")
+                elif key == ord('c'):
+                    # Request new configuration
+                    print("\n" + "="*70)
+                    print("REQUESTING NEW CONFIGURATION")
+                    print("="*70)
+                    new_config = get_user_configuration_inline()
+                    if new_config:
+                        self.update_blade_configuration(new_config)
 
         except KeyboardInterrupt:
             print("\n\nInterrupted")
@@ -529,6 +574,65 @@ def get_user_configuration():
     if confirm != 'y':
         print("Configuration cancelled. Exiting.")
         exit(0)
+    
+    return config
+
+
+def get_user_configuration_inline():
+    """
+    Get blade configuration from user via CLI (inline - no confirmation needed)
+    Used when updating configuration during runtime
+    """
+    print("\nEnter new blade configuration:")
+    
+    while True:
+        try:
+            bay_id = int(input("  BAY ID (1-10): "))
+            if 1 <= bay_id <= 10:
+                break
+            print("  ❌ BAY ID must be between 1 and 10")
+        except ValueError:
+            print("  ❌ Please enter a valid number")
+    
+    while True:
+        try:
+            grinder_id = int(input("  GRINDER ID (1-3): "))
+            if 1 <= grinder_id <= 3:
+                break
+            print("  ❌ GRINDER ID must be between 1 and 3")
+        except ValueError:
+            print("  ❌ Please enter a valid number")
+    
+    while True:
+        try:
+            angle = float(input("  ANGLE (degrees, e.g., 45.5): "))
+            break
+        except ValueError:
+            print("  ❌ Please enter a valid number")
+    
+    while True:
+        try:
+            depth = float(input("  DEPTH (e.g., 1.25): "))
+            break
+        except ValueError:
+            print("  ❌ Please enter a valid number")
+    
+    while True:
+        try:
+            length = int(input("  LENGTH (0-999): "))
+            if 0 <= length <= 999:
+                break
+            print("  ❌ LENGTH must be between 0 and 999")
+        except ValueError:
+            print("  ❌ Please enter a valid number")
+    
+    config = {
+        'bay_id': bay_id,
+        'grinder_id': grinder_id,
+        'angle': angle,
+        'depth': depth,
+        'length': length
+    }
     
     return config
 
