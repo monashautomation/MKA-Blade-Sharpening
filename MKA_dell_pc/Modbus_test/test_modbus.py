@@ -6,20 +6,17 @@ Protocol:
 3. Wait for client requests before sending detection data
 """
 
-import cv2
-import numpy as np
-import PySpin
-import time
-from datetime import datetime
 from threading import Thread, Lock
+import time, json, os
+import PySpin
+import cv2
+from datetime import datetime
 from serrated_blade_detector import SerratedBladeAnalyzer
-import json
-import os
-from modbus_blade_server import BladeDataModbusServer
+from modbus_blade_client import BladeDataModbusClient  # <-- new client class
 
 
 class RealtimeBladeDetectorV2:
-    """Restructured real-time detector with request-response protocol"""
+    """Real-time detector with Modbus client protocol (writes to robot)"""
 
     def __init__(self, config, initial_blade_config):
         self.config = config
@@ -30,15 +27,9 @@ class RealtimeBladeDetectorV2:
         self.latest_results = None
         self.results_lock = Lock()
 
-        # Performance tracking
         self.fps = 0
         self.frame_count = 0
         self.start_time = time.time()
-
-        # Camera system
-        self.system = None
-        self.cam = None
-        self.cam_list = None
 
         # Grinder tip control
         self.grinder_tip_stored = None
@@ -46,31 +37,19 @@ class RealtimeBladeDetectorV2:
         self.detect_grinder_flag = False
         self.grinder_lock = Lock()
 
-        # Configuration update control
-        self.config_update_requested = False
-        self.config_lock = Lock()
-
-        # Modbus Server (replaces TCP server)
-        self.modbus_server = None
+        # Modbus Client to robot
+        self.modbus_client = None
         if config.get('modbus_enabled', True):
-            self.modbus_server = BladeDataModbusServer(
-                host=config.get('modbus_host', '0.0.0.0'),
-                port=config.get('modbus_port', 502)
-            )
-            
-            # Set initial configuration data
-            self.modbus_server.set_configuration(
-                bay_id=initial_blade_config['bay_id'],
-                grinder_id=initial_blade_config['grinder_id'],
-                angle=initial_blade_config['angle'],
-                depth=initial_blade_config['depth'],
-                length=initial_blade_config['length']
-            )
+            robot_host = config.get('modbus_host', '172.24.89.89')
+            robot_port = config.get('modbus_port', 502)
+            self.modbus_client = BladeDataModbusClient(host=robot_host, port=robot_port)
+
+            # Send initial configuration
+            self.update_blade_configuration(initial_blade_config)
 
         self.load_grinder_position()
 
     def load_grinder_position(self):
-        """Load grinder position from JSON file"""
         if os.path.exists(self.grinder_position_file):
             try:
                 with open(self.grinder_position_file, 'r') as f:
@@ -84,7 +63,6 @@ class RealtimeBladeDetectorV2:
             self.grinder_tip_stored = None
 
     def save_grinder_position(self, grinder_tip):
-        """Save grinder position to JSON file"""
         try:
             data = {
                 'grinder_tip': [int(grinder_tip[0]), int(grinder_tip[1])],
@@ -97,34 +75,22 @@ class RealtimeBladeDetectorV2:
             print(f"⚠ Could not save grinder position: {e}")
 
     def update_blade_configuration(self, new_config):
-        """
-        Update blade configuration and broadcast to Modbus registers
-        
-        Args:
-            new_config: Dictionary with bay_id, grinder_id, angle, depth, length
-        """
-        with self.config_lock:
+        """Update blade configuration and write to robot via Modbus client"""
+        with Lock():
             self.blade_config = new_config
-        
-        if self.modbus_server:
-            # Update Modbus configuration registers
-            self.modbus_server.set_configuration(
+
+        if self.modbus_client:
+            self.modbus_client.write_configuration(
                 bay_id=new_config['bay_id'],
                 grinder_id=new_config['grinder_id'],
                 angle=new_config['angle'],
                 depth=new_config['depth'],
-                length=new_config['length']
+                length=new_config['length'],
+                config_version=1
             )
-        
-        print("\n" + "="*70)
-        print("✓ CONFIGURATION UPDATED IN MODBUS REGISTERS")
-        print("="*70)
-        print(f"  Bay ID:      {new_config['bay_id']}")
-        print(f"  Grinder ID:  {new_config['grinder_id']}")
-        print(f"  Angle:       {new_config['angle']:.1f}°")
-        print(f"  Depth:       {new_config['depth']:.2f}")
-        print(f"  Length:      {new_config['length']}")
-        print("="*70 + "\n")
+
+        print(f"✓ Updated blade configuration sent to robot: {new_config}")
+
 
     def initialize_camera(self):
         """Initialize FLIR camera using PySpin"""
@@ -232,19 +198,15 @@ class RealtimeBladeDetectorV2:
                 time.sleep(0.01)
 
     def detection_thread(self):
-        """Thread for running tooth point detection and publishing data"""
-        print("Starting detection thread...")
-
+        """Run tooth detection and send results to robot"""
         detection_interval = 1.0 / self.config['detection_fps']
         last_detection_time = 0
 
         while self.running:
             current_time = time.time()
-
             if current_time - last_detection_time < detection_interval:
                 time.sleep(0.01)
                 continue
-
             last_detection_time = current_time
 
             with self.frame_lock:
@@ -254,18 +216,16 @@ class RealtimeBladeDetectorV2:
                 continue
 
             try:
-                # Check if grinder update is requested
+                # Grinder update logic
                 update_grinder = False
                 with self.grinder_lock:
                     if self.detect_grinder_flag:
                         update_grinder = True
                         self.detect_grinder_flag = False
 
-                # Run detection
                 analyzer = SerratedBladeAnalyzer(frame_to_process)
                 results = analyzer.analyze_blade(pixels_per_mm=self.config['pixels_per_mm'])
 
-                # Grinder tip logic
                 if update_grinder and results.get('grinder_tip'):
                     self.grinder_tip_stored = results['grinder_tip']
                     self.save_grinder_position(self.grinder_tip_stored)
@@ -274,17 +234,90 @@ class RealtimeBladeDetectorV2:
                     results['grinder_tip'] = self.grinder_tip_stored
                     results['grinder_updated_this_cycle'] = False
 
-                # Update results
                 with self.results_lock:
                     self.latest_results = results
 
-                # Publish to Modbus registers
-                if self.modbus_server:
-                    self.modbus_server.publish_data(results)
+                # Publish detection to robot
+                if self.modbus_client:
+                    closest_valley = self.compute_closest_valley(results)
+                    if closest_valley:
+                        self.modbus_client.write_detection(
+                            x_mm=closest_valley['move_y_mm'],
+                            y_mm=closest_valley['move_x_mm'],
+                            status=1
+                        )
+                        self.modbus_client.write_command(11)  # Robot read_detection
+                    else:
+                        self.modbus_client.write_detection(0, 0, 2)  # No detection
 
             except Exception as e:
                 print(f"Detection error: {e}")
 
+    # def compute_closest_valley(self, blade_results):
+    #     """
+    #     Find the tooth tip closest to the grinder tip.
+    #     Matches the request-response logic from the TCP version.
+    #     """
+    #     grinding_coords = blade_results.get('grinding_coordinates', [])
+    #
+    #     if not grinding_coords:
+    #         return None
+    #
+    #     closest_tooth = None
+    #     min_distance = float('inf')
+    #
+    #     for coord in grinding_coords:
+    #         # mx/my are already calculated by the Analyzer class
+    #         mx = coord['move_x_mm']
+    #         my = coord['move_y_mm']
+    #
+    #         # Calculate distance to grinder
+    #         dist = (mx ** 2 + my ** 2) ** 0.5
+    #
+    #         # Filter: Tooth must be 'before' the grinder (my > 0)
+    #         # We use a small buffer (0.1mm) to keep detection active near the contact point
+    #         if my > 0.5:
+    #             if dist < min_distance:
+    #                 min_distance = dist
+    #                 closest_tooth = {
+    #                     'move_x_mm': mx,  # The SWAP: Y-offset is robot's X (feed)
+    #                     'move_y_mm': my,  # The SWAP: X-offset is robot's Y (depth)
+    #                 }
+    #
+    #     return closest_tooth
+    def compute_closest_valley(self, blade_results):
+        grinding_coords = blade_results.get('grinding_coordinates', [])
+        if not grinding_coords:
+            return None
+
+        # Check if we even have a grinder position stored
+        if self.grinder_tip_stored is None:
+            print("⚠ Cannot compute: No grinder tip position stored. Press 'g' to detect.")
+            return None
+
+        closest_tooth = None
+        min_distance = float('inf')
+
+        for coord in grinding_coords:
+            # These values represent the relative distance TO the grinder
+            # calculated as: (Grinder_px - Tooth_px) / scale
+            mx = coord['move_x_mm']
+            my = coord['move_y_mm']
+
+            # The distance from this tooth to the grinder
+            dist = (mx ** 2 + my ** 2) ** 0.5
+
+            # Filter: Only pick teeth that are 'approaching' the grinder
+            # If my > 0, the tooth is still 'behind' the grinder in the feed direction
+            if my > 0.5:
+                if dist < min_distance:
+                    min_distance = dist
+                    closest_tooth = {
+                        'move_x_mm': mx,
+                        'move_y_mm': my,
+                    }
+
+        return closest_tooth
     def draw_overlay(self, frame):
         """Draw detection overlay on frame"""
         overlay = frame.copy()
@@ -299,31 +332,31 @@ class RealtimeBladeDetectorV2:
             grinder_tip = results.get('grinder_tip')
 
             # Draw grinder tip
-            if grinder_tip:
-                cv2.circle(overlay, grinder_tip, 12, (0, 255, 255), 3)
-                cv2.circle(overlay, grinder_tip, 15, (0, 0, 0), 2)
+            # Draw grinder tip safely
+            grinder_tip = results.get('grinder_tip')
+            if grinder_tip and isinstance(grinder_tip, (tuple, list)) and len(grinder_tip) == 2:
+                grinder_tip_int = (int(grinder_tip[0]), int(grinder_tip[1]))
+                cv2.circle(overlay, grinder_tip_int, 12, (0, 255, 255), 3)
+                cv2.circle(overlay, grinder_tip_int, 15, (0, 0, 0), 2)
 
                 label = "GRINDER (UPDATED!)" if results.get('grinder_updated_this_cycle') else "GRINDER (STORED)"
                 label_color = (0, 255, 0) if results.get('grinder_updated_this_cycle') else (0, 255, 255)
-                cv2.putText(overlay, label, (grinder_tip[0] + 20, grinder_tip[1] - 10),
+                cv2.putText(overlay, label, (grinder_tip_int[0] + 20, grinder_tip_int[1] - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, label_color, 2)
 
             # Blade angle
+            # --- Corrected Blade angle section ---
             blade_angle = results.get('blade_angle')
-            if blade_angle:
-                vx, vy, x0, y0 = blade_angle['vx'], blade_angle['vy'], blade_angle['x0'], blade_angle['y0']
-                pt1 = (int(x0 - vx * 1000), int(y0 - vy * 1000))
-                pt2 = (int(x0 + vx * 1000), int(y0 + vy * 1000))
-                cv2.line(overlay, pt1, pt2, (0, 255, 0), 2)
-                cv2.putText(overlay, f"Angle: {blade_angle['angle_from_y_deg']:.2f}°",
+            if blade_angle is not None:
+                # Since analyzer returns a float, just display the text
+                # (If you need to draw the line, you'd need to update the analyzer to return the fitLine points)
+                cv2.putText(overlay, f"Angle: {blade_angle:.2f} deg",
                             (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-
             # Tooth points
-            for coord in results['grinding_coordinates']:
-                pos_x = coord.get('tooth_tip_x_px', coord.get('groove_position_x_px'))
-                pos_y = coord.get('tooth_tip_y_px', coord.get('groove_position_y_px'))
-                pos = (pos_x, pos_y)
-
+            for coord in results.get('grinding_coordinates', []):
+                pos_x = coord.get('tooth_tip_x_px', coord.get('groove_position_x_px', 0))
+                pos_y = coord.get('tooth_tip_y_px', coord.get('groove_position_y_px', 0))
+                pos = (int(pos_x), int(pos_y))
                 cv2.circle(overlay, pos, 10, (255, 255, 0), -1)
                 cv2.circle(overlay, pos, 12, (255, 255, 255), 2)
 
@@ -345,9 +378,9 @@ class RealtimeBladeDetectorV2:
                     cv2.arrowedLine(overlay, pos, grinder_tip, (0, 255, 255), 2, tipLength=0.02)
 
             # Info panel
-            modbus_status = "ACTIVE" if self.modbus_server and self.modbus_server.running else "INACTIVE"
+            # modbus_status = "ACTIVE" if self.modbus_server and self.modbus_server.running else "INACTIVE"
             num_items = results.get('num_teeth', results.get('num_grooves', 0))
-            
+
             # Add blade config to panel
             panel_height = 150 + (num_items * 30)
 
@@ -358,15 +391,15 @@ class RealtimeBladeDetectorV2:
             cv2.putText(overlay, f"FPS: {self.fps:.1f}", (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             y += 30
 
-            modbus_color = (0, 255, 0) if modbus_status == "ACTIVE" else (128, 128, 128)
-            cv2.putText(overlay, f"Modbus: {modbus_status}", (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, modbus_color, 2)
+            # modbus_color = (0, 255, 0) if modbus_status == "ACTIVE" else (128, 128, 128)
+            # cv2.putText(overlay, f"Modbus: {modbus_status}", (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, modbus_color, 2)
             y += 30
-            
+
             # Display blade configuration
-            cv2.putText(overlay, f"Bay: {self.blade_config['bay_id']} | Grinder: {self.blade_config['grinder_id']}", 
+            cv2.putText(overlay, f"Bay: {self.blade_config['bay_id']} | Grinder: {self.blade_config['grinder_id']}",
                         (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 200, 0), 2)
             y += 30
-            cv2.putText(overlay, f"Angle: {self.blade_config['angle']:.1f}° | Depth: {self.blade_config['depth']:.2f} | Len: {self.blade_config['length']}", 
+            cv2.putText(overlay, f"Angle: {self.blade_config['angle']:.1f}° | Depth: {self.blade_config['depth']:.2f} | Len: {self.blade_config['length']}",
                         (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 200, 0), 2)
             y += 30
 
@@ -403,13 +436,6 @@ class RealtimeBladeDetectorV2:
         if not self.initialize_camera():
             print("Failed to initialize camera!")
             return
-
-        if self.modbus_server:
-            if not self.modbus_server.start():
-                print("Warning: Modbus server failed to start")
-            else:
-                print(self.modbus_server.get_register_map())
-
         self.running = True
 
         # Start threads
@@ -418,8 +444,6 @@ class RealtimeBladeDetectorV2:
 
         print("\n✓ System running!")
         print("  'q' = quit | 's' = save | 'g' = update grinder | 'r' = reset | 'c' = new config")
-        if self.modbus_server:
-            print(f"  Modbus: {self.config.get('modbus_host')}:{self.config.get('modbus_port')}")
         print("  Robot can read Modbus registers for detection data")
 
         cv2.namedWindow('Tooth Point Detection', cv2.WINDOW_NORMAL)
@@ -485,9 +509,6 @@ class RealtimeBladeDetectorV2:
         self.running = False
         time.sleep(0.2)
 
-        if self.modbus_server:
-            self.modbus_server.stop()
-
         try:
             if self.cam:
                 self.cam.EndAcquisition()
@@ -509,7 +530,7 @@ def get_user_configuration():
     print("\n" + "=" * 70)
     print("BLADE CONFIGURATION")
     print("=" * 70)
-    
+
     while True:
         try:
             bay_id = int(input("Enter BAY ID (1-10): "))
@@ -518,7 +539,7 @@ def get_user_configuration():
             print("❌ BAY ID must be between 1 and 10")
         except ValueError:
             print("❌ Please enter a valid number")
-    
+
     while True:
         try:
             grinder_id = int(input("Enter GRINDER ID (1-3): "))
@@ -527,21 +548,21 @@ def get_user_configuration():
             print("❌ GRINDER ID must be between 1 and 3")
         except ValueError:
             print("❌ Please enter a valid number")
-    
+
     while True:
         try:
             angle = float(input("Enter ANGLE (degrees, e.g., 45.5): "))
             break
         except ValueError:
             print("❌ Please enter a valid number")
-    
+
     while True:
         try:
             depth = float(input("Enter DEPTH (e.g., 1.25): "))
             break
         except ValueError:
             print("❌ Please enter a valid number")
-    
+
     while True:
         try:
             length = int(input("Enter LENGTH (0-999): "))
@@ -550,7 +571,7 @@ def get_user_configuration():
             print("❌ LENGTH must be between 0 and 999")
         except ValueError:
             print("❌ Please enter a valid number")
-    
+
     config = {
         'bay_id': bay_id,
         'grinder_id': grinder_id,
@@ -558,7 +579,7 @@ def get_user_configuration():
         'depth': depth,
         'length': length
     }
-    
+
     print("\n" + "=" * 70)
     print("Configuration Summary:")
     print(f"  Bay ID:      {config['bay_id']}")
@@ -567,12 +588,12 @@ def get_user_configuration():
     print(f"  Depth:       {config['depth']:.2f}")
     print(f"  Length:      {config['length']}")
     print("=" * 70)
-    
+
     confirm = input("\nProceed with this configuration? (y/n): ").lower()
     if confirm != 'y':
         print("Configuration cancelled. Exiting.")
         exit(0)
-    
+
     return config
 
 
@@ -582,7 +603,7 @@ def get_user_configuration_inline():
     Used when updating configuration during runtime
     """
     print("\nEnter new blade configuration:")
-    
+
     while True:
         try:
             bay_id = int(input("  BAY ID (1-10): "))
@@ -591,7 +612,7 @@ def get_user_configuration_inline():
             print("  ❌ BAY ID must be between 1 and 10")
         except ValueError:
             print("  ❌ Please enter a valid number")
-    
+
     while True:
         try:
             grinder_id = int(input("  GRINDER ID (1-3): "))
@@ -600,21 +621,21 @@ def get_user_configuration_inline():
             print("  ❌ GRINDER ID must be between 1 and 3")
         except ValueError:
             print("  ❌ Please enter a valid number")
-    
+
     while True:
         try:
             angle = float(input("  ANGLE (degrees, e.g., 45.5): "))
             break
         except ValueError:
             print("  ❌ Please enter a valid number")
-    
+
     while True:
         try:
             depth = float(input("  DEPTH (e.g., 1.25): "))
             break
         except ValueError:
             print("  ❌ Please enter a valid number")
-    
+
     while True:
         try:
             length = int(input("  LENGTH (0-999): "))
@@ -623,7 +644,7 @@ def get_user_configuration_inline():
             print("  ❌ LENGTH must be between 0 and 999")
         except ValueError:
             print("  ❌ Please enter a valid number")
-    
+
     config = {
         'bay_id': bay_id,
         'grinder_id': grinder_id,
@@ -631,14 +652,14 @@ def get_user_configuration_inline():
         'depth': depth,
         'length': length
     }
-    
+
     return config
 
 
 def main():
     # Get blade configuration from user
     blade_config = get_user_configuration()
-    
+
     # Camera and detection configuration
     system_config = {
         'pixels_per_mm': 86.96,
@@ -651,10 +672,11 @@ def main():
         'gain': 0.0,
         'grinder_position_file': 'grinder_position.json',
         'modbus_enabled': True,
-        'modbus_host': '0.0.0.0',  # Listen on all interfaces
-        'modbus_port': 502,
+        'modbus_host': '172.24.89.89',  # Robot's Modbus server IP
+        'modbus_port': 502,  # Standard Modbus TCP port
     }
 
+    # Initialize detector with configuration
     detector = RealtimeBladeDetectorV2(system_config, blade_config)
     detector.run()
 
