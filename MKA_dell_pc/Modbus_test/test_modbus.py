@@ -309,7 +309,7 @@ class RealtimeBladeDetectorV2:
 
             # Filter: Only pick teeth that are 'approaching' the grinder
             # If my > 0, the tooth is still 'behind' the grinder in the feed direction
-            if my > 0.5:
+            if my > 1:
                 if dist < min_distance:
                     min_distance = dist
                     closest_tooth = {
