@@ -19,19 +19,19 @@ A modern, industrial-themed web dashboard for controlling robotic blade grinding
 ```
 ┌─────────────────────────┐
 │   Web Dashboard         │
-│   (HTML/CSS/JS)        │
+│   (HTML/CSS/JS)         │
 └───────────┬─────────────┘
             │ HTTP/REST API
             ▼
 ┌─────────────────────────┐
 │   Flask Backend         │
-│   (Python)             │
+│   (Python)              │
 └───────────┬─────────────┘
             │ Modbus TCP
             ▼
 ┌─────────────────────────┐
 │   Robot Controller      │
-│   (Modbus Server)      │
+│   (Modbus Server)       │
 └─────────────────────────┘
 ```
 
