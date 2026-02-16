@@ -1,0 +1,372 @@
+"""
+Doosan Robotics Blade Grinding Program - Modbus Version
+Replaces TCP socket communication with Modbus TCP
+"""
+
+# ============================================================================
+# MODBUS CONFIGURATION
+# ============================================================================
+VISION_IP = "172.24.9.15"
+MODBUS_PORT = 502
+
+# Modbus Register Addresses
+REG_BAY_ID = 128
+REG_GRINDER_ID = 129
+REG_ANGLE = 130
+REG_DEPTH = 131
+REG_LENGTH = 132
+REG_CONFIG_VERSION = 133
+
+REG_DETECTION_X = 134
+REG_DETECTION_Y = 135
+REG_STATUS = 136
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+def modbus_connect():
+    """Connect to Modbus server"""
+    global mb_sock
+    mb_sock = client_socket_open(VISION_IP, MODBUS_PORT)
+    if mb_sock == -1:
+        tp_log("ERROR: Failed to connect to Modbus server")
+        return False
+    tp_log("Connected to Modbus server at " + VISION_IP)
+    return True
+
+def modbus_read_register(address):
+    """
+    Read a single Modbus holding register
+    Returns the register value or -1 on error
+    """
+    # Modbus TCP Read Holding Registers (Function Code 0x03)
+    # Format: [Transaction ID(2), Protocol ID(2), Length(2), Unit ID(1), Function(1), Address(2), Count(2)]
+    
+    transaction_id = 0x0001
+    protocol_id = 0x0000
+    length = 0x0006
+    unit_id = 0x01
+    function_code = 0x03
+    count = 0x0001
+    
+    # Build request packet
+    request = bytearray(12)
+    request[0:2] = transaction_id.to_bytes(2, 'big')
+    request[2:4] = protocol_id.to_bytes(2, 'big')
+    request[4:6] = length.to_bytes(2, 'big')
+    request[6] = unit_id
+    request[7] = function_code
+    request[8:10] = address.to_bytes(2, 'big')
+    request[10:12] = count.to_bytes(2, 'big')
+    
+    # Send request
+    res = client_socket_write(mb_sock, bytes(request))
+    if res < 0:
+        tp_log("ERROR: Modbus write failed")
+        return -1
+    
+    wait(0.05)  # Small delay for response
+    
+    # Read response
+    res, rx_data = client_socket_read(mb_sock, length=9)
+    
+    if res < 9:
+        tp_log("ERROR: Modbus response too short")
+        return -1
+    
+    # Parse response: [Trans ID(2), Proto ID(2), Length(2), Unit(1), Func(1), Bytes(1), Data(2)]
+    if rx_data[7] == function_code:
+        # Extract register value (2 bytes at position 9-10)
+        value = int.from_bytes(rx_data[9:11], byteorder='big', signed=False)
+        return value
+    else:
+        tp_log("ERROR: Modbus error response")
+        return -1
+
+def modbus_read_registers(address, count):
+    """
+    Read multiple Modbus holding registers
+    Returns list of values or empty list on error
+    """
+    transaction_id = 0x0001
+    protocol_id = 0x0000
+    length = 0x0006
+    unit_id = 0x01
+    function_code = 0x03
+    
+    # Build request
+    request = bytearray(12)
+    request[0:2] = transaction_id.to_bytes(2, 'big')
+    request[2:4] = protocol_id.to_bytes(2, 'big')
+    request[4:6] = length.to_bytes(2, 'big')
+    request[6] = unit_id
+    request[7] = function_code
+    request[8:10] = address.to_bytes(2, 'big')
+    request[10:12] = count.to_bytes(2, 'big')
+    
+    # Send request
+    res = client_socket_write(mb_sock, bytes(request))
+    if res < 0:
+        return []
+    
+    wait(0.05)
+    
+    # Read response
+    expected_bytes = 9 + (count * 2)
+    res, rx_data = client_socket_read(mb_sock, length=expected_bytes)
+    
+    if res < expected_bytes:
+        return []
+    
+    # Parse response
+    if rx_data[7] == function_code:
+        values = []
+        for i in range(count):
+            offset = 9 + (i * 2)
+            value = int.from_bytes(rx_data[offset:offset+2], byteorder='big', signed=False)
+            values.append(value)
+        return values
+    
+    return []
+
+def read_blade_config():
+    """
+    Read blade configuration from Modbus
+    Returns dict with config or None on error
+    """
+    values = modbus_read_registers(REG_BAY_ID, 6)
+    
+    if len(values) == 6:
+        config = {
+            'bay_id': values[0],
+            'grinder_id': values[1],
+            'angle': values[2] / 10.0,
+            'depth': values[3] / 100.0,
+            'length': values[4],
+            'version': values[5]
+        }
+        
+        tp_log("Config: Bay=" + str(config['bay_id']) + 
+               " Grinder=" + str(config['grinder_id']) +
+               " Angle=" + str(config['angle']) +
+               " Version=" + str(config['version']))
+        
+        return config
+    
+    return None
+
+def read_detection_data():
+    """
+    Read detection data from Modbus
+    Returns dict with x_mm, y_mm, status or None on error
+    """
+    values = modbus_read_registers(REG_DETECTION_X, 3)
+    
+    if len(values) == 3:
+        # Convert unsigned to signed
+        x_unsigned = values[0]
+        y_unsigned = values[1]
+        status = values[2]
+        
+        # Convert to signed 16-bit
+        if x_unsigned > 32767:
+            x_signed = x_unsigned - 65536
+        else:
+            x_signed = x_unsigned
+            
+        if y_unsigned > 32767:
+            y_signed = y_unsigned - 65536
+        else:
+            y_signed = y_unsigned
+        
+        # Scale to mm (divide by 10)
+        x_mm = x_signed / 10.0
+        y_mm = y_signed / 10.0
+        
+        detection = {
+            'x_mm': x_mm,
+            'y_mm': y_mm,
+            'status': status
+        }
+        
+        return detection
+    
+    return None
+
+# ============================================================================
+# MAIN PROGRAM
+# ============================================================================
+
+# Connect to Modbus
+if not modbus_connect():
+    tp_log("FATAL: Cannot connect to vision system")
+    # Optionally retry or abort
+
+# Read initial configuration
+config = read_blade_config()
+if config is None:
+    tp_log("WARNING: Failed to read config, using defaults")
+    config = {'bay_id': 1, 'grinder_id': 1, 'angle': 45.0, 'version': 0}
+
+tp_log("Starting blade grinding program")
+tp_log("Bay: " + str(config['bay_id']) + " Grinder: " + str(config['grinder_id']))
+
+# ============================================================================
+# INITIAL POSITIONING
+# ============================================================================
+
+x1, sol = get_current_posx(ref=DR_WORLD)
+tp_log("Current Pos: " + str(x1))
+
+dist1 = get_distance(x1, System_grinder_top)
+dist2 = get_distance(x1, fkin(System_init_j))
+dist3 = get_distance(x1, System_blades_top)
+
+# Move to safe position based on current location
+if dist1 < dist2:
+    movel(System_grinder_top, 20, 20)
+elif dist3 < dist2:
+    movel(System_blades_top, 20, 20)
+
+# ============================================================================
+# BLADE MEASUREMENT SEQUENCE
+# ============================================================================
+
+tp_log("Moving to blade position")
+movel(System_blades_top, 20, 20)
+movel(System_blade1_new, 20, 20)
+
+# Switch to tool coordinate frame for precise positioning
+set_ref_coord(DR_TOOL)
+
+# Inspection movement sequence
+movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
+movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
+movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+
+set_ref_coord(DR_BASE)
+
+# ============================================================================
+# BLADE PICKUP AND MEASUREMENT
+# ============================================================================
+
+tp_log("Picking up blade")
+movel(System_blades_top, 100, 20)
+movel(IR_sensor, 50, 20)
+
+# Turn on magnets
+set_digital_output(1, ON)
+
+# Measure left edge
+amovel(posx(0, 500, 0, 0, 0, 0), vel=30, acc=10, mod=DR_MV_MOD_REL)
+while get_digital_input(1) == 0:
+    wait(0.005)
+stop(DR_SSTOP)
+
+blade_left, sol = get_current_posx(ref=DR_WORLD)
+
+movel(posx(0, -30, 0, 0, 0, 0), vel=40, acc=10, mod=DR_MV_MOD_REL)
+
+# Measure right edge
+amovel(posx(0, -400, 0, 0, 0, 0), vel=30, acc=10, mod=DR_MV_MOD_REL)
+while get_digital_input(1) == 0:
+    wait(0.005)
+stop(DR_SSTOP)
+
+blade_right, sol = get_current_posx(ref=DR_WORLD)
+
+blade_length = blade_left[1] - blade_right[1] - 10
+tp_log("Blade length: " + str(blade_length))
+
+# ============================================================================
+# GRINDING SEQUENCE WITH MODBUS
+# ============================================================================
+
+tp_log("Moving to grinding position")
+movel(System_grinder_top, 20, 20)
+movel(System_grinder_app, 20, 20)
+movel(System_grinder_invert, 20, 20)
+
+tp_log("Starting grinding loop - reading from Modbus")
+
+last_config_version = config['version']
+grinding_count = 0
+
+# Main grinding loop
+while True:
+    # Check for configuration updates
+    current_config = read_blade_config()
+    if current_config is not None and current_config['version'] != last_config_version:
+        tp_log("=== NEW CONFIGURATION DETECTED ===")
+        tp_log("Bay: " + str(current_config['bay_id']) + 
+               " Grinder: " + str(current_config['grinder_id']) +
+               " Angle: " + str(current_config['angle']))
+        config = current_config
+        last_config_version = config['version']
+    
+    # Read detection data
+    detection = read_detection_data()
+    
+    if detection is None:
+        tp_log("ERROR: Failed to read detection data")
+        wait(1)
+        continue
+    
+    status = detection['status']
+    
+    if status == 1:  # Valid detection
+        x_mm = detection['x_mm']
+        y_mm = detection['y_mm']
+        
+        grinding_count = grinding_count + 1
+        tp_log("[" + str(grinding_count) + "] Detection: X=" + 
+               str(x_mm) + "mm, Y=" + str(y_mm) + "mm")
+        
+        # Calculate movement deltas
+        delta_x = [x_mm / 100.0, 0, 0, 0, 0, 0]
+        delta_y_mid = [0, (y_mm / 100.0) + 0.7, 0, 0, 0, 0]
+        delta_y = [0, (y_mm / 100.0) + 1.4, 0, 0, 0, 0]
+        delta_neg_y = [0, -((y_mm / 100.0) + 1.4), 0, 0, 0, 0]
+        delta_up = [0, 0, 10, 0, 0, 0]
+        delta_down = [0, 0, -20, 0, 0, 0]
+        
+        # Execute grinding motion sequence
+        tp_log("Executing grinding motion...")
+        
+        movel(posx(delta_x), vel=300, acc=100, mod=DR_MV_MOD_REL)
+        wait(0.1)
+        
+        movel(posx(delta_y), vel=300, acc=100, mod=DR_MV_MOD_REL)
+        wait(0.1)
+        
+        movel(posx(delta_up), vel=400, acc=200, mod=DR_MV_MOD_REL)
+        wait(0.1)
+        
+        movel(posx(delta_down), vel=400, acc=200, mod=DR_MV_MOD_REL)
+        wait(0.1)
+        
+        movel(posx(delta_up), vel=400, acc=200, mod=DR_MV_MOD_REL)
+        wait(0.1)
+        
+        movel(posx(delta_neg_y), vel=400, acc=200, mod=DR_MV_MOD_REL)
+        
+        tp_log("Grinding complete")
+        wait(1)
+        
+    elif status == 2:  # No detection
+        tp_log("No detection in current frame")
+        wait(0.5)
+        
+    else:  # status == 0, no data yet
+        tp_log("Waiting for vision data...")
+        wait(1)
+    
+    # Read at 5 Hz (200ms interval)
+    wait(0.2)
+
+# Cleanup (if loop exits)
+client_socket_close(mb_sock)
+tp_log("Program complete")

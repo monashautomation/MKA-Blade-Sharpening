@@ -1,13 +1,26 @@
 #movel(System_grinder_app, 20, 20)
-movel(System_blade1_new, 20, 20)
-set_ref_coord(DR_TOOL)
+#movel(System_blade1_new, 20, 20)
+#set_ref_coord(DR_TOOL)
+#
+#movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
+#movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
+#movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+#movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+#movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+#
+#set_ref_coord(DR_BASE)
+#
+#movel(System_blades_top, 20, 20)
 
-movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
-movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
-movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
-movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
-movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+# DRL (Doosan) - EtherNet/IP GPR command consumer
 
-set_ref_coord(DR_BASE)
+#set_digital_output(1, ON)
+#set_analog_output(ch=1, val=3)
 
-movel(System_blades_top, 20, 20)
+while(1):
+    value_x = get_modbus_slave(134)
+    value_y = get_modbus_slave(135)
+    angle = get_modbus_slave(130)
+    tp_log("Binary Move Received: X={0}, Y={1}, T={2}".format(value_x/10, (65536 - value_y)/10,angle/10))
+    
+    wait(1)

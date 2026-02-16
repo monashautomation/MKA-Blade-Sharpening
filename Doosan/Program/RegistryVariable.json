@@ -4,7 +4,7 @@
     "Type": "Registry",
     "Name": "IR_sensor",
     "ValueType": "Posx",
-    "Value": "posx(-550,0,250,135,180,90)"
+    "Value": "posx(-550,0,170,135,180,90)"
   },
   "Variable1": {
     "Type": "Registry",
@@ -70,24 +70,24 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[-550.027,-180.724,249.969,69.544,-179.999,24.532]"
+    "Value": "[-550.005,-30.020,169.993,6.632,179.999,-38.368]"
   },
   "Variable12": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-550.000,185.246,249.896,158.439,-179.990,113.453]"
+    "Value": "[-549.989,-0.029,169.953,22.751,179.994,-22.252]"
   },
   "Variable13": {
     "Type": "Registry",
     "Name": "blade_l",
     "ValueType": "Float",
-    "Value": "355.97021484375"
+    "Value": "19.99078544229269"
   },
   "Variable14": {
     "Type": "Registry",
     "Name": "System_grinder_invert",
     "ValueType": "Posx",
-    "Value": "posx(0,480,138,90,115,135)"
+    "Value": "posx(0,513,158,90,115,135)"
   }
 }
