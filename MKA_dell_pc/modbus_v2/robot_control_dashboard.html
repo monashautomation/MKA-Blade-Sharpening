@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+<link rel="icon" type="image/webp" sizes="32x32" href="mka-163w.webp">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MKA</title>
+    <title>MKA - Automated Blade Sharpening System</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * {
@@ -62,7 +63,7 @@
             text-align: center;
             margin-bottom: 48px;
         }
-
+/* 
         .header h1 {
             font-family: 'Inter', sans-serif;
             font-size: 36px;
@@ -70,7 +71,7 @@
             letter-spacing: -0.025em;
             color: var(--foreground);
             margin-bottom: 8px;
-        }
+        } */
 
         .header p {
             font-size: 14px;
@@ -79,6 +80,15 @@
             text-transform: uppercase;
         }
 
+        .header h1{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header h1 img{
+            display: block;
+        }
         .status-bar {
             display: flex;
             gap: 16px;
@@ -165,7 +175,6 @@
             color: var(--foreground);
             margin-bottom: 6px;
         }
-
         .form-input {
             width: 100%;
             background: var(--background);
@@ -448,11 +457,15 @@
 </head>
 <body>
     <div class="container">
+        
         <div class="header">
-            <h1>⚙️ MKA</h1>
-            <p>Precision Blade Grinding System</p>
+            <h1>
+                <img src="mka-163w.webp" alt="MKA" style="height:60px; width:auto;">
+            </h1>
+            <p>
+                Automated Blade Sharpening System
+            </p>
         </div>
-
         <div class="status-bar">
             <div class="status-item">
                 <div class="status-label">Connection Status</div>
