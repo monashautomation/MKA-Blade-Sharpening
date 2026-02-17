@@ -290,7 +290,8 @@ class SerratedBladeAnalyzer:
             # Detect blade and grinder
             self.detect_blade_and_grinder()
 
-            if self.blade_edge_points is None or len(self.blade_edge_points) < 50:
+            if self.blade_edge_points is None or len(self.blade_edge_points) < 20:
+                print(f"⚠ Insufficient blade edge points: {len(self.blade_edge_points) if self.blade_edge_points is not None else 0}")
                 return None
 
             # Use stored grinder position if available and requested
