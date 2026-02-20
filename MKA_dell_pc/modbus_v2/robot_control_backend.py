@@ -511,7 +511,24 @@ def index():
         </body>
         </html>
         """, 404
-
+    
+@app.route('/api/blade/<blade_id>', methods=['GET'])
+def get_blade(blade_id):
+    import sqlite3
+    try:
+        conn = sqlite3.connect("blade_database.sqlite")
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM blades WHERE bade_id = ?", (blade_id,))
+        row = cur.fetchone()
+        conn.close()
+        if row:
+            return jsonify({"success": True, "blade": dict(row)})
+        else:
+            return jsonify({"success": False, "message": f"Blade '{blade_id}' not found"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+    
 @app.route('/api/connect', methods=['POST'])
 def connect():
     global modbus_client, client_connected

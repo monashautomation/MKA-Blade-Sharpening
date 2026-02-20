@@ -26,5 +26,44 @@ def main():
     conn.close()
     print(f"Created: {DB_PATH}")
 
+def add_blade_data(blade_data): 
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("INSERT OR REPLACE INTO blades VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", blade_data)
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
-    main()
+    print("Blade Database ")
+    print("-------------")
+    print("Enter :")
+    print("1. Create Database")
+    print("2. Add Blade Data")
+    print("3. retrieve data")
+    inp = input("Enter : ")
+    if (inp=="1"):
+        main()
+    elif (inp=="2"):
+        bade_id = input("Enter blade ID: ")
+        depth1 = float(input("Enter depth 1: "))
+        depth2 = float(input("Enter depth 2: "))
+        thickness = float(input("Enter thickness: "))
+        middle_depth = float(input("Enter middle depth: "))
+        corner_depth = float(input("Enter corner depth: "))
+        length = float(input("Enter length: "))
+        reach_angle = float(input("Enter reach angle: "))
+        depth_of_cut_from_angle = float(input("Enter depth of cut from angle: "))
+        v_blade = int(input("Is it a V-blade? (1 for Yes, 0 for No): "))
+        tip_angle = float(input("Enter tip angle: "))
+        blade_data = (bade_id, depth1, depth2, thickness, middle_depth
+                        , corner_depth, length, reach_angle, depth_of_cut_from_angle, v_blade, tip_angle)
+        add_blade_data(blade_data)
+    elif (inp=="3"):
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM blades")
+        rows = cur.fetchall()
+        for row in rows:
+            print(row)
+        conn.close()
+        
