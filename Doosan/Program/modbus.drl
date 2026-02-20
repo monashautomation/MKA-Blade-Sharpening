@@ -75,20 +75,22 @@ while(1):
         else:
             set_analog_output(ch=1, val=3.2)
         
-        movej(System_init_j, 20, 20)
+        #movej(System_init_j, 20, 20)
         movel(System_grinder_top, 20, 20)
         movel(System_grinder_app, 20, 20)
         movel(System_grinder_invert, 20, 20)
         
-        movel(posx(blade_right[1]+5, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+        movel(posx(blade_right[1]+100, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
         x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
         
-        while (get_modbus_slave(REG_START) == 1 and (x1[0]*-1 < blade_left[1]) and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION) :
+         #and (x1[0]*-1 < blade_left[1])
+         #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
+        while (get_modbus_slave(REG_START) == 1 ) :
         #while(1):
             tp_log("Start command received")
             val_x = get_modbus_slave(REG_DETECTION_X)/10
             val_y = get_modbus_slave(REG_DETECTION_Y)/10
-            depth = get_modbus_slave(REG_DEPTH)/10
+            depth = get_modbus_slave(REG_DEPTH)/100
             tp_log("Binary Move Received: X={0}, Y={1}".format(val_x, val_y))
             
             # Execute Relative Move (based on X/Y inputs)
@@ -97,8 +99,8 @@ while(1):
             delta_x = [val_x, 0, 0, 0, 0, 0]
             delta_y = [0, val_y+depth, 0, 0, 0, 0]
             delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0]
-            delta_up =  [0, 0, 20, 0, 0, 0]
-            delta_down =  [0, 0, -10, 0, 0, 0]
+            delta_up =  [0, 0, 40, 0, 0, 0]
+            delta_down =  [0, 0, -20, 0, 0, 0]
             
             movel(posx(delta_x), vel=300, acc=100,mod=DR_MV_MOD_REL)
             movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
@@ -107,25 +109,25 @@ while(1):
             movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
             movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
             
-            wait(3)
+            wait(2)
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-        #movel(System_grinder_app, 20, 20)
-        #movel(System_grinder_top, 20, 20)
-        #movel(IR_sensor, 50, 20)
-        #movel(System_blades_top, 100, 20)
-        #movel(System_blade1_new, 20, 20)
-        #
-        #set_ref_coord(DR_TOOL)
-        #
-        #movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
-        #movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
-        #movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
-        #set_analog_output(ch=1, val=0)
-        #movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
-        #movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
-        #
-        #
-        #set_ref_coord(DR_BASE)
-        #
-        #movel(System_blades_top, 20, 20)
+        movel(System_grinder_app, 20, 20)
+        movel(System_grinder_top, 20, 20)
+        movel(IR_sensor, 50, 20)
+        movel(System_blades_top, 100, 20)
+        movel(System_blade1_new, 20, 20)
+        
+        set_ref_coord(DR_TOOL)
+        
+        movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
+        movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
+        movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+        set_analog_output(ch=1, val=0)
+        movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+        movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+        
+        
+        set_ref_coord(DR_BASE)
+        
+        movel(System_blades_top, 20, 20)
         continue # Skip the rest of the loop
