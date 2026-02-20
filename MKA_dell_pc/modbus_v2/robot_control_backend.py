@@ -407,8 +407,6 @@ class BladeDataModbusClient:
     REG_START = 138
 
     # Command codes
-    CMD_READ_DETECTION = 11
-    CMD_START_GRINDING = 20
     CMD_STOP = 21
     CMD_RESET = 22
 
