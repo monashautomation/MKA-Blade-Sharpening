@@ -438,11 +438,10 @@
                 <div class="panel">
                     <div class="panel-title">🎮 Robot Control</div>
                     <div class="control-panel">
-                        <button class="btn btn-primary" onclick="sendCommand(11)" disabled id="readBtn">READ</button>
+                        <button class="btn btn-primary start-button" onclick="startRobot()" disabled id="startBtn">🚀 START ROBOT OPERATION</button>
                         <button class="btn btn-warning" onclick="sendCommand(22)" disabled id="resetBtn">RESET</button>
                         <button class="btn btn-danger" onclick="stopRobot()" disabled id="stopBtn">STOP</button>
                     </div>
-                    <button class="btn btn-primary start-button" onclick="startRobot()" disabled id="startBtn">🚀 START ROBOT OPERATION</button>
                 </div>
             </div>
 
@@ -746,9 +745,16 @@
             const btn = document.getElementById('continuousBtn');
             const interval = parseInt(document.getElementById('updateInterval').value);
             if (!continuousUpdateActive) {
-                if (!cameraActive) { log('⚠ Camera must be active for auto-detection mode', 'warning'); return; }
-                autoDetectFailCount = 0; continuousUpdateActive = true; updateCount = 0;
-                btn.textContent = 'STOP AUTO-DETECT'; btn.classList.remove('btn-success'); btn.classList.add('btn-danger');
+                if (!cameraActive) { 
+                    log('⚠ Camera must be active for auto-detection mode', 'warning'); 
+                    return; 
+                }
+                autoDetectFailCount = 0; 
+                continuousUpdateActive = true; 
+                updateCount = 0;
+                btn.textContent = 'STOP AUTO-DETECT'; 
+                btn.classList.remove('btn-success'); 
+                btn.classList.add('btn-danger');
                 document.getElementById('autoUpdateStatus').innerHTML = '<span class="indicator active"></span>ON (0)';
                 log(`Started continuous auto-detection every ${interval}ms`, 'success');
                 sendDetectionWithAnalysis();
@@ -765,7 +771,7 @@
         }
 
         let autoDetectFailCount = 0;
-        const AUTO_DETECT_MAX_FAILS = 5;
+        // const AUTO_DETECT_MAX_FAILS = 5;
 
         async function sendDetectionWithAnalysis() {
             try {
@@ -782,18 +788,18 @@
                     if (updateCount % 10 === 0) log(`Auto-detection: ${updateCount} valleys sent`, 'success');
                 } else {
                     autoDetectFailCount++;
-                    log(`Auto-detect miss ${autoDetectFailCount}/${AUTO_DETECT_MAX_FAILS}: ${data.message || 'No teeth detected'}`, 'warning');
-                    if (autoDetectFailCount >= AUTO_DETECT_MAX_FAILS && continuousUpdateActive) { log('Auto-detect stopped: too many consecutive failures', 'error'); toggleContinuousUpdate(); }
+                    log(`Auto-detect miss ${autoDetectFailCount}: ${data.message || 'No teeth detected'}`, 'warning');
+                    // if (autoDetectFailCount >= AUTO_DETECT_MAX_FAILS && continuousUpdateActive) { log('Auto-detect stopped: too many consecutive failures', 'error'); toggleContinuousUpdate(); }
                 }
             } catch (error) {
                 autoDetectFailCount++;
-                log(`Auto-detection error ${autoDetectFailCount}/${AUTO_DETECT_MAX_FAILS}: ${error.message}`, 'error');
-                if (autoDetectFailCount >= AUTO_DETECT_MAX_FAILS && continuousUpdateActive) toggleContinuousUpdate();
+                log(`Auto-detection error ${autoDetectFailCount}: ${error.message}`, 'error');
+                // if (autoDetectFailCount >= AUTO_DETECT_MAX_FAILS && continuousUpdateActive) toggleContinuousUpdate();
             }
         }
 
         async function sendCommand(cmd) {
-            const cmdNames = { 11: 'READ_DETECTION', 20: 'START_GRINDING', 21: 'STOP', 22: 'RESET' };
+            const cmdNames = { 20: 'START_GRINDING',21: 'STOP_GRINDING', 22: 'RESET' };
             log(`Sending command: ${cmdNames[cmd]} (${cmd})`, 'info');
             try {
                 const response = await fetch(`${API_BASE}/command`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: cmd }) });

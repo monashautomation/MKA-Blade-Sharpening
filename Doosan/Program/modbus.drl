@@ -26,33 +26,36 @@ while(1):
         dist3 = get_distance(x1, System_blades_top)
         
         if dist1 < dist2:
-            movel(System_grinder_top, 20, 20)
+            movel(System_grinder_top, 100, 20)
         elif dist3 < dist2:
-            movel(System_blades_top, 20, 20)
+            movel(System_blades_top, 100, 20)
+            
+        movej(System_init_j, 100, 20)
         
-        movel(System_blades_top, 20, 20)
-        movel(System_blade1_new, 20, 20)
+        movel(System_blades_top, 50, 50)
+        movel(System_blade1_new, 50, 50)
         set_ref_coord(DR_TOOL)
         
-        movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
-        movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
-        movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+        movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
+        movel(posx(3.5, 3.5, 0, 0, 0, 0), vel=50, acc=100)
         set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
-#
+        #
+        ##Turn on magnets
         set_analog_output(ch=1, val=3.3)
-        movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
-        movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
+        
+        movel(posx(-3.5, -3.5, 0, 0, 0, 0), vel=50, acc=100)
+        movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
         
         set_ref_coord(DR_BASE)
-        #Turn on magnets
         movel(System_blades_top, 100, 20)
+        movel(System_init, 100, 20)
         movel(IR_sensor, 50, 20)
         
         set_digital_output(1, ON)
-        
+        wait(1)
         amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
         while (get_digital_input(1) == 0):
-            wait(0.005)
+            wait(0.01)
         stop(DR_SSTOP)
         
         blade_left, sol = get_current_posx(ref=DR_WORLD)
@@ -62,7 +65,7 @@ while(1):
         amovel(posx(0,-400,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
         
         while (get_digital_input(1) == 0):
-            wait(0.005)
+            wait(0.01)
         
         stop(DR_SSTOP)
         blade_right, sol = get_current_posx(ref=DR_WORLD)
@@ -70,17 +73,17 @@ while(1):
         blade_l = blade_left[1] - blade_right[1] - 10
         if (blade_l<260):
             set_analog_output(ch=1, val=1.2)
-        elif (blade_1<520):
+        elif (blade_l<520):
             set_analog_output(ch=1, val=2.2)
         else:
             set_analog_output(ch=1, val=3.2)
         
-        #movej(System_init_j, 20, 20)
+        movej(System_init_j, 20, 20)
         movel(System_grinder_top, 20, 20)
         movel(System_grinder_app, 20, 20)
         movel(System_grinder_invert, 20, 20)
         
-        movel(posx(blade_right[1]+100, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+        movel(posx(blade_right[1], 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
         x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
         
          #and (x1[0]*-1 < blade_left[1])
@@ -104,30 +107,31 @@ while(1):
             
             movel(posx(delta_x), vel=300, acc=100,mod=DR_MV_MOD_REL)
             movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
-            movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
+        
             movel(posx(delta_y), vel=300, acc=100,mod=DR_MV_MOD_REL)
             movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
             movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
+            movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
             
             wait(2)
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-        movel(System_grinder_app, 20, 20)
-        movel(System_grinder_top, 20, 20)
-        movel(IR_sensor, 50, 20)
+            
+        movel(System_grinder_app, 50, 20)
+        movel(System_grinder_top, 50, 20)
+        movel(System_init, 100, 20)
         movel(System_blades_top, 100, 20)
-        movel(System_blade1_new, 20, 20)
+        movel(System_blade1_new, 50, 20)
         
         set_ref_coord(DR_TOOL)
         
-        movel(posx(0, 0, 11, 0, 0, 0), v=50, a=100)
-        movel(posx(0, 9, 0, 0, 0, 0), v=10, a=10)
-        movel(posx(0, 0, 1, 0, 0, 0), v=10, a=10)
+        movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
+        movel(posx(3.5, 3.5, 0, 0, 0, 0), vel=50, acc=100)
         set_analog_output(ch=1, val=0)
-        movel(posx(0, 0, -11, 0, 0, 0), v=50, a=100)
-        movel(posx(0, -9, 0, 0, 0, 0), v=10, a=10)
+        movel(posx(-3.5, -3.5, 0, 0, 0, 0), vel=50, acc=100)
+        movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
         
         
         set_ref_coord(DR_BASE)
         
-        movel(System_blades_top, 20, 20)
+        movel(System_blades_top, 100, 20)
         continue # Skip the rest of the loop

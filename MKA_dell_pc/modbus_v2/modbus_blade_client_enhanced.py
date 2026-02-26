@@ -18,9 +18,8 @@ class BladeDataModbusClient:
     REG_START = 138  # NEW: Start register to trigger robot operation
 
     # Command codes
-    CMD_READ_DETECTION = 11
     CMD_START_GRINDING = 20
-    CMD_STOP = 21
+    CMD_STOP_GRINDING = 21
     CMD_RESET = 22
 
     def __init__(self, host='172.24.89.89', port=502, unit=1):
@@ -175,7 +174,6 @@ class BladeDataModbusClient:
     def _get_command_name(self, command):
         """Get human-readable command name"""
         cmd_names = {
-            11: "READ_DETECTION",
             20: "START_GRINDING",
             21: "STOP",
             22: "RESET"
@@ -214,9 +212,6 @@ if __name__ == "__main__":
         y_mm=1.8,
         status=1  # 1=valid detection
     )
-
-    # Send command to robot to read detection
-    client.write_command(client.CMD_READ_DETECTION)
 
     # Start the robot operation
     client.start_robot()
