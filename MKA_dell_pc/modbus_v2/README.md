@@ -55,7 +55,6 @@ A modern, industrial-themed web dashboard for controlling robotic blade grinding
 
 | Code | Command          | Description                    |
 |------|------------------|--------------------------------|
-| 11   | READ_DETECTION   | Read detection data            |
 | 20   | START_GRINDING   | Start grinding operation       |
 | 21   | STOP             | Stop operation                 |
 | 22   | RESET            | Reset robot to initial state   |
