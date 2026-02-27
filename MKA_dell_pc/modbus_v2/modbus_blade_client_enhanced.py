@@ -1,33 +1,39 @@
 from pymodbus.client import ModbusTcpClient
 
 class BladeDataModbusClient:
-    """Modbus TCP client to write blade data to robot"""
+    """
+    Modbus TCP client for blade grinder robot communication.
 
-    # Robot register mapping
-    REG_BAY_ID = 128
-    REG_GRINDER_ID = 129
-    REG_ANGLE = 130
-    REG_DEPTH = 131
-    REG_LENGTH = 132
-    REG_CONFIG_VERSION = 133
+    Loop structure:
+    ──────────────────────────────────────────────────────
+    PC writes detection X/Y + status=1 (teeth detected)
+    PC writes START=1          → robot begins moving to tooth valley
+    Robot moves, then sets     GRINDER_READY=1
+    PC reads GRINDER_READY     → triggers camera on / re-detection
+    PC writes new X/Y + GRIND_START=1 → robot starts grinding
+    Robot grinds, resets       GRIND_START=0 (ready for next cut)
+    Repeat from GRIND_START step for each tooth
+    ──────────────────────────────────────────────────────
+    """
 
-    REG_DETECTION_X = 134
-    REG_DETECTION_Y = 135
-    REG_STATUS = 136
-    REG_COMMAND = 137
-    REG_START = 138  # NEW: Start register to trigger robot operation
+    # ── Register Map ─────────────────────────────────────
+    REG_DETECTION_X    = 134   # PC → Robot  | Detection X offset (×10, signed as uint16)
+    REG_DETECTION_Y    = 135   # PC → Robot  | Detection Y offset (×10, signed as uint16)
+    REG_STATUS         = 136   # PC → Robot  | 0=no teeth, 1=teeth detected, 2=error
+    REG_START          = 137   # PC → Robot  | 1=start full loop, 0=idle
+    REG_GRINDER_READY  = 138   # Robot → PC  | 1=robot reached grinder position (triggers camera)
+    REG_GRIND_START    = 139   # PC → Robot  | 1=start grinding; robot resets to 0 after each move
 
-    # Command codes
-    CMD_START_GRINDING = 20
-    CMD_STOP_GRINDING = 21
-    CMD_RESET = 22
+    # ── Status codes ──────────────────────────────────────
+    STATUS_NO_TEETH    = 0
+    STATUS_TEETH_OK    = 1
+    STATUS_ERROR       = 2
 
     def __init__(self, host='172.24.89.89', port=502, unit=1):
         """
-        Initialize Modbus client
         Args:
             host: Robot IP address
-            port: Modbus TCP port (usually 502)
+            port: Modbus TCP port (default 502)
             unit: Modbus slave ID
         """
         self.host = host
@@ -35,192 +41,224 @@ class BladeDataModbusClient:
         self.unit = unit
         self.client = ModbusTcpClient(host, port=port)
         self.connected = False
-        
+
+    # ── Connection ────────────────────────────────────────
+
     def connect(self):
-        """Connect to the robot"""
+        """Connect to the robot Modbus server."""
         if self.client.connect():
             self.connected = True
             print(f"✓ Connected to robot at {self.host}:{self.port}")
             return True
-        else:
-            self.connected = False
-            print(f"✗ Could not connect to robot at {self.host}:{self.port}")
-            return False
+        self.connected = False
+        print(f"✗ Could not connect to robot at {self.host}:{self.port}")
+        return False
 
-    def write_configuration(self, bay_id, grinder_id, angle, depth, length, config_version):
-        """
-        Write blade configuration to robot's Modbus server
-        """
-        if not self.connected:
-            print("✗ Not connected to robot")
-            return None
-            
-        values = [
-            int(bay_id),
-            int(grinder_id),
-            int(angle * 10),
-            int(depth * 100),
-            int(length),
-            int(config_version)
-        ]
+    def close(self):
+        """Close Modbus connection."""
+        self.client.close()
+        self.connected = False
+        print("✓ Modbus connection closed")
 
-        result = self.client.write_registers(address=self.REG_BAY_ID, values=values)
-        
-        if not result.isError():
-            print(f"✓ Configuration written successfully")
-            print(f"  Bay ID: {bay_id}, Grinder ID: {grinder_id}")
-            print(f"  Angle: {angle}°, Depth: {depth}mm, Length: {length}mm")
-        else:
-            print(f"✗ Failed to write configuration: {result}")
-            
-        return result
+    # ── Detection data ────────────────────────────────────
 
     def write_detection(self, x_mm, y_mm, status):
         """
-        Write detection results to robot's Modbus server
+        Write detection X/Y offsets and status to robot.
+
+        Args:
+            x_mm:   X offset in mm (signed, converted to 0.1mm units)
+            y_mm:   Y offset in mm (signed, converted to 0.1mm units)
+            status: STATUS_NO_TEETH=0, STATUS_TEETH_OK=1, STATUS_ERROR=2
         """
         if not self.connected:
             print("✗ Not connected to robot")
             return None
-            
-        # Convert signed mm values to 0.1mm units (0.1mm = multiply by 10)
+
+        # Scale to 0.1 mm resolution, encode signed as unsigned 16-bit
         x_val = int(x_mm * 10)
         y_val = int(y_mm * 10)
+        x_u16 = x_val if x_val >= 0 else 65536 + x_val
+        y_u16 = y_val if y_val >= 0 else 65536 + y_val
 
-        # Convert signed to unsigned 16-bit (0-65535)
-        x_unsigned = x_val if x_val >= 0 else 65536 + x_val
-        y_unsigned = y_val if y_val >= 0 else 65536 + y_val
-        status_int = int(status)
-
-        values = [x_unsigned, y_unsigned, status_int]
-
+        values = [x_u16, y_u16, int(status)]
         result = self.client.write_registers(address=self.REG_DETECTION_X, values=values)
-        
+
         if not result.isError():
-            print(f"✓ Detection data written: X={x_mm:.2f}mm, Y={y_mm:.2f}mm, Status={status}")
+            status_name = {0: 'NO_TEETH', 1: 'TEETH_OK', 2: 'ERROR'}.get(status, str(status))
+            print(f"✓ Detection written: X={x_mm:.2f}mm, Y={y_mm:.2f}mm, Status={status_name}")
         else:
             print(f"✗ Failed to write detection data: {result}")
-            
+
         return result
 
-    def write_command(self, command):
-        """Write command register to robot"""
-        if not self.connected:
-            print("✗ Not connected to robot")
-            return None
-            
-        result = self.client.write_register(
-            address=self.REG_COMMAND,
-            value=command
-        )
-        if result.isError():
-            print(f"✗ Failed to write command: {result}")
-        else:
-            cmd_name = self._get_command_name(command)
-            print(f"✓ Command written: {cmd_name} ({command})")
-        return result
+    # ── Loop control ──────────────────────────────────────
 
-    def start_robot(self):
+    def start_loop(self):
         """
-        Send START command to robot
-        This triggers the robot to begin the grinding operation
+        Signal robot to start the full grinding loop.
+        PC should have already written valid detection data before calling this.
         """
         if not self.connected:
             print("✗ Not connected to robot")
             return None
-            
-        print("\n🚀 Starting robot operation...")
-        result = self.client.write_register(
-            address=self.REG_START,
-            value=1
-        )
-        
-        if result.isError():
-            print(f"✗ Failed to start robot: {result}")
-        else:
-            print(f"✓ Robot started successfully!")
-            
-        return result
 
-    def stop_robot(self):
-        """Stop the robot operation"""
-        if not self.connected:
-            print("✗ Not connected to robot")
-            return None
-            
-        print("\n🛑 Stopping robot...")
-        result = self.client.write_register(
-            address=self.REG_START,
-            value=0
-        )
-        
+        print("🚀 Starting grinding loop (START=1)...")
+        result = self.client.write_register(address=self.REG_START, value=1)
+
         if not result.isError():
-            print(f"✓ Robot stopped")
+            print("✓ Loop started")
         else:
-            print(f"✗ Failed to stop robot: {result}")
-            
+            print(f"✗ Failed to start loop: {result}")
+
         return result
 
-    def reset_robot(self):
-        """Reset the robot to initial state"""
+    def stop_loop(self):
+        """Stop / abort the grinding loop (START=0)."""
         if not self.connected:
             print("✗ Not connected to robot")
             return None
-            
-        print("\n🔄 Resetting robot...")
-        result = self.write_command(self.CMD_RESET)
+
+        print("🛑 Stopping loop (START=0)...")
+        result = self.client.write_register(address=self.REG_START, value=0)
+
+        if not result.isError():
+            print("✓ Loop stopped")
+        else:
+            print(f"✗ Failed to stop loop: {result}")
+
         return result
 
-    def _get_command_name(self, command):
-        """Get human-readable command name"""
-        cmd_names = {
-            20: "START_GRINDING",
-            21: "STOP",
-            22: "RESET"
+    def send_grind_start(self):
+        """
+        Tell robot to begin grinding the current tooth position.
+        Called by PC after GRINDER_READY=1 is detected and new detection data
+        has been written.
+        Robot resets GRIND_START back to 0 after completing the move,
+        signalling it is ready for the next tooth.
+        """
+        if not self.connected:
+            print("✗ Not connected to robot")
+            return None
+
+        print("⚙️  Sending GRIND_START=1...")
+        result = self.client.write_register(address=self.REG_GRIND_START, value=1)
+
+        if not result.isError():
+            print("✓ Grind start sent")
+        else:
+            print(f"✗ Failed to send grind start: {result}")
+
+        return result
+
+    # ── Read robot state ──────────────────────────────────
+
+    def read_grinder_ready(self):
+        """
+        Read GRINDER_READY register from robot.
+        Returns True when robot has finished moving to grinder position
+        and is waiting for GRIND_START.
+        """
+        if not self.connected:
+            print("✗ Not connected to robot")
+            return None
+
+        result = self.client.read_holding_registers(address=self.REG_GRINDER_READY, count=1)
+
+        if result.isError():
+            print(f"✗ Failed to read GRINDER_READY: {result}")
+            return None
+
+        value = result.registers[0]
+        return bool(value)
+
+    def read_grind_start(self):
+        """
+        Read GRIND_START register.
+        Returns False (0) when robot has reset it after completing a cut —
+        signals PC that the next GRIND_START can be sent.
+        """
+        if not self.connected:
+            print("✗ Not connected to robot")
+            return None
+
+        result = self.client.read_holding_registers(address=self.REG_GRIND_START, count=1)
+
+        if result.isError():
+            print(f"✗ Failed to read GRIND_START: {result}")
+            return None
+
+        return bool(result.registers[0])
+
+    def read_all_status(self):
+        """Read all loop-related registers in one shot for monitoring."""
+        if not self.connected:
+            return None
+
+        # Read registers 134–139 (6 registers)
+        result = self.client.read_holding_registers(
+            address=self.REG_DETECTION_X, count=6
+        )
+
+        if result.isError():
+            print(f"✗ Failed to read status registers: {result}")
+            return None
+
+        regs = result.registers
+        # Decode signed 16-bit
+        def to_signed(v):
+            return v if v < 32768 else v - 65536
+
+        return {
+            'detection_x_mm': to_signed(regs[0]) / 10.0,
+            'detection_y_mm': to_signed(regs[1]) / 10.0,
+            'status':         regs[2],
+            'start':          regs[3],
+            'grinder_ready':  regs[4],
+            'grind_start':    regs[5],
         }
-        return cmd_names.get(command, f"UNKNOWN_{command}")
-
-    def close(self):
-        """Close Modbus connection"""
-        self.client.close()
-        self.connected = False
-        print("✓ Modbus client connection closed")
 
 
-# Example usage
+# ── Example usage ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Create client
+    import time
+
     client = BladeDataModbusClient()
-    
-    # Connect to robot
+
     if not client.connect():
         exit(1)
 
-    # Write configuration
-    client.write_configuration(
-        bay_id=5,
-        grinder_id=2,
-        angle=45.5,
-        depth=1.25,
-        length=150,
-        config_version=1
-    )
+    # --- Step 1: Write initial detection data ---
+    client.write_detection(x_mm=5.2, y_mm=2.1, status=BladeDataModbusClient.STATUS_TEETH_OK)
 
-    # Simulate detection data
-    client.write_detection(
-        x_mm=2.5,
-        y_mm=1.8,
-        status=1  # 1=valid detection
-    )
+    # --- Step 2: Start the full loop ---
+    client.start_loop()
 
-    # Start the robot operation
-    client.start_robot()
+    # --- Step 3: Poll for GRINDER_READY, then send each grind command ---
+    print("\nWaiting for robot to reach grinder position...")
+    timeout = 30  # seconds
+    t0 = time.time()
 
-    # Wait for user input to stop
-    input("\nPress Enter to stop robot...")
-    
-    # Stop robot
-    client.stop_robot()
+    while time.time() - t0 < timeout:
+        ready = client.read_grinder_ready()
+        if ready:
+            print("✓ Grinder is ready! Writing updated detection & sending GRIND_START...")
 
-    # Close connection
+            # (Re-run camera detection here in real usage)
+            client.write_detection(x_mm=5.2, y_mm=2.1, status=BladeDataModbusClient.STATUS_TEETH_OK)
+            client.send_grind_start()
+
+            # Wait for robot to reset GRIND_START (signals cut is done)
+            print("  Waiting for robot to complete cut...")
+            while client.read_grind_start():
+                time.sleep(0.1)
+            print("  ✓ Cut complete, ready for next tooth")
+            break
+
+        time.sleep(0.2)
+    else:
+        print("✗ Timeout waiting for GRINDER_READY")
+
+    # --- Stop ---
+    client.stop_loop()
     client.close()
