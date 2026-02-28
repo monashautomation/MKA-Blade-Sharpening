@@ -609,7 +609,15 @@
                 log('✓ Cut complete (robot reset GRIND_START=0) — ready for next tooth', 'success');
                 document.getElementById('grindStartBtn').disabled = false;
                 setStep(5);
-                setTimeout(() => setStep(loopRunning ? 3 : 0), 1500);
+                // Auto re-trigger grind if status is still 1 (teeth detected)
+                const currentStatus = parseInt(document.getElementById('detectionStatus').value);
+                if (currentStatus === 1) {
+                    log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth', 'info');
+                    setTimeout(() => sendGrindStart(), 200);
+                } else {
+                    log(`⚠ Status=${currentStatus} — waiting for new detection before next grind`, 'warning');
+                    setTimeout(() => setStep(loopRunning ? 3 : 0), 1500);
+                }
             }
 
             lastGrinderReady = r.grinder_ready;
@@ -875,15 +883,17 @@
                 const d = data.detection;
                 document.getElementById('detectionX').value = d.x_mm;
                 document.getElementById('detectionY').value = d.y_mm;
-                document.getElementById('detectionStatus').value = d.status;
+                setDetectionStatus(1);
                 document.getElementById('detectionResult').innerHTML =
                     `<span style="color:var(--success)">✓ Valley ${d.valley_id||'N/A'}: (${d.x_mm}, ${d.y_mm})mm | ${d.num_teeth} teeth</span>`;
                 log(`Detected: Valley ${d.valley_id||'N/A'} at (${d.x_mm}, ${d.y_mm})mm`, 'success');
             } else {
+                setDetectionStatus(0);
                 document.getElementById('detectionResult').innerHTML = '<span style="color:var(--danger)">✗ No teeth detected</span>';
                 log(data.message||'No teeth', 'warning');
             }
         } catch (e) {
+            setDetectionStatus(2);
             document.getElementById('detectionResult').innerHTML = '<span style="color:var(--danger)">✗ Failed</span>';
             log(`Detection failed: ${e.message}`, 'error');
         }
@@ -899,15 +909,24 @@
                 const d = data.detection;
                 document.getElementById('detectionX').value = d.x_mm;
                 document.getElementById('detectionY').value = d.y_mm;
-                document.getElementById('detectionStatus').value = d.status;
+                setDetectionStatus(1);
                 document.getElementById('detectionResult').innerHTML =
                     `<span style="color:var(--success)">✓ Written: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm</span>`;
                 log(`Detect & write: Valley ${d.valley_id||'N/A'} — ${d.num_teeth} teeth`, 'success');
             } else {
+                setDetectionStatus(0);
                 document.getElementById('detectionResult').innerHTML = '<span style="color:var(--danger)">✗ Failed</span>';
                 log(data.message||'Failed', 'error');
             }
-        } catch (e) { log(`Error: ${e.message}`, 'error'); }
+        } catch (e) {
+            setDetectionStatus(2);
+            log(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    // Sets the status dropdown + writes REG 136 immediately if connected
+    function setDetectionStatus(value) {
+        document.getElementById('detectionStatus').value = value;
     }
 
     let autoDetectFailCount = 0;
@@ -915,7 +934,6 @@
         const btn = document.getElementById('continuousBtn');
         const interval = parseInt(document.getElementById('updateInterval').value);
         if (!continuousUpdateActive) {
-            if (!cameraActive) { log('⚠ Camera must be active for auto-detect loop', 'warning'); return; }
             autoDetectFailCount = 0; continuousUpdateActive = true; updateCount = 0;
             btn.textContent = 'STOP AUTO-DETECT'; btn.className = 'btn btn-danger';
             document.getElementById('autoUpdateStatus').innerHTML = '<span class="indicator active"></span>ON (0)';
@@ -940,16 +958,20 @@
                 autoDetectFailCount = 0;
                 document.getElementById('detectionX').value = d.x_mm;
                 document.getElementById('detectionY').value = d.y_mm;
-                document.getElementById('detectionStatus').value = d.status;
+                setDetectionStatus(1);
                 updateCount++;
                 document.getElementById('autoUpdateStatus').innerHTML = `<span class="indicator active"></span>ON (${updateCount})`;
                 if (updateCount % 10 === 0) log(`Auto-detect: ${updateCount} writes`, 'success');
+                // Status=1 confirmed — auto-send GRIND_START=1
+                sendGrindStart();
             } else {
                 autoDetectFailCount++;
+                setDetectionStatus(0);
                 if (autoDetectFailCount % 5 === 0) log(`Auto-detect miss ×${autoDetectFailCount}`, 'warning');
             }
         } catch (e) {
             autoDetectFailCount++;
+            setDetectionStatus(2);
             log(`Auto-detect error: ${e.message}`, 'error');
         }
     }
