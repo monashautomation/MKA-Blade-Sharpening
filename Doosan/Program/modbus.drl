@@ -106,8 +106,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
         
         set_ref_coord(DR_BASE)
-        movel(System_blades_top, 100, 20)
-        movel(System_init, 100, 20)
+        movel(System_blades_top, 150, 20)
+        movel(System_init, 150, 20)
         movel(IR_sensor, 50, 20)
         
         # Length check
@@ -142,20 +142,20 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # Grinding
                 
         movej(System_init_j, 50, 20)
-        movel(System_grinder_top, 50, 20)
+        movel(System_grinder_top, 150, 20)
         movel(grinder_app, 50, 20)
         movel(grinder_angle, 20, 20)
         
         # Notify System
-        set_modbus_slave(REG_GRIND_READY,1)
         
-        movel(posx(blade_right[1], 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+        
+        movel(posx(blade_right[1]+3, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
         x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
         
          #and (x1[0]*-1 < blade_left[1])
          #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
-         
-        wait(5)
+        set_modbus_slave(REG_GRIND_READY,1)
+        wait(10)
         
         while (1):
             if (get_modbus_slave(REG_STATUS) == 0):
@@ -170,7 +170,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                     tp_log("Binary Move Received: X={0}, Y={1}".format(val_x, val_y))
                     
                     # Execute Relative Move (based on X/Y inputs)
-                    # We assume these are offsets in mm
+                    # We assume these are offssets in mm
                     #
                     delta_x = [val_x, 0, 0, 0, 0, 0]
                     delta_y = [0, val_y+depth, 0, 0, 0, 0]
@@ -187,7 +187,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                     movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
                     wait(0.5)
                     set_modbus_slave(REG_GRIND,0)
-                    wait(0.5)
+                    wait(1)
                     
         set_modbus_slave(REG_GRIND_READY,0)
         
@@ -195,8 +195,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(grinder_angle, 20, 20)
         movel(grinder_app, 20, 20)
         movel(System_grinder_top, 20, 20)
-        movel(System_init, 100, 20)
-        movel(System_blades_top, 100, 20)
+        movel(System_init, 150, 20)
+        movel(System_blades_top, 150, 20)
         
         
         movel(blade_pos, 50, 20)
@@ -212,7 +212,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         set_ref_coord(DR_BASE)
         
-        movel(System_blades_top, 100, 20)
+        movel(System_blades_top, 150, 20)
         
         set_modbus_slave(REG_START, 0)
         
