@@ -588,9 +588,9 @@
                 ? '<span class="indicator warning"></span>ACTIVE'
                 : '<span class="indicator disconnected"></span>IDLE';
 
-            // GRINDER_READY rising edge → trigger camera + advance step
+            // GRINDER_READY rising edge → robot is at grinder position
             if (r.grinder_ready && !lastGrinderReady) {
-                log('🟢 GRINDER_READY=1 — robot is at grinder position!', 'success');
+                log('🟢 GRINDER_READY=1 — robot at grinder position, running detection…', 'success');
                 document.getElementById('grinderReadyOverlay').style.display = 'block';
                 document.getElementById('grindStartBtn').disabled = false;
                 setStep(3);
@@ -599,24 +599,33 @@
                     log('Auto-starting camera (GRINDER_READY triggered)', 'info');
                     await toggleCamera();
                 }
+                // Trigger detection only after camera has a real frame
+                if (continuousUpdateActive) {
+                    await waitForCameraReady();
+                    sendDetectionWithAnalysis();
+                }
             }
             if (!r.grinder_ready && lastGrinderReady) {
                 document.getElementById('grinderReadyOverlay').style.display = 'none';
             }
 
-            // GRIND_START falling edge → robot completed cut
+            // GRIND_START falling edge → robot completed cut, ready for next tooth
             if (!r.grind_start && lastGrindStart) {
-                log('✓ Cut complete (robot reset GRIND_START=0) — ready for next tooth', 'success');
+                log('✓ Cut complete (robot reset GRIND_START=0)', 'success');
                 document.getElementById('grindStartBtn').disabled = false;
                 setStep(5);
-                // Auto re-trigger grind if status is still 1 (teeth detected)
-                const currentStatus = parseInt(document.getElementById('detectionStatus').value);
-                if (currentStatus === 1) {
-                    log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth', 'info');
-                    setTimeout(() => sendGrindStart(), 200);
-                } else {
-                    log(`⚠ Status=${currentStatus} — waiting for new detection before next grind`, 'warning');
-                    setTimeout(() => setStep(loopRunning ? 3 : 0), 1500);
+                // If auto-detect is on and grinder is still ready, run detection for next tooth
+                if (continuousUpdateActive && r.grinder_ready) {
+                    log('🔍 Running detection for next tooth…', 'info');
+                    setTimeout(() => sendDetectionWithAnalysis(), 200);
+                } else if (!continuousUpdateActive) {
+                    const currentStatus = parseInt(document.getElementById('detectionStatus').value);
+                    if (currentStatus === 1) {
+                        log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth', 'info');
+                        setTimeout(() => sendGrindStart(), 200);
+                    } else {
+                        setTimeout(() => setStep(loopRunning ? 3 : 0), 1500);
+                    }
                 }
             }
 
@@ -697,6 +706,23 @@
             } catch (e) { log(`Disconnect error: ${e.message}`, 'error'); }
             finally { btn.disabled = false; }
         }
+    }
+
+    // ── Camera warmup guard ──
+    // Polls /api/camera/ready until the capture thread has a real frame,
+    // or times out after 3s. Prevents detection firing on null/blank frames.
+    async function waitForCameraReady(timeoutMs = 3000) {
+        if (!cameraActive) return;
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            try {
+                const res = await fetch(`${API_BASE}/camera/ready`);
+                const data = await res.json();
+                if (data.ready) return;
+            } catch (_) {}
+            await new Promise(r => setTimeout(r, 80));
+        }
+        log('⚠ Camera ready timeout — proceeding anyway', 'warning');
     }
 
     // ── E-STOP ──
@@ -930,26 +956,27 @@
     }
 
     let autoDetectFailCount = 0;
+    let detectionRunning = false; // guard against overlapping calls
+
     function toggleContinuousUpdate() {
         const btn = document.getElementById('continuousBtn');
-        const interval = parseInt(document.getElementById('updateInterval').value);
         if (!continuousUpdateActive) {
             autoDetectFailCount = 0; continuousUpdateActive = true; updateCount = 0;
             btn.textContent = 'STOP AUTO-DETECT'; btn.className = 'btn btn-danger';
             document.getElementById('autoUpdateStatus').innerHTML = '<span class="indicator active"></span>ON (0)';
-            log(`Auto-detect loop started (every ${interval}ms)`, 'success');
-            sendDetectionWithAnalysis();
-            updateIntervalId = setInterval(sendDetectionWithAnalysis, interval);
+            log('Auto-detect enabled — will fire when GRINDER_READY=1 and GRIND_START=0', 'success');
         } else {
             continuousUpdateActive = false;
-            if (updateIntervalId) { clearInterval(updateIntervalId); updateIntervalId = null; }
             btn.textContent = 'AUTO-DETECT LOOP'; btn.className = 'btn btn-success';
             document.getElementById('autoUpdateStatus').textContent = 'OFF';
-            log(`Auto-detect stopped after ${updateCount} writes`, 'warning');
+            log(`Auto-detect disabled after ${updateCount} detections`, 'warning');
         }
     }
 
     async function sendDetectionWithAnalysis() {
+        // Guard: don't overlap concurrent detection calls
+        if (detectionRunning) return;
+        detectionRunning = true;
         try {
             const res = await fetch(`${API_BASE}/detection/send_auto`, { method: 'POST' });
             const data = await res.json();
@@ -961,18 +988,32 @@
                 setDetectionStatus(1);
                 updateCount++;
                 document.getElementById('autoUpdateStatus').innerHTML = `<span class="indicator active"></span>ON (${updateCount})`;
-                if (updateCount % 10 === 0) log(`Auto-detect: ${updateCount} writes`, 'success');
-                // Status=1 confirmed — auto-send GRIND_START=1
+                log(`Auto-detect: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm — sending GRIND_START`, 'success');
+                // X/Y written + status=1 confirmed → trigger grind
                 sendGrindStart();
             } else {
                 autoDetectFailCount++;
+                // Explicitly write status=0 to REG 136 so robot knows no teeth found
                 setDetectionStatus(0);
-                if (autoDetectFailCount % 5 === 0) log(`Auto-detect miss ×${autoDetectFailCount}`, 'warning');
+                await fetch(`${API_BASE}/detection`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 0 })
+                });
+                log(`Auto-detect miss ×${autoDetectFailCount} — status=0 written to REG 136`, 'warning');
             }
         } catch (e) {
             autoDetectFailCount++;
             setDetectionStatus(2);
+            // Write error status to robot
+            try {
+                await fetch(`${API_BASE}/detection`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 2 })
+                });
+            } catch (_) {}
             log(`Auto-detect error: ${e.message}`, 'error');
+        } finally {
+            detectionRunning = false;
         }
     }
 
@@ -1139,7 +1180,6 @@
     });
 
     window.addEventListener('beforeunload', () => {
-        if (continuousUpdateActive) clearInterval(updateIntervalId);
         if (cameraActive) clearInterval(cameraIntervalId);
         if (registerPollId) clearInterval(registerPollId);
     });
