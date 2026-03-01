@@ -70,24 +70,24 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[-551.973,-160.406,119.882,15.187,179.987,-29.828]"
+    "Value": "[-551.978,-165.066,119.971,175.734,-179.998,130.718]"
   },
   "Variable12": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-552.010,183.811,119.985,50.051,-179.999,5.064]"
+    "Value": "[-551.967,206.029,119.913,153.173,-179.993,108.194]"
   },
   "Variable13": {
     "Type": "Registry",
     "Name": "blade_l",
     "ValueType": "Float",
-    "Value": "360.2174835205078"
+    "Value": "387.0950012207031"
   },
   "Variable14": {
     "Type": "Registry",
     "Name": "System_grinder_invert",
     "ValueType": "Posx",
-    "Value": "posx(0,513,158,90,120,135)"
+    "Value": "posx(0,513,164,90,120,135)"
   }
 }

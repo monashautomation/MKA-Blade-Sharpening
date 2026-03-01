@@ -149,7 +149,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # Notify System
         
         
-        movel(posx(blade_right[1]+3, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+        movel(posx(blade_right[1]+2, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
         x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
         
          #and (x1[0]*-1 < blade_left[1])
@@ -194,7 +194,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # Put blade back
         movel(grinder_angle, 20, 20)
         movel(grinder_app, 20, 20)
-        movel(System_grinder_top, 20, 20)
+        movel(System_grinder_top, 100, 20)
         movel(System_init, 150, 20)
         movel(System_blades_top, 150, 20)
         
