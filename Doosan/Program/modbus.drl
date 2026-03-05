@@ -18,33 +18,41 @@ REG_EMERGENCY = 140
 CMD_READ_DETECTION = 11
 CMD_RESET = 22
 
+
+
 # Homing
 tp_log("Homing")
 x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
 tp_log("Current Pos: " + str(x1))
 
-#dist1 = get_distance(x1, System_grinder_top)
-#dist2 = get_distance(x1, fkin(System_init_j))
-#dist3 = get_distance(x1, System_blades_top)
-#
-#if dist1 < dist2:
-    #movel(System_grinder_top, 100, 20)
-#elif dist3 < dist2:
-    #movel(System_blades_top, 100, 20)
-    #
-#movej(System_init_j, 20, 20)
+dist1 = get_distance(x1, System_grinder_top)
+dist2 = get_distance(x1, fkin(System_init_j))
+dist3 = get_distance(x1, System_blades_top)
+
+if dist1 < dist2:
+    movel(System_grinder_top, 100, 20)
+elif dist3 < dist2:
+    movel(System_blades_top, 100, 20)
+    
+movej(System_init_j, 20, 20)
 
 while(get_modbus_slave(REG_EMERGENCY) == 0):
     if (get_modbus_slave(REG_START) == 1):
+    
+        angle = get_modbus_slave(REG_ANGLE)/10
+        depth = get_modbus_slave(REG_DEPTH)/100
+        
         tp_log("Start command received")
         tp_log("-----------------------------------------------")
         tp_log("Bay ID: " + str(get_modbus_slave(REG_BAY_ID)))
         tp_log("Grinder ID: " + str(get_modbus_slave(REG_GRINDER_ID)))
-        tp_log("Angle: " + str(get_modbus_slave(REG_ANGLE)))
-        tp_log("Depth: " + str(get_modbus_slave(REG_DEPTH)))
+        tp_log("Angle: " + str(angle))
+        tp_log("Depth: " + str(depth))
         tp_log("Length: " + str(get_modbus_slave(REG_LENGTH)))
         tp_log("Config Version: " + str(get_modbus_slave(REG_CONFIG_VERSION)))
         tp_log("-----------------------------------------------")
+        
+        set_modbus_slave(REG_GRIND_READY, 0)
         
         # Grinder Selection
         if (get_modbus_slave(REG_GRINDER_ID) == 1):
@@ -65,6 +73,9 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         else:
             tp_log("Incorrect Grinder ID " + str(get_modbus_slave(REG_GRINDER_ID)))
             break
+        
+        #shift_b = [0,0,0,0,angle,0]
+        #grinder_angle = add_pose(grinder_angle, shift_b)
         
         # Blade selection
 
@@ -91,18 +102,20 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         
         # Pick up
+        #move_val = 3.5 # A129
+        move_val = 10 # A202
         
         movel(System_blades_top, 50, 50)
         movel(blade_pos, 50, 50)
         set_ref_coord(DR_TOOL)
         
         movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-        movel(posx(3.5, 3.5, 0, 0, 0, 0), vel=50, acc=100)
+        movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
         set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
         # Turn on magnets
         set_analog_output(ch=1, val=3.3)
         
-        movel(posx(-3.5, -3.5, 0, 0, 0, 0), vel=50, acc=100)
+        movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
         movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
         
         set_ref_coord(DR_BASE)
@@ -144,10 +157,14 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movej(System_init_j, 50, 20)
         movel(System_grinder_top, 50, 20)
         movel(grinder_app, 50, 20)
-        movel(grinder_angle, 20, 20)
+        
+        new = posx(System_grinder_invert)
+        new[4] = System_grinder_invert[4] + angle
+        tp_log(str(new))
+        
+        movel(new, 20, 20)
         
         # Notify System
-        set_modbus_slave(REG_GRIND_READY,1)
         
         movel(posx(blade_right[1], 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
         x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
@@ -155,7 +172,9 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
          #and (x1[0]*-1 < blade_left[1])
          #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
          
-        wait(5)
+        set_modbus_slave(REG_GRIND_READY,1)
+
+        wait(7)
         
         while (1):
             if (get_modbus_slave(REG_STATUS) == 0):
@@ -204,9 +223,9 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         set_ref_coord(DR_TOOL)
         
         movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-        movel(posx(3.5, 3.5, 0, 0, 0, 0), vel=50, acc=100)
+        movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
         set_analog_output(ch=1, val=0)
-        movel(posx(-3.5, -3.5, 0, 0, 0, 0), vel=50, acc=100)
+        movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
         movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
         
         
