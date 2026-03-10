@@ -18,6 +18,8 @@ REG_EMERGENCY = 140
 CMD_READ_DETECTION = 11
 CMD_RESET = 22
 
+# I/O settings
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 
 
 ## Homing
@@ -80,11 +82,11 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # Blade selection
 
         if (get_modbus_slave(REG_BAY_ID) == 1):
-            tp_log("Blade 1")
+            tp_log("Blade 1") #A129
             blade_pos = System_blade1
             
         elif (get_modbus_slave(REG_BAY_ID) == 2):
-            tp_log("Blade 2")
+            tp_log("Blade 2")#A202
             blade_pos = System_blade2
         elif (get_modbus_slave(REG_BAY_ID) == 3):
             tp_log("Blade 3")
@@ -98,30 +100,48 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         else:
             tp_log("Incorrect Bay ID " + str(get_modbus_slave(REG_BAY_ID)))
             break
-            
-        
         
         # Pick up
         #move_val = 3.5 # A129
-        
-        #Uncomment BELOW
         #move_val = 10 # A202
-        #
-        #movel(System_blades_top, 50, 50)
-        #movel(blade_pos, 50, 50)
-        #set_ref_coord(DR_TOOL)
-        #
-        #movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-        #movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
-        set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+        
+        movel(System_blades_top, 50, 50)
+        movel(blade_pos, 50, 50)
+        set_ref_coord(DR_WORLD)
+        
+        force_ext = get_tool_force(DR_TOOL)
+        current_z = force_ext[2]
+        
+        fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+        while (fcon_z):
+
+            movel(posx([0,0,-1,0,0,0]), vel=20, acc=20,mod=DR_MV_MOD_REL)
+            fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+        
+        set_ref_coord(DR_TOOL)
+
+        pos1, sol = get_current_posx(DR_WORLD)
+        
+        force_ext = get_tool_force(DR_TOOL)
+        current_y = force_ext[1]
+            
+        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 2, ref=DR_TOOL)
+        while (fcon_y):
+            
+            movel(posx([1, 1, 0,0,0,0]), vel=20, acc=20,mod=DR_MV_MOD_REL)
+            fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 2, ref=DR_TOOL)
+        
+        pos2, sol2 = get_current_posx(DR_WORLD)  
+        tp_log("Collision detected")    
+        
         ## Turn on magnets
         set_analog_output(ch=1, val=3.3)
-        #
-        #movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
-        #movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
-        #
-        set_ref_coord(DR_BASE)
-        #movel(System_blades_top, 100, 20)
+
+        set_ref_coord(DR_WORLD)
+    
+        movel(pos1,20,20)
+        movel(blade, vel=20, acc=20)
+        movel(System_blades_top, 100, 50)
         movel(System_init, 100, 50)
         movel(IR_sensor, 100, 50)
         
@@ -214,24 +234,15 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(System_grinder_top, 50, 20)
         movel(System_init, 100, 20)
         
-        # UNCOMMENT BELOW
-        #movel(System_blades_top, 100, 20)
-        #
-        #
-        #movel(blade_pos, 50, 20)
-        #
-        #set_ref_coord(DR_TOOL)
-        #
-        #movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-        #movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
-        #set_analog_output(ch=1, val=0)
-        #movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
-        #movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
-        #
-        #
-        #set_ref_coord(DR_BASE)
-        #
-        #movel(System_blades_top, 100, 20)
+        movel(System_blades_top, 100, 20)
+        movel(blade_pos, 50, 20)
+        movel(pos1, 20, 20)
+        movel(pos2, 10, 10)
+        
+        # Turn off magnets
+        set_analog_output(ch=1, val=0)
+        
+        movel(blade, vel=20, acc=20)
         
         set_modbus_slave(REG_START, 0)
         
