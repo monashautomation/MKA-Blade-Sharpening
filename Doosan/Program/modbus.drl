@@ -20,21 +20,21 @@ CMD_RESET = 22
 
 
 
-# Homing
-tp_log("Homing")
-x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-tp_log("Current Pos: " + str(x1))
-
-dist1 = get_distance(x1, System_grinder_top)
-dist2 = get_distance(x1, fkin(System_init_j))
-dist3 = get_distance(x1, System_blades_top)
-
-if dist1 < dist2:
-    movel(System_grinder_top, 100, 20)
-elif dist3 < dist2:
-    movel(System_blades_top, 100, 20)
-    
-movej(System_init_j, 20, 20)
+## Homing
+#tp_log("Homing")
+#x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+#tp_log("Current Pos: " + str(x1))
+#
+#dist1 = get_distance(x1, System_grinder_top)
+#dist2 = get_distance(x1, fkin(System_init_j))
+#dist3 = get_distance(x1, System_blades_top)
+#
+#if dist1 < dist2:
+    #movel(System_grinder_top, 100, 20)
+#elif dist3 < dist2:
+    #movel(System_blades_top, 100, 20)
+    #
+#movej(System_init_j, 100, 20)
 
 while(get_modbus_slave(REG_EMERGENCY) == 0):
     if (get_modbus_slave(REG_START) == 1):
@@ -58,43 +58,43 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         if (get_modbus_slave(REG_GRINDER_ID) == 1):
             tp_log("Grinder 1")
             grinder_app = System_grinder_app
-            grinder_angle = System_grinder_invert
             
         elif (get_modbus_slave(REG_GRINDER_ID) == 2):
             tp_log("Grinder 2")
             grinder_app = System_grinder_app
-            grinder_angle = System_grinder_invert
             
         elif (get_modbus_slave(REG_GRINDER_ID) == 3):
             tp_log("Grinder 3")
             grinder_app = System_grinder_app
-            grinder_angle = System_grinder_invert
         
         else:
             tp_log("Incorrect Grinder ID " + str(get_modbus_slave(REG_GRINDER_ID)))
             break
         
-        #shift_b = [0,0,0,0,angle,0]
-        #grinder_angle = add_pose(grinder_angle, shift_b)
+        # Angled frame
+        
+        angle_pos = posx(System_grinder_invert)
+        angle_pos[4] = angle_pos[4] + angle
+        
         
         # Blade selection
 
         if (get_modbus_slave(REG_BAY_ID) == 1):
             tp_log("Blade 1")
-            blade_pos = System_blade1_new
+            blade_pos = System_blade1
             
         elif (get_modbus_slave(REG_BAY_ID) == 2):
             tp_log("Blade 2")
-            blade_pos = System_blade1_new
+            blade_pos = System_blade2
         elif (get_modbus_slave(REG_BAY_ID) == 3):
             tp_log("Blade 3")
-            blade_pos = System_blade1_new
+            blade_pos = System_blade1
         elif (get_modbus_slave(REG_BAY_ID) == 4):
             tp_log("Blade 4")
-            blade_pos = System_blade1_new
+            blade_pos = System_blade1
         elif (get_modbus_slave(REG_BAY_ID) == 5):
             tp_log("Blade 5")
-            blade_pos = System_blade1_new
+            blade_pos = System_blade1
         else:
             tp_log("Incorrect Bay ID " + str(get_modbus_slave(REG_BAY_ID)))
             break
@@ -103,25 +103,27 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         # Pick up
         #move_val = 3.5 # A129
-        move_val = 10 # A202
         
-        movel(System_blades_top, 50, 50)
-        movel(blade_pos, 50, 50)
-        set_ref_coord(DR_TOOL)
-        
-        movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-        movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
+        #Uncomment BELOW
+        #move_val = 10 # A202
+        #
+        #movel(System_blades_top, 50, 50)
+        #movel(blade_pos, 50, 50)
+        #set_ref_coord(DR_TOOL)
+        #
+        #movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
+        #movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
         set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
-        # Turn on magnets
+        ## Turn on magnets
         set_analog_output(ch=1, val=3.3)
-        
-        movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
-        movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
-        
+        #
+        #movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
+        #movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
+        #
         set_ref_coord(DR_BASE)
-        movel(System_blades_top, 100, 20)
-        movel(System_init, 100, 20)
-        movel(IR_sensor, 50, 20)
+        #movel(System_blades_top, 100, 20)
+        movel(System_init, 100, 50)
+        movel(IR_sensor, 100, 50)
         
         # Length check
         
@@ -144,7 +146,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         stop(DR_SSTOP)
         blade_right, sol = get_current_posx(ref=DR_WORLD)
         
-        blade_l = blade_left[1] - blade_right[1] + 16
+        blade_l = blade_left[1] - blade_right[1]
         if (blade_l<260):
             set_analog_output(ch=1, val=1.2)
         elif (blade_l<520):
@@ -158,11 +160,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(System_grinder_top, 50, 20)
         movel(grinder_app, 50, 20)
         
-        new = posx(System_grinder_invert)
-        new[4] = System_grinder_invert[4] + angle
-        tp_log(str(new))
-        
-        movel(new, 20, 20)
+        movel(angle_pos, 20, 20)
         
         # Notify System
         
@@ -211,27 +209,29 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         set_modbus_slave(REG_GRIND_READY,0)
         
         # Put blade back
-        movel(grinder_angle, 20, 20)
-        movel(grinder_app, 20, 20)
-        movel(System_grinder_top, 20, 20)
+        movel(angle_pos, 20, 20)
+        movel(grinder_app, 50, 20)
+        movel(System_grinder_top, 50, 20)
         movel(System_init, 100, 20)
-        movel(System_blades_top, 100, 20)
         
-        
-        movel(blade_pos, 50, 20)
-        
-        set_ref_coord(DR_TOOL)
-        
-        movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-        movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
-        set_analog_output(ch=1, val=0)
-        movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
-        movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
-        
-        
-        set_ref_coord(DR_BASE)
-        
-        movel(System_blades_top, 100, 20)
+        # UNCOMMENT BELOW
+        #movel(System_blades_top, 100, 20)
+        #
+        #
+        #movel(blade_pos, 50, 20)
+        #
+        #set_ref_coord(DR_TOOL)
+        #
+        #movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
+        #movel(posx(move_val, move_val, 0, 0, 0, 0), vel=50, acc=100)
+        #set_analog_output(ch=1, val=0)
+        #movel(posx(-move_val, -move_val, 0, 0, 0, 0), vel=50, acc=100)
+        #movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
+        #
+        #
+        #set_ref_coord(DR_BASE)
+        #
+        #movel(System_blades_top, 100, 20)
         
         set_modbus_slave(REG_START, 0)
         
