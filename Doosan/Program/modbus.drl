@@ -18,55 +18,65 @@ REG_EMERGENCY = 140
 CMD_READ_DETECTION = 11
 CMD_RESET = 22
 
+# Code Settings
+homing_val = False
+
 # I/O settings
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 
 
 ## Homing
-#tp_log("Homing")
-#x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-#tp_log("Current Pos: " + str(x1))
-#
-#dist1 = get_distance(x1, System_grinder_top)
-#dist2 = get_distance(x1, fkin(System_init_j))
-#dist3 = get_distance(x1, System_blades_top)
-#
-#if dist1 < dist2:
-    #movel(System_grinder_top, 100, 20)
-#elif dist3 < dist2:
-    #movel(System_blades_top, 100, 20)
-    #
-#movej(System_init_j, 100, 20)
+if (homing_val):
+    tp_log("Homing")
+    x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+    tp_log("Current Pos: " + str(x1))
+    
+    dist1 = get_distance(x1, System_grinder_top)
+    dist2 = get_distance(x1, fkin(System_init_j))
+    dist3 = get_distance(x1, System_blades_top)
+    
+    if dist1 < dist2:
+        movel(System_grinder_top, 100, 20)
+    elif dist3 < dist2:
+        movel(System_blades_top, 100, 20)
+        
+    movej(System_init_j, 100, 20)
+else:
+    tp_log("Skipped Homing")
 
 while(get_modbus_slave(REG_EMERGENCY) == 0):
     if (get_modbus_slave(REG_START) == 1):
-    
-        angle = get_modbus_slave(REG_ANGLE)/10
-        depth = get_modbus_slave(REG_DEPTH)/100
+    #
+        v_angle = get_modbus_slave(REG_ANGLE)/10
+        v_depth = get_modbus_slave(REG_DEPTH)/100
+        v_length = get_modbus_slave(REG_LENGTH)
+        v_bay_id = get_modbus_slave(REG_BAY_ID)
+        v_grinder_id = get_modbus_slave(REG_GRINDER_ID)
+        v_config_version = get_modbus_slave(REG_CONFIG_VERSION)
         
         tp_log("Start command received")
         tp_log("-----------------------------------------------")
-        tp_log("Bay ID: " + str(get_modbus_slave(REG_BAY_ID)))
-        tp_log("Grinder ID: " + str(get_modbus_slave(REG_GRINDER_ID)))
-        tp_log("Angle: " + str(angle))
-        tp_log("Depth: " + str(depth))
-        tp_log("Length: " + str(get_modbus_slave(REG_LENGTH)))
-        tp_log("Config Version: " + str(get_modbus_slave(REG_CONFIG_VERSION)))
+        tp_log("Bay ID: " + str(v_bay_id))
+        tp_log("Grinder ID: " + str(v_grinder_id))
+        tp_log("Angle: " + str(v_angle))
+        tp_log("Depth: " + str(v_depth))
+        tp_log("Length: " + str(v_length))
+        tp_log("Config Version: " + str(v_config_version))
         tp_log("-----------------------------------------------")
         
         set_modbus_slave(REG_GRIND_READY, 0)
         
-        # Grinder Selection
-        if (get_modbus_slave(REG_GRINDER_ID) == 1):
+         #Grinder Selection
+        if (v_grinder_id == 1):
             tp_log("Grinder 1")
             grinder_app = System_grinder_app
             
-        elif (get_modbus_slave(REG_GRINDER_ID) == 2):
-            tp_log("Grinder 2")
+        elif (v_grinder_id == 2):
+            tp_log("Grinder 2 (NOT SET)")
             grinder_app = System_grinder_app
             
-        elif (get_modbus_slave(REG_GRINDER_ID) == 3):
-            tp_log("Grinder 3")
+        elif (v_grinder_id == 3):
+            tp_log("Grinder 3 (NOT SET)")
             grinder_app = System_grinder_app
         
         else:
@@ -76,34 +86,33 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # Angled frame
         
         angle_pos = posx(System_grinder_invert)
-        angle_pos[4] = angle_pos[4] + angle
+        angle_pos[4] = angle_pos[4] + v_angle
         
-        
-        # Blade selection
-
-        if (get_modbus_slave(REG_BAY_ID) == 1):
+        #
+         #Blade selection
+#
+        if (v_bay_id == 1):
             tp_log("Blade 1") #A129
             blade_pos = System_blade1
-            
-        elif (get_modbus_slave(REG_BAY_ID) == 2):
-            tp_log("Blade 2")#A202
+        elif (v_bay_id == 2):
+            tp_log("Blade 2") #A202
             blade_pos = System_blade2
-        elif (get_modbus_slave(REG_BAY_ID) == 3):
-            tp_log("Blade 3")
+        elif (v_bay_id == 3):
+            tp_log("Blade 3 (NOT SET)")
             blade_pos = System_blade1
-        elif (get_modbus_slave(REG_BAY_ID) == 4):
-            tp_log("Blade 4")
+        elif (v_bay_id == 4):
+            tp_log("Blade 4 (NOT SET)")
             blade_pos = System_blade1
-        elif (get_modbus_slave(REG_BAY_ID) == 5):
-            tp_log("Blade 5")
+        elif (v_bay_id == 5):
+            tp_log("Blade 5 (NOT SET)")
             blade_pos = System_blade1
         else:
             tp_log("Incorrect Bay ID " + str(get_modbus_slave(REG_BAY_ID)))
             break
         
-        # Pick up
-        #move_val = 3.5 # A129
-        #move_val = 10 # A202
+         #Pick up
+        move_val = 3.5 # A129
+        move_val = 10 # A202
         
         movel(System_blades_top, 50, 50)
         movel(blade_pos, 50, 50)
@@ -124,23 +133,31 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         force_ext = get_tool_force(DR_TOOL)
         current_y = force_ext[1]
-            
-        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 2, ref=DR_TOOL)
+        tp_log("Current y: " + str(current_y))
+        
+        if (current_y < -2):
+            max_current_y = -current_y
+        else:
+            max_current_y = current_y + 2
+        
+        tp_log("Max y:" + str(max_current_y))
+        
+        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_TOOL)
         while (fcon_y):
             
             movel(posx([1, 1, 0,0,0,0]), vel=20, acc=20,mod=DR_MV_MOD_REL)
-            fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 2, ref=DR_TOOL)
+            fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_TOOL)
         
         pos2, sol2 = get_current_posx(DR_WORLD)  
         tp_log("Collision detected")    
         
-        ## Turn on magnets
+        # Turn on magnets
         set_analog_output(ch=1, val=3.3)
 
         set_ref_coord(DR_WORLD)
     
         movel(pos1,20,20)
-        movel(blade, vel=20, acc=20)
+        movel(blade_pos, vel=20, acc=20)
         movel(System_blades_top, 100, 50)
         movel(System_init, 100, 50)
         movel(IR_sensor, 100, 50)
@@ -149,7 +166,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         set_digital_output(1, ON)
         wait(1)
-        amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+        # Used to be 500. Should we keep as 500 or no? Robot will stop moving anyway...
+        amovel(posx(0,50+(v_length/2),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
         while (get_digital_input(1) == 0):
             wait(0.01)
         stop(DR_SSTOP)
@@ -158,7 +176,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
         
-        amovel(posx(0,-400,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+        # Used to be -400
+        amovel(posx(0,-(v_length+50),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
         
         while (get_digital_input(1) == 0):
             wait(0.01)
@@ -167,12 +186,15 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         blade_right, sol = get_current_posx(ref=DR_WORLD)
         
         blade_l = blade_left[1] - blade_right[1]
+        
         if (blade_l<260):
             set_analog_output(ch=1, val=1.2)
         elif (blade_l<520):
             set_analog_output(ch=1, val=2.2)
         else:
             set_analog_output(ch=1, val=3.2)
+            
+        tp_log("Detected Blade Length: " + str(blade_l))
             
         # Grinding
                 
@@ -187,8 +209,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(posx(blade_right[1], 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
         x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
         
-         #and (x1[0]*-1 < blade_left[1])
-         #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
+        #and (x1[0]*-1 < blade_left[1])
+        #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
          
         set_modbus_slave(REG_GRIND_READY,1)
 
@@ -209,19 +231,39 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                     # Execute Relative Move (based on X/Y inputs)
                     # We assume these are offsets in mm
                     #
+                    move_range = 40
+                    
                     delta_x = [val_x, 0, 0, 0, 0, 0]
-                    delta_y = [0, val_y+depth, 0, 0, 0, 0]
-                    delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0]
-                    delta_up =  [0, 0, 40, 0, 0, 0]
-                    delta_down =  [0, 0, -20, 0, 0, 0]
+                    delta_y = [0, val_y, 0, 0, 0, 0] # No depth, just position
+                    delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0] # Retracting depth and pos
+                    delta_up =  [0, 0, move_range, 0, 0, 0]
+                    delta_down =  [0, 0, -(move_range/2), 0, 0, 0]
                     
                     movel(posx(delta_x), vel=300, acc=100,mod=DR_MV_MOD_REL)
+                    start_cut_pos, sol = get_current_posx()
                     movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                
                     movel(posx(delta_y), vel=300, acc=100,mod=DR_MV_MOD_REL)
-                    movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                    
+                    #movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                    #movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                    
+                    direction = 1 # 1 = up, -1 = down
+                    current_depth = 0
+                    cut_depth = 0.3
+                    
+                    while (current_depth < depth):
+                        
+                        step = min(cut_depth, depth - current_depth)
+                        
+                        rel_move = [0, step, direction * move_range, 0, 0, 0]
+                        movel(posx(rel_move), vel=300, acc=200, mod=DR_MV_MOD_REL)
+                        
+                        current_depth += step
+                        direction *= -1
+                    
                     movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                    movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                    movel(start_cut_pos, vel=400, acc=200,mod=DR_MV_MOD_REL)
+                    
                     wait(0.5)
                     set_modbus_slave(REG_GRIND,0)
                     wait(0.5)
@@ -242,7 +284,9 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # Turn off magnets
         set_analog_output(ch=1, val=0)
         
-        movel(blade, vel=20, acc=20)
+        movel(blade_pos, vel=20, acc=20)
+        movel(System_blades_top, 100, 20)
+
         
         set_modbus_slave(REG_START, 0)
         
