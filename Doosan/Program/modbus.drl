@@ -262,7 +262,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                         direction *= -1
                     
                     movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                    movel(start_cut_pos, vel=400, acc=200,mod=DR_MV_MOD_REL)
+                    movel(posx(start_cut_pos), vel=400, acc=200)
                     
                     wait(0.5)
                     set_modbus_slave(REG_GRIND,0)

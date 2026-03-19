@@ -52,19 +52,19 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[-551.963,-174.644,119.919,14.088,179.991,-30.927]"
+    "Value": "[-551.989,-173.769,119.967,169.453,-179.998,124.439]"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-551.990,197.949,119.961,151.360,-179.997,106.374]"
+    "Value": "[-551.984,199.003,119.963,150.172,-179.996,105.183]"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "blade_l",
     "ValueType": "Float",
-    "Value": "372.5935363769531"
+    "Value": "372.7720489501953"
   },
   "Variable11": {
     "Type": "Registry",
