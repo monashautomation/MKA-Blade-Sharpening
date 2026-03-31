@@ -1,39 +1,168 @@
-#set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
-#set_analog_output(ch=1, val=3.2)
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+set_analog_output(ch=1, val=0)
+
+#movel(System_grinder_app, 20, 20)
+#movel(System_grinder_top, 50, 20)
+#movej(System_init_j, 100, 50)
+
+
+for i in range(3):
+    
+    if (i==0):
+        tp_log("Test")
+        continue
+    elif (i == 1):
+        blade = System_blade1
+    elif (i == 2):
+        blade = System_blade2
+    else:
+        tp_log("Wrong blade number")
+        break
+    
+    movel(System_blades_top, 100, 50)
+    movel(blade, vel=50, acc=100)
+    set_ref_coord(DR_WORLD)
+    
+    move_val = 10
+    #movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
+    #movel(posx(10, 10, 0, 0, 0, 0), vel=50, acc=100)
+    
+    force_ext = force_ext = get_tool_force(DR_TOOL)
+    current_x = force_ext[0]
+    current_y = force_ext[1]
+    current_z = force_ext[2]
+    
+    tp_log(str(current_x))
+    tp_log(str(current_y))
+    tp_log(str(current_z))
+    
+    fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+    while (fcon_z):
+        force_ext = force_ext = get_tool_force(DR_TOOL)
+        new_x = force_ext[0]
+        new_y = force_ext[1]
+        new_z = force_ext[2]
+        movel(posx([0,0,-1,0,0,0]), vel=20, acc=20,mod=DR_MV_MOD_REL)
+    
+        #tp_log("Would be moving down here: " + str(new_z) + "/" + str(current_z) )
+        #wait(1)
+        
+        fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+    
+    set_ref_coord(DR_TOOL)
+    force_ext = force_ext = get_tool_force(DR_TOOL)
+    current_x = force_ext[0]
+    current_y = force_ext[1]
+    current_z = force_ext[2]
+    
+    tp_log(str(current_x))
+    tp_log("Current Y: " + str(current_y))
+    tp_log("Conditions: " + str(max(current_y - 5,0)) + "/" + str(current_y + 2))
+    
+    pos1, sol = get_current_posx(DR_WORLD)
+        
+    fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 2, ref=DR_TOOL)
+    while (fcon_y):
+        
+        movel(posx([1,1, 0,0,0,0]), vel=20, acc=20,mod=DR_MV_MOD_REL)
+        
+        #wait(1)
+        force_ext = force_ext = get_tool_force(DR_TOOL)
+        new_x = force_ext[0]
+        new_y = force_ext[1]
+        new_z = force_ext[2]
+        tp_log("New_y: " + str(new_y))
+        
+        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 2, ref=DR_TOOL)
+    
+    pos2, sol2 = get_current_posx(DR_WORLD)  
+    tp_log("Collision detected")    
+    set_analog_output(ch=1, val=3.2)
+    
+    set_ref_coord(DR_WORLD)
+    
+    movel(pos1,20,20)
+    movel(blade, vel=20, acc=20)
+    
+    movel(pos1, 20, 20)
+    movel(pos2, 10, 10)
+    set_analog_output(ch=1, val=0)
+    movel(blade, vel=20, acc=20)
+
+
 #
+#movel(posx(-10, -10, 0, 0, 0, 0), vel=50, acc=100)
+#movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
+#
+#set_ref_coord(DR_BASE)
 #
 #movel(System_blade1_new, vel=50, acc=100)
+#
+#wait(3)
+#
 #set_ref_coord(DR_TOOL)
 #
 #
 #movel(posx(0, 0, 13.3, 0, 0, 0), vel=50, acc=100)
-#movel(posx(3.5, 3.5, 0, 0, 0, 0), vel=50, acc=100)
+#movel(posx(10, 10, 0, 0, 0, 0), vel=50, acc=100)
 #
 #set_analog_output(ch=1, val=0)
 #
-#movel(posx(-3.5, -3.5, 0, 0, 0, 0), vel=50, acc=100)
+#movel(posx(-10, -10, 0, 0, 0, 0), vel=50, acc=100)
 #movel(posx(0, 0, -13.3, 0, 0, 0), vel=50, acc=100)
+#
+#set_ref_coord(DR_BASE)
+#
+#movel(System_blade1_new, vel=50, acc=100)
 
 #movel(System_grinder_app, 100,20)
-#movel(System_grinder_top, 100, 20)
+##movel(System_grinder_top, 100, 20)
+#movel(System_grinder_invert, 20, 20)
+#movel(System_grinder_app, 20,20)
+#movel(System_grinder_top, 20, 20)
+#
 #movel(System_init, 100, 20)
-#movel(IR_sensor, 100,20)
 
-movel(System_init, 100, 20)
-movel(IR_sensor, 50, 20)
+#grinder_angle = System_grinder_invert
+#tp_log(str(grinder_angle))
+#shift_b = [0,0,0,0,30,0]
+#q2 = addto(System_grinder_invert, [0, 0, 0, 0, 30, 0])
+##movej (q2, v=10, a=20)
+#
+#tp_log(str(q2))
+#set_ref_coord(DR_WORLD)
+#
+#posx1 = [100, 20, 300, 90, 0, 180]
+#posx2 = [0, 0, 0, 0.1, 30, 0.1]
+#add_posx = add_pose(posx1, posx2)
+#
+#new = posx(System_grinder_invert)
+#new[4] = System_grinder_invert[4] + 30
+#tp_log(str(new))
+#
+#movel(new, 20, 20)
 
-set_digital_output(1, ON)
-wait(1)
-amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
-while (get_digital_input(1) == 0):
-    wait(0.01)
-stop(DR_SSTOP)
 
-blade_left, sol = get_current_posx(ref=DR_WORLD)
+#movel(new, 20, 20)
 
-movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
+#movel(posx([0,0,0, 5, 0, 0]), 20, 20, ref=DR_BASE, mod=DR_MV_MOD_REL)
+##movel(IR_sensor, 100,20)
 
-amovel(posx(0,-400,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
-
-while (get_digital_input(1) == 0):
-    wait(0.01)
+#movel(System_init, 100, 20)
+#movel(IR_sensor, 50, 20)
+#
+#set_digital_output(1, ON)
+#wait(1)
+#amovel(posx(0,500,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+#while (get_digital_input(1) == 0):
+    #wait(0.01)
+#stop(DR_SSTOP)
+#
+#blade_left, sol = get_current_posx(ref=DR_WORLD)
+#
+#movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
+#
+#amovel(posx(0,-400,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+#
+#while (get_digital_input(1) == 0):
+    #wait(0.01)
