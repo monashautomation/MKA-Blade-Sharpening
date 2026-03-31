@@ -229,7 +229,7 @@
                 <div class="panel-title">🔌 Connection Settings</div>
                 <div class="form-group">
                     <label class="form-label">Robot IP Address</label>
-                    <input type="text" id="robotIP" class="form-input" value="172.24.89.89">
+                    <input type="text" id="robotIP" class="form-input" value="172.24.9.20">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -841,8 +841,33 @@
         } catch (e) { log(`Start failed: ${e.message}`, 'error'); }
     }
 
+<!--    async function stopLoop() {-->
+<!--        log('■ Sending START=0 — stopping loop', 'warning');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                loopRunning = false;-->
+<!--                document.getElementById('robotState').textContent = 'IDLE';-->
+<!--                document.getElementById('grindStartBtn').disabled = true;-->
+<!--                setStep(0);-->
+<!--                log(data.message, 'warning');-->
+<!--            } else { log(data.message, 'error'); }-->
+<!--        } catch (e) { log(`Stop failed: ${e.message}`, 'error'); }-->
+<!--    }-->
     async function stopLoop() {
         log('■ Sending START=0 — stopping loop', 'warning');
+
+        // Stop auto-detect loop if running
+        if (continuousUpdateActive) {
+            continuousUpdateActive = false;
+            document.getElementById('continuousBtn').textContent = 'AUTO-DETECT LOOP';
+            document.getElementById('continuousBtn').className = 'btn btn-success';
+            document.getElementById('autoUpdateStatus').textContent = 'OFF';
+            log('Auto-detect loop stopped', 'warning');
+
+        }
+
         try {
             const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });
             const data = await res.json();
@@ -852,6 +877,15 @@
                 document.getElementById('grindStartBtn').disabled = true;
                 setStep(0);
                 log(data.message, 'warning');
+
+                // Write STATUS=0 to REG 136
+                await fetch(`${API_BASE}/detection`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 0 })
+                });
+                setDetectionStatus(0);
+                log('REG 136 STATUS=0 written', 'warning');
+
             } else { log(data.message, 'error'); }
         } catch (e) { log(`Stop failed: ${e.message}`, 'error'); }
     }
