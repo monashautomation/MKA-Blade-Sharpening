@@ -1,25 +1,23 @@
-# 🤖 Blade Grinder Robot Control System
+# 🤖 Modbus v2 - Robot Control System
 
-A modern, industrial-themed web dashboard for controlling robotic blade grinding operations via Modbus TCP protocol.
+A web-based dashboard for controlling robotic blade grinding operations via Modbus TCP protocol.
 
 ## 🌟 Features
 
-- **FLIR Camera Integration** - Professional PySpin SDK for high-quality image capture
 - **Real-time Modbus TCP Communication** - Direct control of robot via Modbus registers
-- **Beautiful Industrial UI** - Cyberpunk-inspired dashboard with real-time status updates
-- **Automatic Blade Detection** - AI-powered tooth detection from live camera feed
+- **Web Dashboard** - User-friendly interface for robot control and monitoring
 - **Configuration Management** - Send blade configurations (bay ID, grinder ID, angle, depth, length)
-- **Detection Data** - Automatic tooth coordinate extraction and transmission
+- **Detection Data Handling** - Send tooth coordinate data
 - **Robot Control** - Start, stop, reset, and command the robot
-- **Live System Log** - Real-time monitoring of all operations
-- **Connection Management** - Easy connect/disconnect with status indicators
+- **Database Integration** - Store and retrieve data
+- **Grinder Position Configuration** - JSON-based position settings
 
 ## 📋 System Architecture
 
 ```
 ┌─────────────────────────┐
 │   Web Dashboard         │
-│   (HTML/CSS/JS)         │
+│   (HTML)                │
 └───────────┬─────────────┘
             │ HTTP/REST API
             ▼
@@ -63,85 +61,37 @@ A modern, industrial-themed web dashboard for controlling robotic blade grinding
 
 ### Prerequisites
 
-```bash
-# Python 3.8+
-python --version
-```
+- Python 3.8+
 
-### Install PySpin (FLIR Spinnaker SDK)
-
-**IMPORTANT:** PySpin must be installed before other dependencies.
-
-1. **Download Spinnaker SDK** from FLIR's website:
-   - Visit: https://www.flir.com/products/spinnaker-sdk/
-   - Download the appropriate version for your OS
-   - Install the Spinnaker SDK first
-
-2. **Install PySpin Python module:**
-   ```bash
-   # The PySpin wheel is included in the Spinnaker SDK installation
-   # Location varies by OS:
-   # Linux: /opt/spinnaker/lib/
-   # Windows: C:\Program Files\FLIR Systems\Spinnaker\
-   
-   # Install the .whl file:
-   pip install /path/to/spinnaker_python-*.whl
-   ```
-
-### Install Other Dependencies
+### Install Dependencies
 
 ```bash
-pip install pymodbus flask flask-cors numpy opencv-python scipy
+pip install -r requirements.txt
 ```
 
-### Project Structure
+## 📁 Project Structure
 
 ```
-blade-grinder-control/
-├── modbus_blade_client_enhanced.py  # Enhanced Modbus client with start register
-├── robot_control_backend.py          # Flask backend server (requires HTML in same dir)
-├── robot_control_standalone.py       # Standalone server (all-in-one, recommended)
-├── robot_control_dashboard.html      # Web dashboard UI
-├── serrated_blade_detector.py        # Blade detection system
-└── README.md                         # This file
+modbus_v2/
+├── database.py                     # Database operations
+├── grinder_position.json           # Grinder position configuration
+├── index.html                      # Main dashboard page
+├── modbus_blade_client_enhanced.py # Enhanced Modbus client
+├── requirements.txt                # Python dependencies
+├── robot_control_backend.py        # Flask backend server
+├── robot_control_dashboard.html    # Robot control dashboard
+└── README.md                       # This file
 ```
-
-### Important: File Placement
-
-**Make sure both files are in the same directory:**
-- `robot_control_standalone.py` (or `robot_control_backend.py`)
-- `robot_control_dashboard.html`
-
-The server looks for the HTML file in the same folder where you run the Python script.
 
 ## 📖 Usage
 
 ### 1. Start the Flask Backend
 
-**Option A: Standalone Server (Recommended)**
-```bash
-python robot_control_standalone.py
-```
-
-**Option B: Modular Backend**
 ```bash
 python robot_control_backend.py
 ```
 
-You should see:
-```
-================================================================================
-🤖 BLADE GRINDER CONTROL SYSTEM - BACKEND SERVER
-================================================================================
-
-✓ Starting Flask server...
-✓ Dashboard will be available at: http://localhost:5000
-✓ API endpoints ready
-
-================================================================================
-```
-
-**Important:** The HTML file must be in the same directory as the Python script!
+The server will start and be available at `http://localhost:5000`.
 
 ### 2. Open the Dashboard
 
@@ -150,54 +100,19 @@ Open your web browser and navigate to:
 http://localhost:5000
 ```
 
-### 3. Connect to Robot
+Use the dashboard to connect to the robot, send configurations, and control operations.
 
-1. Enter the robot's IP address (default: `172.24.89.89`)
-2. Enter the Modbus port (default: `502`)
-3. Enter the unit ID (default: `1`)
-4. Click **CONNECT TO ROBOT**
+### 3. Using the Modbus Client
 
-### 4. Send Configuration
-
-1. Fill in the blade configuration:
-   - Bay ID
-   - Grinder ID
-   - Angle (degrees)
-   - Depth (mm)
-   - Length (mm)
-   - Config Version
-2. Click **SEND CONFIGURATION**
-
-### 5. Send Detection Data
-
-1. Enter the detected tooth coordinates:
-   - X Position (mm)
-   - Y Position (mm)
-   - Detection Status (0=invalid, 1=valid)
-2. Click **SEND DETECTION DATA**
-
-### 6. Control Robot
-
-- **READ** - Read detection data from robot
-- **RESET** - Reset robot to initial state
-- **STOP** - Emergency stop
-- **START ROBOT OPERATION** - Begin grinding operation
-
-## 🔌 Standalone Modbus Client Usage
-
-You can also use the enhanced Modbus client directly:
+You can also use the Modbus client directly:
 
 ```python
 from modbus_blade_client_enhanced import BladeDataModbusClient
 
-# Create and connect client
 client = BladeDataModbusClient(host='172.24.89.89', port=502, unit=1)
 client.connect()
-
-# Send configuration
-client.write_configuration(
-    bay_id=5,
-    grinder_id=2,
+# Use client methods to send data
+```
     angle=45.5,
     depth=1.25,
     length=150,

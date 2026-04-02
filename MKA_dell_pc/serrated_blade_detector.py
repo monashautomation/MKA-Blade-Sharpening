@@ -266,9 +266,10 @@ class SerratedBladeAnalyzer:
             elif x_smooth[i] == np.min(window) and x_smooth[i] < mean_x - 10:
                 valleys.append(i)
 
-        # Filter close points
-        peaks = self._filter_close_points(peaks, window_size)
-        valleys = self._filter_close_points(valleys, window_size)
+        # Filter close points (remove duplicate peaks that are too close)
+        min_tooth_spacing = max(window_size // 2, 8)
+        peaks = self._filter_close_points(peaks, min_tooth_spacing)
+        valleys = self._filter_close_points(valleys, min_tooth_spacing)
 
         # Create tooth profiles - each PEAK becomes a grinding target
         tooth_profiles = []
@@ -317,6 +318,10 @@ class SerratedBladeAnalyzer:
 
             # Calculate tooth height (distance from valleys to peak)
             height = abs(tooth_point[0] - ((top_valley[0] + bottom_valley[0]) / 2))
+
+            # Filter out tiny peaks that are probably noise/duplicates
+            if height < min_height_px:
+                continue
 
             # Calculate angle
             angle = self._calculate_tooth_angle(top_valley, tooth_point, bottom_valley)
