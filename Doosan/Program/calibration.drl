@@ -1,0 +1,15 @@
+tp_log("Homing")
+x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+tp_log("Current Pos: " + str(x1))
+
+dist1 = get_distance(x1, System_grinder_top)
+dist2 = get_distance(x1, fkin(System_init_j))
+dist3 = get_distance(x1, System_blades_top)
+
+if dist1 < dist2:
+    movel(System_grinder_top, 50, 20)
+elif dist3 < dist2:
+    movel(System_blades_top, 50, 20)
+    
+movej(System_init_j, 100, 20)
+
