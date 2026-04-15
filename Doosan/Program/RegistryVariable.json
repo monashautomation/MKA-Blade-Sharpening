@@ -1,5 +1,5 @@
 {
-  "Count": "16",
+  "Count": "17",
   "Variable0": {
     "Type": "Registry",
     "Name": "IR_sensor",
@@ -62,7 +62,7 @@
   },
   "Variable10": {
     "Type": "Registry",
-    "Name": "blade_l",
+    "Name": "blade_length",
     "ValueType": "Float",
     "Value": "370.15318298339844"
   },
@@ -95,5 +95,11 @@
     "Name": "blade_zero",
     "ValueType": "Posx",
     "Value": "posx(0.02, -505.5, -1.54, 15.81, 180, -119.19)"
+  },
+  "Variable16": {
+    "Type": "Registry",
+    "Name": "blade_depth",
+    "ValueType": "Float",
+    "Value": "18.54"
   }
 }

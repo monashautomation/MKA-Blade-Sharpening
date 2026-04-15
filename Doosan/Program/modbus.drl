@@ -197,16 +197,16 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         stop(DR_SSTOP)
         blade_right, sol = get_current_posx(ref=DR_WORLD)
         
-        blade_l = blade_left[1] - blade_right[1]
+        blade_length = blade_left[1] - blade_right[1]
         
-        if (blade_l<260):
+        if (blade_length<260):
             set_analog_output(ch=1, val=1.2)
-        elif (blade_l<520):
+        elif (blade_length<520):
             set_analog_output(ch=1, val=2.2)
         else:
             set_analog_output(ch=1, val=3.2)
             
-        tp_log("Detected Blade Length: " + str(blade_l))
+        tp_log("Detected Blade Length: " + str(blade_length))
             
         # Grinding
                 
