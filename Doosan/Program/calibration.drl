@@ -15,14 +15,16 @@
 
 REG_CALIBRATION = 142
 set_modbus_slave(REG_CALIBRATION,0)
-
-offset_val = sqrt(((blade_depth)^2)/2)
-tp_log("Blade depth: " + str(blade_depth) + ", Offset Val: " + str(offset_val))
-depth_offset = posx(offset_val, offset_val, 0, 0, 0, 0)
+set_tcp("Tool_v1")
+wait(2)
+depth_offset = posx(20, 0, 0, 0, 0, 0)
 current_pose = get_current_posx()[0]
 
-new_tcp = trans(current_pose, tool_offset, DR_BASE, DR_TOOL)
+new_tcp = trans(current_pose, depth_offset, DR_TOOL, DR_BASE)
 
-ucs_id = set_user_cart_coord(pivot, ref=DR_BASE) # apparently sets tcp
-movel(posx(0,0,0,0,0,10), ref=ucs_id)   # rotate about pivot
-movel(next_target, ref=DR_BASE)            # back to base-frame motion, no revert needed
+ucs_id = set_user_cart_coord(new_tcp, ref=DR_BASE) # apparently sets tcp
+current_pose2 = get_current_posx(ref=ucs_id)[0]
+tp_log(str(current_pose2))
+movel(posx(0,0,0,0,90,0), time=5, ref=ucs_id)   # rotate about pivot
+
+#set_tcp("Flange")
