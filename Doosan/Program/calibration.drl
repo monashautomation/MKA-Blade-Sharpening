@@ -25,6 +25,28 @@ new_tcp = trans(current_pose, depth_offset, DR_TOOL, DR_BASE)
 ucs_id = set_user_cart_coord(new_tcp, ref=DR_BASE) # apparently sets tcp
 current_pose2 = get_current_posx(ref=ucs_id)[0]
 tp_log(str(current_pose2))
-movel(posx(0,0,0,0,90,0), time=5, ref=ucs_id)   # rotate about pivot
+#movel(posx(0,0,0,0,90,0), time=5, ref=ucs_id)   # rotate about pivot
 
 #set_tcp("Flange")
+
+set_tcp("Tool_v1")
+
+def on_arc(base, pivot, transformation):
+    # pivot: [px, py, pz] offset in tool frame
+    # transformation: posx whose orientation is the rotation to apply about pivot
+    px, py, pz = pivot[0], pivot[1], pivot[2]
+    rz1, ry, rz2 = transformation[3], transformation[4], transformation[5]
+    R = eul2rotm([rz1, ry, rz2])
+    tx = px - (R[0][0]*px + R[0][1]*py + R[0][2]*pz)
+    ty = py - (R[1][0]*px + R[1][1]*py + R[1][2]*pz)
+    tz = pz - (R[2][0]*px + R[2][1]*py + R[2][2]*pz)
+    delta = posx(tx, ty, tz, rz1, ry, rz2)
+    return trans(base, delta, DR_TOOL, DR_BASE)
+
+start = get_current_posx()[0]
+pivot = [20, 0, 0]
+
+mid = on_arc(start, pivot, posx(0, 0, 0, 0, 5, 0))
+end = on_arc(start, pivot, posx(0, 0, 0, 0, 10, 0))
+
+movec(mid, end, time=5, ref=DR_BASE)
