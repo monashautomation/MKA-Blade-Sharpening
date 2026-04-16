@@ -14,6 +14,9 @@ REG_GRIND_READY = 138 # For camera
 REG_GRIND = 139 # Grind loop
 REG_EMERGENCY = 140
 
+REG_CALIBRATION_READY = 141
+REG_CALIBRATION_ANGLE = 142
+
 # Command codes
 CMD_READ_DETECTION = 11
 CMD_RESET = 22
@@ -44,8 +47,31 @@ if (homing_val):
 else:
     tp_log("Skipped Homing")
 
+def rotate_tcp(tcp, pivot, transformation):
+    # pivot: [px, py, pz] offset in tool frame
+    # transformation: posx whose orientation is the rotation to apply about pivot
+    set_tcp(tcp)
+    base = get_current_posx()[0]
+    px, py, pz = pivot[0], pivot[1], pivot[2]
+    rz1, ry, rz2 = transformation[3], transformation[4], transformation[5]
+
+    R = eul2rotm([rz1, ry, rz2])
+    tx = px - (R[0][0]*px + R[0][1]*py + R[0][2]*pz)
+    ty = py - (R[1][0]*px + R[1][1]*py + R[1][2]*pz)
+    tz = pz - (R[2][0]*px + R[2][1]*py + R[2][2]*pz)
+    delta = posx(tx, ty, tz, rz1, ry, rz2)
+    final = trans(base, delta, DR_TOOL, DR_BASE)
+    movel(final, time=5, ref=DR_BASE)
+    set_tcp("Flange")
+    tp_log("TCP set back to Flange")
+    rotated_pos = get_current_posx()[0]
+    tp_log("Current position: " + str(rotated_pos))
+    return rotated_pos
+
 while(get_modbus_slave(REG_EMERGENCY) == 0):
     if (get_modbus_slave(REG_START) == 1):
+    
+        set_tcp("Flange")
     #
         v_angle = get_modbus_slave(REG_ANGLE)/10
         v_depth = get_modbus_slave(REG_DEPTH)/100
@@ -84,9 +110,9 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             break
         
         # Angled frame
-        
-        angle_pos = posx(System_grinder_invert)
-        angle_pos[4] = angle_pos[4] + v_angle
+        #UPDATE, CALCULATE AT ROTATION
+        #angle_pos = posx(System_grinder_invert)
+        #angle_pos[4] = angle_pos[4] + v_angle
         
         #
          #Blade selection
@@ -150,8 +176,11 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
         amovel(posx([0, -20, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
-        
+        wait(0.5)
         while (fcon_y):
+            if (check_motion() == 0):
+            tp_log("No blade detected")
+                return
             fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
         
         stop(DR_SSTOP)
@@ -160,7 +189,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         tp_log("Collision Y detected")
         
         blade_depth = pos2[1] - blade_zero[1]
-        
+        tp_log("Detected Blade Depth: " + str(blade_depth))
         # Turn on magnets
         set_analog_output(ch=1, val=1.2)
         
@@ -214,7 +243,12 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(System_grinder_top, 100, 50)
         movel(grinder_app, 100, 50)
         
-        movel(angle_pos, 50, 20)
+        new_grinder_invert = posx(System_grinder_invert)
+        new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
+        
+        movel(new_grinder_invert, 20, 20)
+        
+        angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
         
         # Notify System
         
@@ -324,14 +358,28 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         movel(System_init, 100, 50)
         
         movel(System_blades_top, 100, 50)
-        movel(blade_pos, 50, 50)
+        #movel(blade_pos, 50, 50)
         #movel(pos1, 20, 20)
         #movel(pos2, 10, 10)
+        
+        force_z = get_tool_force(DR_TOOL)[2]
+        fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        
+        movel(System_blade_drop, 100, 50)
+        
+        amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+        
+        while (fcon_z and (check_motion() != 0)):
+            force_ext = get_tool_force(DR_WORLD)
+            fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        
+        stop(DR_SSTOP)
+
          
         # Turn off magnets
         set_analog_output(ch=1, val=0)
         
-        movel(blade_pos, vel=20, acc=20)
+        #movel(blade_pos, vel=20, acc=20)
         movel(System_blades_top, 100, 50)
 
         

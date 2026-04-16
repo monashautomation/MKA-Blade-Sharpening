@@ -1,0 +1,59 @@
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+
+#movej(System_init_j, 50, 20)
+#movel(System_blade_drop, 50, 20)
+
+shape_start = posx(System_blade_shape)
+shape_start[1] = shape_start[1] + 30
+
+movel(shape_start, 50, 20)
+
+set_analog_output(ch=1, val=3.3)
+
+wait(5)
+
+middle = []
+left = []
+right = []
+
+blade_present = 1
+
+def check_distance(direction):
+    global blade_present
+    movel(posx(50 * direction,0,0,0,0,0), 20, 20, mod=DR_MV_MOD_REL)
+    start = get_current_posx()[0]
+    current_y = get_tool_force(DR_WORLD)[1]
+    fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 10, ref=DR_WORLD)
+    amovel(posx([0, -30, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
+    wait(0.5)
+    while (fcon_y):
+        if (check_motion() == 0):
+            tp_log("No blade detected")
+            blade_present = 0
+            movel(start, 20, 20)
+            return
+        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=current_y + 10, ref=DR_WORLD)
+    
+    stop(DR_SSTOP)
+    position = get_current_posx()[0]
+    distance = position[1] - System_blade_shape[1]
+    movel(start, 20, 20)
+    return distance
+
+#At middle approx
+dist = check_distance(0)
+middle.append(dist)
+tp_log("Middle: " + str(middle))
+
+while blade_present == 1:
+    dist = check_distance(1)
+    right.append(dist)
+tp_log("Right: " + str(right))
+    
+movel(shape_start, 50, 20)
+blade_present = 1
+
+while blade_present == 1:
+    dist = check_distance(-1)
+    left.append(dist)
+tp_log("Left: " + str(left))    

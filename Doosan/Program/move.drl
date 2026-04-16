@@ -24,71 +24,71 @@ set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 
 #NEW PICK UP TEST
   #Pick up
-blade_pos = System_blade1
-
-
-move_val = 3.5 # A129
-move_val = 10 # A202
-#movej(System_init_j, 20, 20)
-#movel(System_blades_top, 100, 50)
-movej(System_blade1_j, 80, 50)
-set_analog_output(ch=1, val=0.0)
-
-set_ref_coord(DR_WORLD)
-
-force_ext = get_tool_force(DR_TOOL)
-current_z = force_ext[2]
-
-fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
-
-amovel(posx([0,0,-50,0,0,0]), vel=10, acc=20,mod=DR_MV_MOD_REL)
-
-while (fcon_z):
-    fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
-
-stop(DR_SSTOP)
-
-set_ref_coord(DR_WORLD)
-
-pos1, sol = get_current_posx(DR_WORLD)
-
-force_ext = get_tool_force(DR_WORLD)
-current_y = force_ext[1]
-tp_log("Current y: " + str(current_y))
-
-#wait(5)
-
-if (current_y < -2):
-    max_current_y = -current_y
-else:
-    max_current_y = current_y + 10
-
-tp_log("Max y:" + str(max_current_y))
-
-fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
-amovel(posx([0, -60, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
-
-while (fcon_y):
-    force_ext = get_tool_force(DR_WORLD)
-    tp_log("Y: " + str(force_ext[1]))
-    fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
-
-stop(DR_SSTOP)
-
-pos2, sol2 = get_current_posx(DR_WORLD)  
-tp_log("Collision detected")
-
-blade_depth = pos2[1] - blade_zero[1]
-tp_log("Blade depth: " + str(blade_depth))    
-
-# Turn on magnets
-set_analog_output(ch=1, val=1.2)
-
-set_ref_coord(DR_WORLD)
-
-#movel(pos1,20,20)
-#movel(blade_pos, vel=20, acc=20)
-set_analog_output(ch=1, val=3.3)
+#blade_pos = System_blade1
+#
+#
+#move_val = 3.5 # A129
+#move_val = 10 # A202
+##movej(System_init_j, 20, 20)
+##movel(System_blades_top, 100, 50)
+#movej(System_blade1_j, 80, 50)
+#set_analog_output(ch=1, val=0.0)
+#
+#set_ref_coord(DR_WORLD)
+#
+#force_ext = get_tool_force(DR_TOOL)
+#current_z = force_ext[2]
+#
+#fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+#
+#amovel(posx([0,0,-50,0,0,0]), vel=10, acc=20,mod=DR_MV_MOD_REL)
+#
+#while (fcon_z):
+    #fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+#
+#stop(DR_SSTOP)
+#
+#set_ref_coord(DR_WORLD)
+#
+#pos1, sol = get_current_posx(DR_WORLD)
+#
+#force_ext = get_tool_force(DR_WORLD)
+#current_y = force_ext[1]
+#tp_log("Current y: " + str(current_y))
+#
+##wait(5)
+#
+#if (current_y < -2):
+    #max_current_y = -current_y
+#else:
+    #max_current_y = current_y + 10
+#
+#tp_log("Max y:" + str(max_current_y))
+#
+#fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
+#amovel(posx([0, -60, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
+#
+#while (fcon_y):
+    #force_ext = get_tool_force(DR_WORLD)
+    #tp_log("Y: " + str(force_ext[1]))
+    #fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
+#
+#stop(DR_SSTOP)
+#
+#pos2, sol2 = get_current_posx(DR_WORLD)  
+#tp_log("Collision detected")
+#
+#blade_depth = pos2[1] - blade_zero[1]
+#tp_log("Blade depth: " + str(blade_depth))    
+#
+## Turn on magnets
+#set_analog_output(ch=1, val=1.2)
+#
+#set_ref_coord(DR_WORLD)
+#
+##movel(pos1,20,20)
+##movel(blade_pos, vel=20, acc=20)
+#set_analog_output(ch=1, val=3.3)
 
 #movel(System_blades_top, 100, 50)
 #movel(System_blade1, 20, 20)
@@ -256,4 +256,56 @@ set_analog_output(ch=1, val=3.3)
 #while (get_digital_input(1) == 0):
     #wait(0.01)
     
+    
+## GRINDER HEIGHT ADJUSTMENT TEST
+#set_tcp("Flange")
+#new_grinder_invert = posx(System_grinder_invert)
+#new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
+#movel(System_grinder_invert, 20, 20)
+##movel(posx(0,0,-blade_depth,0,0,0), 20, 20, ref=DR_WORLD, mod=DR_MV_MOD_REL)
+#movel(new_grinder_invert, 20, 20)
+#
+#
+#def rotate_tcp(tcp, pivot, transformation):
+    ## pivot: [px, py, pz] offset in tool frame
+    ## transformation: posx whose orientation is the rotation to apply about pivot
+    #set_tcp(tcp)
+    #base = get_current_posx()[0]
+    #px, py, pz = pivot[0], pivot[1], pivot[2]
+    #rz1, ry, rz2 = transformation[3], transformation[4], transformation[5]
+#
+    #R = eul2rotm([rz1, ry, rz2])
+    #tx = px - (R[0][0]*px + R[0][1]*py + R[0][2]*pz)
+    #ty = py - (R[1][0]*px + R[1][1]*py + R[1][2]*pz)
+    #tz = pz - (R[2][0]*px + R[2][1]*py + R[2][2]*pz)
+    #delta = posx(tx, ty, tz, rz1, ry, rz2)
+    #final = trans(base, delta, DR_TOOL, DR_BASE)
+    #movel(final, time=5, ref=DR_BASE)
+    #set_tcp("Flange")
+    #angle_pos = get_current_posx()[0]
+    #return angle_pos
+    #
+#angle = 30
+#rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-angle,0))
+#
+#set_tcp("Flange")
+#angle_pos = get_current_posx()[0]
+#wait(5)
+
+#BLADE DROP OFF SET
+movel(System_blade1, 100, 20)
+
+#force_z = get_tool_force(DR_TOOL)[2]
+#fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+#
+#movel(System_blade_drop, 100, 20)
+        #
+#amovel(posx(0,0,-500,0,0,0), 50, 20, mod=DR_MV_MOD_REL)
+#
+#while (fcon_z and (check_motion() != 0)):
+    #force_ext = get_tool_force(DR_WORLD)
+    #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+#
+#stop(DR_SSTOP)
+#tp_log("Placed")
 
