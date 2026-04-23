@@ -293,7 +293,8 @@ set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 #wait(5)
 
 #BLADE DROP OFF SET
-movel(System_blade1, 100, 20)
+movel(System_grinder_invert, 100, 20)
+
 
 #force_z = get_tool_force(DR_TOOL)[2]
 #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)

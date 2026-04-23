@@ -1,3 +1,4 @@
+set_tcp("Flange")
 #tp_log("Homing")
 #x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
 #tp_log("Current Pos: " + str(x1))
@@ -75,15 +76,24 @@
 #posj(-270.22, 28.33, 97.08, -0.04, 28.05, 134.9)
 
 #posx(0, 599.74, 177.78, 90, 160, -180)
+#movej(System_init_j, 20, 20)
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+set_analog_output(ch=1, val=3.3)
+#wait(5)
+#movel(System_grinder_top, 50, 20)
+movel(System_grinder_app, 50, 20)
+
 
 set_tcp("Flange")
 REG_CALIBRATION = 141
 REG_CALIBRATION_ANGLE = 142
 
+set_modbus_slave(REG_CALIBRATION, 0)
+
 movel(System_angle_inspection, 20, 20)
 
 inspection_depth = posx(System_angle_inspection)
-inspection_depth[1] = inspection_depth[1] + blade_depth
+inspection_depth[1] = (inspection_depth[1] + 41) - blade_depth
 tp_log("New Y: " + str(inspection_depth))
 
 movel(inspection_depth, 20, 20)
@@ -109,6 +119,7 @@ def rotation(base, pivot, transformation):
 current_angle = 70
 
 set_modbus_slave(REG_CALIBRATION, 1)
+set_modbus_slave(REG_CALIBRATION_ANGLE, 70 * 10)
     
 for i in range(0,60,5):
     current_rot = get_current_posx()[0]
@@ -126,6 +137,12 @@ set_tcp("Flange")
 
 movel(System_angle_inspection, 20, 20)
 tp_log("Current pos: " + str(get_current_posx()[0]))
+
+set_modbus_slave(REG_CALIBRATION, 0)
+
+tp_log("Calibration finished")
+
+#posx(-0.01, 603.89, 151.36, 90, 120, -180)
 
 
     

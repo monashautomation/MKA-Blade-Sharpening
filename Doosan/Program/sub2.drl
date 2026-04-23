@@ -17,30 +17,80 @@
 #set_digital_output(1, ON)
 #set_analog_output(ch=1, val=3)
 # Modbus Register Addresses
-REG_BAY_ID = 128
-REG_GRINDER_ID = 129
-REG_ANGLE = 130
-REG_DEPTH = 131
-REG_LENGTH = 132
-REG_CONFIG_VERSION = 133
-
-REG_DETECTION_X = 134
-REG_DETECTION_Y = 135
-REG_STATUS = 136
-REG_START = 138 
-REG_COMMAND = 137
-
-# Command codes
-CMD_READ_DETECTION = 11
-CMD_RESET = 22
-
-while(1):
-    value_x = get_modbus_slave(134)
-    value_y = get_modbus_slave(135)
-    angle = get_modbus_slave(130)
-    stats = get_modbus_slave(REG_START)
-    sp =  get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
-
-    tp_log("Binary Move Received: X={0}, Y={1}, T={2}, stat ={3}, stop = {4}".format(value_x/10, (65536 - value_y)/10,angle/10, stats, sp))
+#REG_BAY_ID = 128
+#REG_GRINDER_ID = 129
+#REG_ANGLE = 130
+#REG_DEPTH = 131
+#REG_LENGTH = 132
+#REG_CONFIG_VERSION = 133
+#
+#REG_DETECTION_X = 134
+#REG_DETECTION_Y = 135
+#REG_STATUS = 136
+#REG_START = 138 
+#REG_COMMAND = 137
+#
+ #Command codes
+#CMD_READ_DETECTION = 11
+#CMD_RESET = 22
+#
+#while(1):
+    #value_x = get_modbus_slave(134)
+    #value_y = get_modbus_slave(135)
+    #angle = get_modbus_slave(130)
+    #stats = get_modbus_slave(REG_START)
+    #sp =  get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
+#
+    #tp_log("Binary Move Received: X={0}, Y={1}, T={2}, stat ={3}, stop = {4}".format(value_x/10, (65536 - value_y)/10,angle/10, stats, sp))
+    #
+    #wait(1)
     
-    wait(1)
+        #force_z = get_tool_force(DR_TOOL)[2]
+        #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        #
+        #movel(System_blade_drop, 100, 50)
+        #
+        #amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+        #
+        #while (fcon_z and (check_motion() != 0)):
+            #force_ext = get_tool_force(DR_WORLD)
+            #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        #
+        #stop(DR_SSTOP)
+        #force_z = get_tool_force(DR_TOOL)[2]
+        #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        #
+        #movel(System_blade_drop, 100, 50)
+        #
+        #amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+        #
+        #while (fcon_z and (check_motion() != 0)):
+            #force_ext = get_tool_force(DR_WORLD)
+            #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        #
+        #stop(DR_SSTOP)
+#        #force_z = get_tool_force(DR_TOOL)[2]
+        #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        #
+        #movel(System_blade_drop, 100, 50)
+        #
+        #amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+        #
+        #while (fcon_z and (check_motion() != 0)):
+            #force_ext = get_tool_force(DR_WORLD)
+            #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+        #
+        #stop(DR_SSTOP)
+movel(System_blade_drop, 100, 50)
+amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+
+force_z = get_tool_force(DR_TOOL)[2]        
+fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+       
+while (fcon_z and (check_motion() != 0)):
+    force_ext = get_tool_force(DR_WORLD)
+    fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+
+stop(DR_SSTOP)
+movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+movel(System_blade_drop, 100, 50)

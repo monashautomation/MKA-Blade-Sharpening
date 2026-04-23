@@ -4,7 +4,7 @@
     "Type": "Registry",
     "Name": "IR_sensor",
     "ValueType": "Posx",
-    "Value": "posx(-552,0,120,135,180,90)"
+    "Value": "posx(-565,0,120,135,180,90)"
   },
   "Variable1": {
     "Type": "Registry",
@@ -52,19 +52,19 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[-551.986,-144.663,119.980,115.523,-179.997,70.511]"
+    "Value": "[-531.992,-101.494,119.942,6.365,179.993,-38.648]"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-551.991,151.132,119.933,162.921,-179.993,117.931]"
+    "Value": "[-532.026,116.652,119.946,160.015,-179.997,115.027]"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "blade_length",
     "ValueType": "Float",
-    "Value": "295.7947082519531"
+    "Value": "218.14633178710938"
   },
   "Variable11": {
     "Type": "Registry",
@@ -76,7 +76,7 @@
     "Type": "Registry",
     "Name": "System_blade1",
     "ValueType": "Posx",
-    "Value": "posx(0, -480, 30, 90, 180, -45)"
+    "Value": "posx(0, -470, 30, 90, 180, -45)"
   },
   "Variable13": {
     "Type": "Registry",
@@ -94,25 +94,25 @@
     "Type": "Registry",
     "Name": "blade_zero",
     "ValueType": "Posx",
-    "Value": "posx(0.02, -505.5, -1.54, 15.81, 180, -119.19)"
+    "Value": "posx(0.02, -505.7, -1.54, 15.81, 180, -119.19)"
   },
   "Variable16": {
     "Type": "Registry",
     "Name": "blade_depth",
     "ValueType": "Float",
-    "Value": "5.529449462890625"
+    "Value": "31.457720947265614"
   },
   "Variable17": {
     "Type": "Registry",
     "Name": "System_angle_inspection",
     "ValueType": "Posx",
-    "Value": "posx(0, 531, 194, 90, 160, 135)"
+    "Value": "posx(0, 528, 179, 90, 160, 135)"
   },
   "Variable18": {
     "Type": "Registry",
     "Name": "System_blade_drop",
     "ValueType": "Posx",
-    "Value": "posx(0, -340, 500, 90, 180, -45)"
+    "Value": "posx(0, -610, 300, 90, 180, -45)"
   },
   "Variable19": {
     "Type": "Registry",
