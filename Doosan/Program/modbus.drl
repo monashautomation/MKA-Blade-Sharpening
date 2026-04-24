@@ -17,12 +17,14 @@ REG_EMERGENCY = 140
 REG_CALIBRATION_READY = 141
 REG_CALIBRATION_ANGLE = 142
 
+REG_BLADE_COUNT = 144
+
 # Command codes
 CMD_READ_DETECTION = 11
 CMD_RESET = 22
 
 # Code Settings
-homing_val = False
+homing_val = True
 
 #movej(System_init_j, 100, 20)
 
@@ -115,6 +117,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         v_bay_id = get_modbus_slave(REG_BAY_ID)
         v_grinder_id = get_modbus_slave(REG_GRINDER_ID)
         v_config_version = get_modbus_slave(REG_CONFIG_VERSION)
+        v_blade_count = get_modbus_slave(REG_BLADE_COUNT)
         
         tp_log("Start command received")
         tp_log("-----------------------------------------------")
@@ -124,6 +127,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         tp_log("Depth: " + str(v_depth))
         tp_log("Length: " + str(v_length))
         tp_log("Config Version: " + str(v_config_version))
+        tp_log("Blade count: " + str(v_blade_count))
         tp_log("-----------------------------------------------")
         
         set_modbus_slave(REG_GRIND_READY, 0)
@@ -173,260 +177,269 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             tp_log("Incorrect Bay ID " + str(get_modbus_slave(REG_BAY_ID)))
             break
         
-         #Pick up
-        move_val = 3.5 # A129
-        move_val = 10 # A202
-        
-        movel(System_blades_top, 100, 50)
-        movel(blade_pos, 80, 50)
-        set_ref_coord(DR_WORLD)
-        
-        force_ext = get_tool_force(DR_TOOL)
-        current_z = force_ext[2]
-        
-        fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
-        
-        amovel(posx([0,0,-50,0,0,0]), vel=10, acc=20,mod=DR_MV_MOD_REL)
-
-        while (fcon_z):
+        # For number of blades
+        for i in range(0,max(1,v_blade_count),1):
+             #Pick up
+            move_val = 3.5 # A129
+            move_val = 10 # A202
+            
+            movel(System_blades_top, 100, 80)
+            movel(blade_pos, 100, 80)
+            set_ref_coord(DR_WORLD)
+            
+            force_ext = get_tool_force(DR_TOOL)
+            current_z = force_ext[2]
+            
             fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
-        
-        stop(DR_SSTOP)
-
-        set_ref_coord(DR_WORLD)
-
-        pos1, sol = get_current_posx(DR_WORLD)
-        
-        force_ext = get_tool_force(DR_WORLD)
-        current_y = force_ext[1]
-        tp_log("Current y: " + str(current_y))
-        
-        #wait(5)
-        #
-        if (current_y < -2):
-            max_current_y = -current_y
-        else:
-            max_current_y = current_y + 10
-        
-        tp_log("Max y:" + str(max_current_y))
-        
-        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
-        amovel(posx([0, -40, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
-        wait(0.5)
-        while (fcon_y):
-            if (check_motion() == 0):
-                tp_log("No blade detected")
-                movel(blade_pos, vel=20, acc=20)
-                movel(System_blades_top, 100, 50)
-                exit()
-                
-            fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
-        
-        stop(DR_SSTOP)
-        
-        pos2, sol2 = get_current_posx(DR_WORLD)  
-        tp_log("Collision Y detected")
-        
-        blade_depth = pos2[1] - blade_zero[1]
-        tp_log("Detected Blade Depth: " + str(blade_depth))
-        # Turn on magnets
-        set_analog_output(ch=1, val=1.2)
-        
-        set_ref_coord(DR_WORLD)
-        
-        #movel(pos1,20,20)
-        movel(blade_pos, vel=20, acc=20)
-        set_analog_output(ch=1, val=3.3)
-        
-        movel(System_blades_top, 100, 50)
-        movel(System_init, 150, 50)
-        ir_adjusted = posx(IR_sensor)
-        ir_adjusted[0] = ir_adjusted[0] + blade_depth
-        tp_log("IR adjusted x val: " + str(ir_adjusted[0]))
-        
-        movel(ir_adjusted, 100, 50)
-        
-        # Length check
-        
-        set_digital_output(1, ON)
-        wait(1)
-        # Used to be 500. Should we keep as 500 or no? Robot will stop moving anyway...
-        amovel(posx(0,50+(v_length/2),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
-        while (get_digital_input(1) == 0):
-            wait(0.01)
-        stop(DR_SSTOP)
-        
-        blade_left, sol = get_current_posx(ref=DR_WORLD)
-        
-        movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
-        
-        # Used to be -400
-        amovel(posx(0,-(v_length+50),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
-        
-        while (get_digital_input(1) == 0):
-            wait(0.01)
-        
-        stop(DR_SSTOP)
-        blade_right, sol = get_current_posx(ref=DR_WORLD)
-        
-        blade_length = blade_left[1] - blade_right[1]
-        
-        if (blade_length<260):
-            set_analog_output(ch=1, val=1.2)
-        elif (blade_length<520):
-            set_analog_output(ch=1, val=2.2)
-        else:
-            set_analog_output(ch=1, val=3.2)
             
-        tp_log("Detected Blade Length: " + str(blade_length))
+            amovel(posx([0,0,-50,0,0,0]), vel=10, acc=20,mod=DR_MV_MOD_REL)
+    
+            while (fcon_z):
+                fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
             
-        # Grinding
-                
-        movej(System_init_j, 100, 50)
-        movel(System_grinder_top, 100, 50)
-        movel(grinder_app, 100, 50)
-        
-        new_grinder_invert = posx(System_grinder_invert)
-        new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
-        
-        movel(new_grinder_invert, 20, 20)
-        
-        angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
-        
-        # Notify System
-        ## CHANGE THIS FROM 110 TO blade_right[1] - 3 
-        movel(posx(blade_right[1] - 3, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
-        x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-        
-        #and (x1[0]*-1 < blade_left[1])
-        #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
-         
-        set_modbus_slave(REG_GRIND_READY,1)
-
-        wait(7)
-        try:
-            while (1):
-                if (get_modbus_slave(REG_STATUS) == 0):
-                    tp_log("Stopping operation")
-                    break
-                while (get_modbus_slave(REG_STATUS) == 1):
-                    if (get_modbus_slave(REG_GRIND) == 1):
-                        tp_log("Start command received")
-                        val_x = get_modbus_slave(REG_DETECTION_X)/100
-                        val_y = get_modbus_slave(REG_DETECTION_Y)/100
-                        depth = get_modbus_slave(REG_DEPTH)/100
-                        tp_log("Binary Move Received: X={0}, Y={1}".format(val_x, val_y))
-                        
-                        # Execute Relative Move (based on X/Y inputs)
-                        # We assume these are offsets in mm
-                        #
-                        move_range = 20
-                        
-                        delta_x = [val_x, 0, 0, 0, 0, 0]
-                        delta_y = [0, val_y, 0, 0, 0, 0] # No depth, just position
-                        delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0] # Retracting depth and pos
-                        delta_up =  [0, 0, move_range, 0, 0, 0]
-                        delta_down =  [0, 0, -(move_range/2), 0, 0, 0]
-                        
-                        safe_movel(posx(delta_x), vel=200, acc=100,mod=DR_MV_MOD_REL)
-                        start_cut_pos, sol = get_current_posx()
-                        safe_movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                        safe_movel(posx(delta_y), vel=200, acc=100,mod=DR_MV_MOD_REL)
-                        
-                        #movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                        #movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                        
-                        
-                        # Alternating Direction Cut
-                        direction = 1 # 1 = up, -1 = down
-                        current_depth = 0
-                        calc_cut = 0
-                        #Identifying right cut depth
-                        for passes in [5,4,3,2,1]:
-                            calc_cut = depth/passes
-                            if 0.2 <= (calc_cut) <= 0.4:
-                                cut_depth = calc_cut
-                                break
-                        if calc_cut == 0:
-                            num_cuts = math.ceil(depth/0.3)
-                            cut_depth = depth/num_cuts
-                        
-                        while (current_depth < depth):
-                            
-                            step = min(cut_depth, depth - current_depth)
-                            
-                            rel_move = [0, step, direction * move_range, 0, 0, 0]
-                            scaled_vel = 200 * (1.5 - cut_depth)
-                            scaled_acc = 0.7 * scaled_vel
-                            safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
-                            
-                            current_depth += step
-                            tp_log("Current Depth: " + str(current_depth))
-                            direction *= -1
-                            
-                            
-                            
-                        # Cut on down only
-                        
-                        ## Cut on up only
-                        #current_depth = 0
-                        #cut_depth = 0.3
-                        #
-                        #while (current_depth < depth):
-                            #
-                            #step = min(cut_depth, depth - current_depth)
-                            #
-                            #rel_move = [0, step, move_range, 0, 0, 0]
-                            #rel_down = [0, 0, -move_range, 0, 0, 0]
-                            #movel(posx(rel_move), vel=300, acc=200, mod=DR_MV_MOD_REL)
-                            #movel(posx(rel_down), vel=300, acc=200, mod=DR_MV_MOD_REL)
-                            #current_depth += step
-                            #tp_log("Current Depth: " + str(current_depth))                      
-                        
-                        
-                        safe_movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                        safe_movel(posx(start_cut_pos), vel=400, acc=200)
-                        
-                        wait(0.5)
-                        set_modbus_slave(REG_GRIND,0)
-                        wait(0.5)
-        except ProcessAborted:
-        # If abort process, move back, put blade back
-            movel(posx(0,-30,0,0,0,0), 20, 20, mod=DR_MV_MOD_REL)
+            stop(DR_SSTOP)
+    
+            set_ref_coord(DR_WORLD)
+    
+            pos1, sol = get_current_posx(DR_WORLD)
             
-        set_modbus_slave(REG_GRIND_READY,0)
-        
-        # Put blade back
-        movel(angle_pos, 20, 20)
-        movel(grinder_app, 50, 20)
-        #movel(System_grinder_top, 100, 50)
-        movej(System_grinder_top_j, 10, 10)
-        movel(System_init, 100, 50)
-        
-        movel(System_blades_top, 100, 50)
-        #movel(blade_pos, 50, 50)
-        #movel(pos1, 20, 20)
-        #movel(pos2, 10, 10)
-        
-        movel(System_blade_drop, 100, 50)
-        amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
-        
-        force_z = get_tool_force(DR_TOOL)[2]        
-        fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
-               
-        while (fcon_z and (check_motion() != 0)):
             force_ext = get_tool_force(DR_WORLD)
+            current_y = force_ext[1]
+            tp_log("Current y: " + str(current_y))
+            
+            #wait(5)
+            #
+            if (current_y < -2):
+                max_current_y = -current_y
+            else:
+                max_current_y = current_y + 10
+            
+            tp_log("Max y:" + str(max_current_y))
+            
+            fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
+            amovel(posx([0, -40, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
+            wait(0.5)
+            while (fcon_y):
+                if (check_motion() == 0):
+                    tp_log("No blade detected")
+                    movel(blade_pos, vel=20, acc=20)
+                    movel(System_blades_top, 100, 80)
+                    exit()
+                    
+                fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
+            
+            stop(DR_SSTOP)
+            
+            pos2, sol2 = get_current_posx(DR_WORLD)  
+            tp_log("Collision Y detected")
+            
+            blade_depth = pos2[1] - blade_zero[1]
+            tp_log("Detected Blade Depth: " + str(blade_depth))
+            # Turn on magnets
+            set_analog_output(ch=1, val=1.2)
+            
+            set_ref_coord(DR_WORLD)
+            
+            #movel(pos1,20,20)
+            movel(blade_pos, vel=20, acc=20)
+            set_analog_output(ch=1, val=3.3)
+            
+            movel(System_blades_top, 150, 80)
+            movel(System_init, 150, 80)
+            ir_adjusted = posx(IR_sensor)
+            ir_adjusted[0] = ir_adjusted[0] + blade_depth
+            tp_log("IR adjusted x val: " + str(ir_adjusted[0]))
+            
+            movel(ir_adjusted, 150, 80)
+            
+            # Length check
+            
+            set_digital_output(1, ON)
+            wait(1)
+            # Used to be 500. Should we keep as 500 or no? Robot will stop moving anyway...
+            amovel(posx(0,50+(v_length/2),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+            while (get_digital_input(1) == 0):
+                wait(0.01)
+            stop(DR_SSTOP)
+            
+            blade_left, sol = get_current_posx(ref=DR_WORLD)
+            
+            movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
+            
+            # Used to be -400
+            amovel(posx(0,-(v_length+50),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+            
+            while (get_digital_input(1) == 0):
+                wait(0.01)
+            
+            stop(DR_SSTOP)
+            blade_right, sol = get_current_posx(ref=DR_WORLD)
+            
+            blade_length = blade_left[1] - blade_right[1]
+            
+            if (blade_length<260):
+                set_analog_output(ch=1, val=1.2)
+            elif (blade_length<520):
+                set_analog_output(ch=1, val=2.2)
+            else:
+                set_analog_output(ch=1, val=3.2)
+                
+            tp_log("Detected Blade Length: " + str(blade_length))
+                
+            # Grinding
+                    
+            movej(System_init_j, 150, 80)
+            movel(System_grinder_top, 150, 80)
+            movel(grinder_app, 150, 80)
+            
+            new_grinder_invert = posx(System_grinder_invert)
+            new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
+            
+            movel(new_grinder_invert, 20, 20)
+            
+            angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
+            
+            # Notify System
+            ## CHANGE THIS FROM 110 TO blade_right[1] - 3 
+            movel(posx(blade_right[1] - 3, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+            x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+            
+            #and (x1[0]*-1 < blade_left[1])
+            #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
+             
+            set_modbus_slave(REG_GRIND_READY,1)
+    
+            wait(7)
+            try:
+                while (1):
+                    if (get_modbus_slave(REG_STATUS) == 0):
+                        tp_log("Stopping operation")
+                        break
+                    while (get_modbus_slave(REG_STATUS) == 1):
+                        if (get_modbus_slave(REG_GRIND) == 1):
+                            tp_log("Start command received")
+                            val_x = get_modbus_slave(REG_DETECTION_X)/100
+                            val_y = get_modbus_slave(REG_DETECTION_Y)/100
+                            depth = get_modbus_slave(REG_DEPTH)/100
+                            tp_log("Binary Move Received: X={0}, Y={1}".format(val_x, val_y))
+                            
+                            # Execute Relative Move (based on X/Y inputs)
+                            # We assume these are offsets in mm
+                            #
+                            move_range = 30
+                            offset = 8
+                            
+                            delta_x = [val_x, 0, 0, 0, 0, 0]
+                            delta_y = [0, val_y, 0, 0, 0, 0] # No depth, just position
+                            delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0] # Retracting depth and pos
+                            delta_up =  [0, 0, move_range, 0, 0, 0]
+                            delta_down =  [0, 0, -(move_range/2) + offset, 0, 0, 0]
+                            
+                            safe_movel(posx(delta_x), vel=200, acc=100,mod=DR_MV_MOD_REL)
+                            
+                            start_cut_pos, sol = get_current_posx()
+                            safe_movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                            safe_movel(posx(delta_y), vel=200, acc=100,mod=DR_MV_MOD_REL)
+                            
+                            #movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                            #movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                            
+                            
+                            # Alternating Direction Cut
+                            direction = 1 # 1 = up, -1 = down
+                            current_depth = 0
+                            calc_cut = 0
+                            #Identifying right cut depth
+                            if depth != 0:
+                                    
+                                for passes in [5,4,3,2,1]:
+                                    calc_cut = depth/passes
+                                    if 0.2 <= (calc_cut) <= 0.4:
+                                        cut_depth = calc_cut
+                                        break
+                                if calc_cut == 0:
+                                    num_cuts = math.ceil(depth/0.3)
+                                    cut_depth = depth/num_cuts
+                                
+                                while (current_depth < depth):
+                                    
+                                    step = min(cut_depth, depth - current_depth)
+                                    
+                                    rel_move = [0, step, direction * move_range, 0, 0, 0]
+                                    scaled_vel = 200 * (1.5 - cut_depth)
+                                    scaled_acc = 0.7 * scaled_vel
+                                    safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
+                                    
+                                    current_depth += step
+                                    tp_log("Current Depth: " + str(current_depth))
+                                    direction *= -1
+                            else:
+                                tp_log("0 depth cut")
+                                
+                                
+                                
+                            # Cut on down only
+                            
+                            ## Cut on up only
+                            #current_depth = 0
+                            #cut_depth = 0.3
+                            #
+                            #while (current_depth < depth):
+                                #
+                                #step = min(cut_depth, depth - current_depth)
+                                #
+                                #rel_move = [0, step, move_range, 0, 0, 0]
+                                #rel_down = [0, 0, -move_range, 0, 0, 0]
+                                #movel(posx(rel_move), vel=300, acc=200, mod=DR_MV_MOD_REL)
+                                #movel(posx(rel_down), vel=300, acc=200, mod=DR_MV_MOD_REL)
+                                #current_depth += step
+                                #tp_log("Current Depth: " + str(current_depth))                      
+                            rel_move = [0, 0, direction * move_range, 0, 0, 0]
+                            safe_movel(posx(rel_move), vel=100, acc=20, mod=DR_MV_MOD_REL)
+
+                            safe_movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                            safe_movel(posx(start_cut_pos), vel=400, acc=200)
+                            
+                            wait(0.5)
+                            set_modbus_slave(REG_GRIND,0)
+                            wait(0.5)
+            except ProcessAborted:
+            # If abort process, move back, put blade back
+                movel(posx(0,-30,0,0,0,0), 20, 20, mod=DR_MV_MOD_REL)
+                
+            set_modbus_slave(REG_GRIND_READY,0)
+            
+            # Put blade back
+            movel(angle_pos, 20, 20)
+            movel(grinder_app, 50, 20)
+            #movel(System_grinder_top, 100, 50)
+            movej(System_grinder_top_j, time=3)
+            movel(System_init, 150, 80)
+            
+            movel(System_blades_top, 150, 80)
+            #movel(blade_pos, 50, 50)
+            #movel(pos1, 20, 20)
+            #movel(pos2, 10, 10)
+            
+            movel(System_blade_drop, 150, 80)
+            amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+            
+            force_z = get_tool_force(DR_TOOL)[2]        
             fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
-        
-        stop(DR_SSTOP)
-        movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
-        movel(System_blade_drop, 100, 50)
-         
-        # Turn off magnets
-        set_analog_output(ch=1, val=0)
-        
-        #movel(blade_pos, vel=20, acc=20)
-        movel(System_blades_top, 100, 50)
+                   
+            while (fcon_z and (check_motion() != 0)):
+                force_ext = get_tool_force(DR_WORLD)
+                fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+            
+            stop(DR_SSTOP)
+            movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+            movel(System_blade_drop, 100, 50)
+             
+            # Turn off magnets
+            set_analog_output(ch=1, val=0)
+            
+            #movel(blade_pos, vel=20, acc=20)
+            movel(System_blades_top, 150, 80)
 
         
         set_modbus_slave(REG_START, 0)
