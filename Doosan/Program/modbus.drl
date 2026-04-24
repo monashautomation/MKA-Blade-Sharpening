@@ -73,17 +73,13 @@ def safe_movel(*args, **kwargs):
     if status == 0:
         raise ProcessAborted()
 
-def soft_estop():
-    while True:
-        if get_modbus_slave(REG_STATUS) == 1:
-            while get_modbus_slave(REG_STATUS) == 1:
-                sleep(0.05)
-                continue
-            if get_modbus_slave(REG_STATUS) == 0:
-               stop(DR_QSTOP)
-               break
+def check_emergency():
+    if get_modbus_slave(REG_EMERGENCY) != 0:
+        tp_log("Emergency triggered - stopping program")
+        stop(DR_QSTOP)
+        exit()
 
-
+thread_run(check_emergency, loop=True, interval=0.5)
     
 ## Homing
 if (homing_val):
@@ -105,7 +101,7 @@ else:
     tp_log("Skipped Homing")
 
     
-# MAIN PROGRAM    
+# MAIN PROGRAM
 while(get_modbus_slave(REG_EMERGENCY) == 0):
     if (get_modbus_slave(REG_START) == 1):
     
@@ -132,7 +128,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         
         set_modbus_slave(REG_GRIND_READY, 0)
         
-         #Grinder Selection
+        #Grinder Selection
         if (v_grinder_id == 1):
             tp_log("Grinder 1")
             grinder_app = System_grinder_app
@@ -306,7 +302,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             
             #and (x1[0]*-1 < blade_left[1])
             #and get_modbus_slave(REG_COMMAND) == CMD_READ_DETECTION
-             
+            
             set_modbus_slave(REG_GRIND_READY,1)
     
             wait(7)
@@ -373,29 +369,12 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                                     current_depth += step
                                     tp_log("Current Depth: " + str(current_depth))
                                     direction *= -1
+
+                                rel_move = [0, 0, direction * move_range, 0, 0, 0]
+                                safe_movel(posx(rel_move), vel=100, acc=20, mod=DR_MV_MOD_REL)
+
                             else:
                                 tp_log("0 depth cut")
-                                
-                                
-                                
-                            # Cut on down only
-                            
-                            ## Cut on up only
-                            #current_depth = 0
-                            #cut_depth = 0.3
-                            #
-                            #while (current_depth < depth):
-                                #
-                                #step = min(cut_depth, depth - current_depth)
-                                #
-                                #rel_move = [0, step, move_range, 0, 0, 0]
-                                #rel_down = [0, 0, -move_range, 0, 0, 0]
-                                #movel(posx(rel_move), vel=300, acc=200, mod=DR_MV_MOD_REL)
-                                #movel(posx(rel_down), vel=300, acc=200, mod=DR_MV_MOD_REL)
-                                #current_depth += step
-                                #tp_log("Current Depth: " + str(current_depth))                      
-                            rel_move = [0, 0, direction * move_range, 0, 0, 0]
-                            safe_movel(posx(rel_move), vel=100, acc=20, mod=DR_MV_MOD_REL)
 
                             safe_movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
                             safe_movel(posx(start_cut_pos), vel=400, acc=200)

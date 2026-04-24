@@ -1,0 +1,3 @@
+- Grind movement offset (done)
+- Mini UI for homing, maybe setting different modes
+- Final down pass (done but questionable...)
