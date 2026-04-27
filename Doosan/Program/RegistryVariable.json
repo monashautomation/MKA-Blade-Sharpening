@@ -52,19 +52,19 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[-533.523,-101.037,120.028,13.093,-179.996,-31.915]"
+    "Value": "[-543.014,-177.607,119.986,16.088,179.996,-28.916]"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-533.516,114.657,119.998,23.213,-179.999,-21.776]"
+    "Value": "[-543.001,186.469,119.911,158.655,-179.990,113.663]"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "blade_length",
     "ValueType": "Float",
-    "Value": "215.6941375732422"
+    "Value": "364.07557678222656"
   },
   "Variable11": {
     "Type": "Registry",
@@ -76,7 +76,7 @@
     "Type": "Registry",
     "Name": "System_blade1",
     "ValueType": "Posx",
-    "Value": "posx(0, -470, 30, 90, 180, -45)"
+    "Value": "posx(0, -475, 30, 90, 180, -45)"
   },
   "Variable13": {
     "Type": "Registry",
@@ -100,7 +100,7 @@
     "Type": "Registry",
     "Name": "blade_depth",
     "ValueType": "Float",
-    "Value": "31.50377197265624"
+    "Value": "22.06785888671874"
   },
   "Variable17": {
     "Type": "Registry",

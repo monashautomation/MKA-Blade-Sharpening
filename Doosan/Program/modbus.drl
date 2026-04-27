@@ -78,8 +78,9 @@ def check_emergency():
         tp_log("Emergency triggered - stopping program")
         stop(DR_QSTOP)
         exit()
+    wait(0.5)
 
-thread_run(check_emergency, loop=True, interval=0.5)
+thread_run(check_emergency, loop=True)
     
 ## Homing
 if (homing_val):
@@ -176,6 +177,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         # For number of blades
         for i in range(0,max(1,v_blade_count),1):
              #Pick up
+             
             move_val = 3.5 # A129
             move_val = 10 # A202
             
@@ -237,16 +239,16 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             set_ref_coord(DR_WORLD)
             
             #movel(pos1,20,20)
-            movel(blade_pos, vel=20, acc=20)
+            movel(blade_pos, vel=50, acc=20)
             set_analog_output(ch=1, val=3.3)
             
-            movel(System_blades_top, 150, 80)
-            movel(System_init, 150, 80)
+            movel(System_blades_top, 250, 100)
+            movel(System_init, 250, 100)
             ir_adjusted = posx(IR_sensor)
             ir_adjusted[0] = ir_adjusted[0] + blade_depth
             tp_log("IR adjusted x val: " + str(ir_adjusted[0]))
             
-            movel(ir_adjusted, 150, 80)
+            movel(ir_adjusted, 200, 100)
             
             # Length check
             
@@ -284,9 +286,9 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                 
             # Grinding
                     
-            movej(System_init_j, 150, 80)
-            movel(System_grinder_top, 150, 80)
-            movel(grinder_app, 150, 80)
+            movej(System_init_j, 250, 100)
+            movel(System_grinder_top, 250, 100)
+            movel(grinder_app, 200, 100)
             
             new_grinder_invert = posx(System_grinder_invert)
             new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
@@ -297,7 +299,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             
             # Notify System
             ## CHANGE THIS FROM 110 TO blade_right[1] - 3 
-            movel(posx(blade_right[1] - 3, 0, 0, 0, 0, 0), 20, 10, mod=DR_MV_MOD_REL)
+            movel(posx(blade_right[1] - 3, 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
             
             #and (x1[0]*-1 < blade_left[1])
@@ -305,7 +307,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             
             set_modbus_slave(REG_GRIND_READY,1)
     
-            wait(7)
+            wait(5)
             try:
                 while (1):
                     if (get_modbus_slave(REG_STATUS) == 0):
@@ -331,11 +333,11 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             delta_up =  [0, 0, move_range, 0, 0, 0]
                             delta_down =  [0, 0, -(move_range/2) + offset, 0, 0, 0]
                             
-                            safe_movel(posx(delta_x), vel=200, acc=100,mod=DR_MV_MOD_REL)
+                            safe_movel(posx(delta_x), vel=250, acc=100,mod=DR_MV_MOD_REL)
                             
                             start_cut_pos, sol = get_current_posx()
                             safe_movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                            safe_movel(posx(delta_y), vel=200, acc=100,mod=DR_MV_MOD_REL)
+                            safe_movel(posx(delta_y), vel=250, acc=100,mod=DR_MV_MOD_REL)
                             
                             #movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
                             #movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
@@ -353,25 +355,26 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                                     if 0.2 <= (calc_cut) <= 0.4:
                                         cut_depth = calc_cut
                                         break
-                                if calc_cut == 0:
-                                    num_cuts = math.ceil(depth/0.3)
-                                    cut_depth = depth/num_cuts
+                                if calc_cut < 0.2:
+     
+                                    cut_depth = calc_cut
+                                    
                                 
                                 while (current_depth < depth):
                                     
                                     step = min(cut_depth, depth - current_depth)
                                     
                                     rel_move = [0, step, direction * move_range, 0, 0, 0]
-                                    scaled_vel = 200 * (1.5 - cut_depth)
-                                    scaled_acc = 0.7 * scaled_vel
+                                    scaled_vel = 250 * (1.5 - cut_depth)
+                                    scaled_acc = 0.8 * scaled_vel
                                     safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
                                     
                                     current_depth += step
                                     tp_log("Current Depth: " + str(current_depth))
                                     direction *= -1
 
-                                rel_move = [0, 0, direction * move_range, 0, 0, 0]
-                                safe_movel(posx(rel_move), vel=100, acc=20, mod=DR_MV_MOD_REL)
+                                #rel_move = [0, 0, direction * move_range, 0, 0, 0]
+                                #safe_movel(posx(rel_move), vel=200, acc=50, mod=DR_MV_MOD_REL)
 
                             else:
                                 tp_log("0 depth cut")
