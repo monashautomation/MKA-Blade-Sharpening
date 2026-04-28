@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MKA Robot Dashboard</title>
+<style>
+  :root {
+    --bg: #ffffff; --panel: #f7f8fa; --line: #d8dde6;
+    --text: #1a2030; --dim: #6b7280;
+    --primary: #1fbf6c;     /* green: connected / on / start */
+    --accent: #2563eb;      /* blue: headings / info */
+    --secondary: #7c3aed;   /* purple: calibration / override / ghost */
+    --danger: #dc2626;      /* red: emergency / errors */
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'Consolas','Monaco',monospace; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+  h1 { color: var(--accent); font-size: 22px; margin: 0 0 16px; letter-spacing: 2px; }
+  h1 .conn { float: right; font-size: 12px; color: var(--dim); font-weight: normal; letter-spacing: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); padding: 14px; border-radius: 6px; }
+  .panel.full { grid-column: 1 / -1; }
+  .panel h2 { color: var(--accent); margin: 0 0 10px; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: none; }
+  .name { color: var(--text); font-size: 13px; }
+  .name .addr { color: var(--dim); font-size: 11px; margin-left: 4px; }
+  input[type=number], select { background: #fff; border: 1px solid var(--line); color: var(--text); padding: 4px 8px; width: 110px; font-family: inherit; text-align: right; border-radius: 3px; }
+  input[type=number]:disabled, select:disabled { color: #aab1bd; background: #eef0f3; }
+  input[type=number]:focus { outline: 1px solid var(--accent); }
+  .toggle { width: 48px; height: 22px; background: #cfd5df; border-radius: 11px; position: relative; cursor: pointer; transition: background 0.15s; }
+  .toggle.on { background: var(--primary); }
+  .toggle.disabled { opacity: 0.4; cursor: not-allowed; }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+  .toggle.on::after { left: 28px; }
+  button { background: var(--primary); color: #fff; border: none; padding: 10px 18px; font-family: inherit; font-weight: 700; cursor: pointer; border-radius: 4px; letter-spacing: 1.5px; font-size: 13px; }
+  button:hover { filter: brightness(1.05); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.danger { background: var(--danger); color: #fff; }
+  button.warning { background: var(--secondary); color: #fff; }
+  button.ghost { background: #fff; color: var(--secondary); border: 1px solid var(--secondary); }
+  .controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  details summary { cursor: pointer; color: var(--secondary); padding: 6px 0; font-size: 13px; user-select: none; }
+  details[open] summary { margin-bottom: 8px; }
+  .override { margin-bottom: 10px; font-size: 12px; color: var(--dim); }
+  .override input { margin-right: 6px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: #e5e8ed; color: var(--text); }
+  .pill.on { background: var(--primary); color: #fff; }
+  .pill.warn { background: var(--secondary); color: #fff; }
+  .pill.err { background: var(--danger); color: #fff; }
+  .small { font-size: 11px; color: var(--dim); }
+  .status-strip { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>MKA BLADE SHARPENING — DASHBOARD <span id="conn" class="conn">connecting…</span></h1>
+
+<div class="status-strip" id="status-strip"></div>
+
+<div class="controls">
+  <button id="btn-start">▶ START CYCLE</button>
+  <button id="btn-estop" class="danger">■ EMERGENCY STOP</button>
+  <button id="btn-clear-estop" class="warning">CLEAR E-STOP</button>
+  <button id="btn-status0" class="ghost">STATUS = 0 (stop grind)</button>
+  <button id="btn-status1" class="ghost">STATUS = 1 (resume)</button>
+  <button id="btn-grind-tick" class="ghost">GRIND = 1 (one cut)</button>
+</div>
+
+<div class="grid">
+
+  <div class="panel">
+    <h2>Mode</h2>
+    <div id="mode-section"></div>
+    <div class="small" style="margin-top: 6px;">Mode = 1 runs calibration only and ignores feature toggles.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Feature Toggles</h2>
+    <div id="toggle-section"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Config Inputs</h2>
+    <div id="config-section"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Last-Known Derived State</h2>
+    <div id="derived-section"></div>
+    <div class="small" style="margin-top: 6px;">Editable. Stages skipped this cycle will reuse these values.</div>
+  </div>
+
+  <div class="panel full">
+    <h2>Camera / Detection</h2>
+    <div id="detection-section"></div>
+  </div>
+
+  <details class="panel full">
+    <summary>Handshake Registers (read-only by default)</summary>
+    <div class="override">
+      <label><input type="checkbox" id="override-handshake"> Allow editing handshake registers (use with care)</label>
+    </div>
+    <div id="handshake-section"></div>
+  </details>
+
+</div>
+
+<script>
+const POLL_MS = 1000;
+let snapshot = {};
+let writing = false;
+let overrideHandshake = false;
+
+async function fetchRegs() {
+  if (writing) return;
+  try {
+    const r = await fetch('/api/registers');
+    const j = await r.json();
+    const conn = document.getElementById('conn');
+    if (j.ok) {
+      snapshot = j.registers;
+      conn.textContent = 'connected → ' + j.robot_ip;
+      conn.style.color = 'var(--primary)';
+      render();
+    } else {
+      conn.textContent = 'error: ' + j.error;
+      conn.style.color = 'var(--danger)';
+    }
+  } catch (e) {
+    document.getElementById('conn').textContent = 'disconnected: ' + e.message;
+    document.getElementById('conn').style.color = 'var(--danger)';
+  }
+}
+
+async function writeReg(name, value) {
+  writing = true;
+  try {
+    await fetch('/api/registers', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({[name]: value})
+    });
+  } catch (e) {
+    alert('Write failed: ' + e.message);
+  } finally {
+    writing = false;
+    fetchRegs();
+  }
+}
+window.writeReg = writeReg;
+
+function fmt(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'number' && !Number.isInteger(v)) return v.toFixed(2);
+  return v;
+}
+
+function row(name, label, opts) {
+  opts = opts || {};
+  const reg = snapshot[name];
+  if (!reg) return `<div class="row"><span class="name">${label}</span><span class="small">missing</span></div>`;
+  const val = reg.value;
+  const addr = reg.meta.addr;
+  const editable = (opts.forceEditable !== undefined) ? opts.forceEditable : reg.meta.editable;
+
+  if (opts.kind === 'toggle') {
+    const on = Number(val) === 1;
+    const cls = 'toggle' + (on ? ' on' : '') + (editable ? '' : ' disabled');
+    const click = editable ? `onclick="writeReg('${name}', ${on ? 0 : 1})"` : '';
+    return `<div class="row"><span class="name">${label} <span class="addr">[${addr}]</span></span>
+      <div class="${cls}" ${click}></div></div>`;
+  }
+  if (opts.kind === 'select') {
+    const optsHtml = opts.options.map(o =>
+      `<option value="${o.v}" ${Number(o.v) === Number(val) ? 'selected' : ''}>${o.label}</option>`
+    ).join('');
+    return `<div class="row"><span class="name">${label} <span class="addr">[${addr}]</span></span>
+      <select ${editable ? '' : 'disabled'} onchange="writeReg('${name}', this.value)">${optsHtml}</select></div>`;
+  }
+  const step = opts.step || 1;
+  return `<div class="row"><span class="name">${label} <span class="addr">[${addr}]</span></span>
+    <input type="number" step="${step}" value="${fmt(val)}" ${editable ? '' : 'disabled'}
+      onchange="writeReg('${name}', this.value)"></div>`;
+}
+
+function pill(label, regName, valueLabels) {
+  const reg = snapshot[regName];
+  if (!reg) return '';
+  const v = Number(reg.value);
+  let cls = 'pill';
+  let text = valueLabels && valueLabels[v] !== undefined ? valueLabels[v] : v;
+  if (regName === 'EMERGENCY' && v !== 0) cls += ' err';
+  else if (regName === 'STATUS' && v === 0) cls += ' warn';
+  else if (v === 1 && regName !== 'EMERGENCY') cls += ' on';
+  return `<span class="${cls}">${label}: ${text}</span>`;
+}
+
+function render() {
+  document.getElementById('status-strip').innerHTML =
+    pill('EMERGENCY', 'EMERGENCY') +
+    pill('STATUS', 'STATUS') +
+    pill('START', 'START') +
+    pill('GRIND_READY', 'GRIND_READY') +
+    pill('GRIND', 'GRIND') +
+    pill('CALIB_READY', 'CALIBRATION_READY') +
+    pill('MODE', 'MODE', {0: 'OPERATION', 1: 'CALIBRATION'});
+
+  document.getElementById('mode-section').innerHTML =
+    row('MODE', 'Mode', {kind: 'select', options: [
+      {v: 0, label: '0 — Operation'},
+      {v: 1, label: '1 — Calibration'}
+    ]});
+
+  document.getElementById('toggle-section').innerHTML =
+    row('FEAT_HOMING',  'Homing',         {kind: 'toggle'}) +
+    row('FEAT_PICKUP',  'Blade Pickup',   {kind: 'toggle'}) +
+    row('FEAT_LENGTH',  'Length Check',   {kind: 'toggle'}) +
+    row('FEAT_GRIND',   'Grinding',       {kind: 'toggle'}) +
+    row('FEAT_PUTDOWN', 'Blade Putdown',  {kind: 'toggle'});
+
+  document.getElementById('config-section').innerHTML =
+    row('BAY_ID',         'Bay ID',          {step: 1}) +
+    row('GRINDER_ID',     'Grinder ID',      {step: 1}) +
+    row('ANGLE',          'Angle (deg)',     {step: 0.1}) +
+    row('DEPTH',          'Cut Depth (mm)',  {step: 0.01}) +
+    row('LENGTH',         'Blade Length (mm)', {step: 1}) +
+    row('CONFIG_VERSION', 'Config Version',  {step: 1}) +
+    row('BLADE_COUNT',    'Blade Count',     {step: 1});
+
+  document.getElementById('derived-section').innerHTML =
+    row('BLADE_DEPTH',   'Blade Depth (mm)',          {step: 0.01}) +
+    row('BLADE_LENGTH',  'Blade Length Measured (mm)',{step: 0.1}) +
+    row('BLADE_LEFT_Y',  'Blade Left Y (mm)',         {step: 0.1}) +
+    row('BLADE_RIGHT_Y', 'Blade Right Y (mm)',        {step: 0.1});
+
+  document.getElementById('detection-section').innerHTML =
+    row('DETECTION_X', 'Detection X (mm)', {step: 0.01}) +
+    row('DETECTION_Y', 'Detection Y (mm)', {step: 0.01});
+
+  const ovr = overrideHandshake;
+  document.getElementById('handshake-section').innerHTML =
+    row('STATUS',             'Status',                {step: 1, forceEditable: ovr}) +
+    row('START',              'Start',                 {step: 1, forceEditable: ovr}) +
+    row('GRIND_READY',        'Grind Ready',           {step: 1, forceEditable: ovr}) +
+    row('GRIND',              'Grind',                 {step: 1, forceEditable: ovr}) +
+    row('EMERGENCY',          'Emergency',             {step: 1, forceEditable: ovr}) +
+    row('CALIBRATION_READY',  'Calibration Ready',     {step: 1, forceEditable: ovr}) +
+    row('CALIBRATION_ANGLE',  'Calibration Angle (°)', {step: 0.1, forceEditable: ovr});
+}
+
+document.getElementById('btn-start').onclick = () => writeReg('START', 1);
+document.getElementById('btn-estop').onclick = () => writeReg('EMERGENCY', 1);
+document.getElementById('btn-clear-estop').onclick = () => {
+  if (confirm('Clear emergency stop? Robot program must be re-started on the controller.')) writeReg('EMERGENCY', 0);
+};
+document.getElementById('btn-status0').onclick = () => writeReg('STATUS', 0);
+document.getElementById('btn-status1').onclick = () => writeReg('STATUS', 1);
+document.getElementById('btn-grind-tick').onclick = () => writeReg('GRIND', 1);
+document.getElementById('override-handshake').onchange = (e) => { overrideHandshake = e.target.checked; render(); };
+
+fetchRegs();
+setInterval(fetchRegs, POLL_MS);
+</script>
+</body>
+</html>
