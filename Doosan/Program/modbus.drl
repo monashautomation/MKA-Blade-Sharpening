@@ -16,7 +16,7 @@ REG_EMERGENCY = 140
 
 REG_CALIBRATION_READY = 141
 REG_CALIBRATION_ANGLE = 142
-
+REG_TEETH_DEPTH = 143
 REG_BLADE_COUNT = 144
 
 # Command codes
@@ -24,7 +24,7 @@ CMD_READ_DETECTION = 11
 CMD_RESET = 22
 
 # Code Settings
-homing_val = True
+homing_val = False
 
 #movej(System_init_j, 100, 20)
 
@@ -69,6 +69,7 @@ def safe_movel(*args, **kwargs):
         raise ProcessAborted()
         
     movel(*args, **kwargs)
+    tp_log("Status: " + str(status))
         
     if status == 0:
         raise ProcessAborted()
