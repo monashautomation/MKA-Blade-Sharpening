@@ -52,31 +52,31 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[-543.014,-177.607,119.986,16.088,179.996,-28.916]"
+    "Value": "[-547.874,-94.538,120.008,0.757,-179.998,-44.253]"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-543.001,186.469,119.911,158.655,-179.990,113.663]"
+    "Value": "[-547.865,118.487,119.985,31.501,179.999,-13.488]"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "blade_length",
     "ValueType": "Float",
-    "Value": "364.07557678222656"
+    "Value": "213.02483367919922"
   },
   "Variable11": {
     "Type": "Registry",
     "Name": "System_grinder_invert",
     "ValueType": "Posx",
-    "Value": "posx(0.000,585.000,130.000,90.000,90.000,135.000)"
+    "Value": "posx(0.000,584.000,135.000,90.000,90.000,135.000)"
   },
   "Variable12": {
     "Type": "Registry",
     "Name": "System_blade1",
     "ValueType": "Posx",
-    "Value": "posx(0, -475, 30, 90, 180, -45)"
+    "Value": "posx(0, -480, 30, 90, 180, -45)"
   },
   "Variable13": {
     "Type": "Registry",
@@ -100,13 +100,13 @@
     "Type": "Registry",
     "Name": "blade_depth",
     "ValueType": "Float",
-    "Value": "22.06785888671874"
+    "Value": "17.14317626953124"
   },
   "Variable17": {
     "Type": "Registry",
     "Name": "System_angle_inspection",
     "ValueType": "Posx",
-    "Value": "posx(0, 528, 179, 90, 160, 135)"
+    "Value": "posx(0, 528, 185, 90, 160, 135)"
   },
   "Variable18": {
     "Type": "Registry",

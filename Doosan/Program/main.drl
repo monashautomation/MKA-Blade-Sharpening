@@ -19,17 +19,20 @@ REG_START = 137            # 1 = trigger one orchestrator pass
 REG_GRIND_READY = 138      # robot -> camera handshake
 REG_GRIND = 139            # camera -> robot: cut now
 REG_EMERGENCY = 140        # 1 = stop everything
-REG_CALIBRATION_READY = 141
-REG_CALIBRATION_ANGLE = 142
-REG_BLADE_COUNT = 144
+REG_CALIBRATION_READY = 141 # 1 - start/stop calibration
+REG_CALIBRATION_ANGLE = 142 # Angle of detection
+REG_BLADE_COUNT = 143      # Blade count
+REG_CURRENT_DEPTH = 144    # Tooth Depth from camera
+REG_CURRENT_X = 145        # X diff after detection_x
 
 # --- Feature toggles (NEW) ---
-REG_FEAT_HOMING = 145
-REG_FEAT_PICKUP = 146
-REG_FEAT_LENGTH = 147
-REG_FEAT_GRIND = 148
-REG_FEAT_PUTDOWN = 149
-REG_MODE = 150             # 0 = operation, 1 = calibration
+REG_MODE = 160             # 0 = operation, 1 = calibration
+REG_FEAT_HOMING = 161
+REG_FEAT_PICKUP = 162
+REG_FEAT_LENGTH = 163
+REG_FEAT_GRIND = 164
+REG_FEAT_PUTDOWN = 165
+
 
 # --- Last-known derived state (NEW) ---
 REG_BLADE_DEPTH = 160      # x100 mm, signed

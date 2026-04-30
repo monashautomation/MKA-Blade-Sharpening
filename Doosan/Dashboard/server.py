@@ -14,7 +14,7 @@ import os
 from flask import Flask, jsonify, request, send_from_directory
 from pymodbus.client import ModbusTcpClient
 
-ROBOT_IP = os.environ.get("ROBOT_IP", "172.24.89.89")
+ROBOT_IP = os.environ.get("ROBOT_IP", "172.24.9.20")
 ROBOT_PORT = int(os.environ.get("ROBOT_PORT", "502"))
 HTTP_PORT = int(os.environ.get("HTTP_PORT", "5050"))
 

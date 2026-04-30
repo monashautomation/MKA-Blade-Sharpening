@@ -181,8 +181,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             move_val = 3.5 # A129
             move_val = 10 # A202
             
-            movel(System_blades_top, 100, 80)
-            movel(blade_pos, 100, 80)
+            movel(System_blades_top, 200, 100)
+            movel(blade_pos, 200, 100)
             set_ref_coord(DR_WORLD)
             
             force_ext = get_tool_force(DR_TOOL)
@@ -242,8 +242,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             movel(blade_pos, vel=50, acc=20)
             set_analog_output(ch=1, val=3.3)
             
-            movel(System_blades_top, 250, 100)
-            movel(System_init, 250, 100)
+            movel(System_blades_top, 300, 200)
+            movel(System_init, 300, 200)
             ir_adjusted = posx(IR_sensor)
             ir_adjusted[0] = ir_adjusted[0] + blade_depth
             tp_log("IR adjusted x val: " + str(ir_adjusted[0]))
@@ -299,7 +299,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             
             # Notify System
             ## CHANGE THIS FROM 110 TO blade_right[1] - 3 
-            movel(posx(blade_right[1] - 3, 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
+            movel(posx(blade_right[1] + 15, 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
             
             #and (x1[0]*-1 < blade_left[1])
@@ -350,13 +350,12 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             #Identifying right cut depth
                             if depth != 0:
                                     
-                                for passes in [5,4,3,2,1]:
+                                for passes in [12,11,10,9,8,7,6,5,4,3,2,1]:
                                     calc_cut = depth/passes
-                                    if 0.2 <= (calc_cut) <= 0.4:
+                                    if 0.1 <= (calc_cut) <= 0.25:
                                         cut_depth = calc_cut
                                         break
-                                if calc_cut < 0.2:
-     
+                                if calc_cut < 0.1:
                                     cut_depth = calc_cut
                                     
                                 
@@ -382,7 +381,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             safe_movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
                             safe_movel(posx(start_cut_pos), vel=400, acc=200)
                             
-                            wait(0.5)
+                            wait(1)
                             set_modbus_slave(REG_GRIND,0)
                             wait(0.5)
             except ProcessAborted:
@@ -414,11 +413,15 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                 fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
             
             stop(DR_SSTOP)
+            
+            # Turn off magnets
+            set_analog_output(ch=1, val=0)
+            
+            # Move back
             movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
             movel(System_blade_drop, 100, 50)
              
-            # Turn off magnets
-            set_analog_output(ch=1, val=0)
+            
             
             #movel(blade_pos, vel=20, acc=20)
             movel(System_blades_top, 150, 80)
