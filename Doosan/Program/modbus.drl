@@ -91,16 +91,32 @@ if (homing_val):
     x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
     tp_log("Current Pos: " + str(x1))
     
-    dist1 = get_distance(x1, System_grinder_top)
-    dist2 = get_distance(x1, fkin(System_init_j))
-    dist3 = get_distance(x1, System_blades_top)
+    local_zones = [System_grinder_top,fkin(System_init_j), System_blades_top, System_grinder2_top]
+    dist = [0] * 4
+    #dist1 = get_distance(x1, System_grinder_top)
+    #dist2 = get_distance(x1, fkin(System_init_j))
+    #dist3 = get_distance(x1, System_blades_top)
+    #dist4 = get_distance(x1, System_grinder2_top)
     
-    if dist1 < dist2:
-        movel(System_grinder_top, 50, 10)
-    elif dist3 < dist2:
-        movel(System_blades_top, 50, 20)
-        
-    movej(System_init_j, 100, 20)
+    for i in range(0,len(local_zones)):
+        dist[i] = get_distance(x1, local_zones[i])
+    
+    closest_zone = dist.index(min(dist))
+    while closest_zone != 2:
+        tp_log("Closest_zone: " + str(closest_zone))
+        if closest_zone == 0:
+            movel(local_zones[0], 100, 20)
+            closest_zone += 1
+        elif closest_zone == 1:
+            movej(System_init_j, 100, 20)
+            closest_zone += 1
+        elif closest_zone == 3:
+            movel(local_zones[3], 100, 20)
+            closest_zone -= 1
+            
+    tp_log("Going to blades now")        
+    movel(local_zones[2], 100, 20)
+    
 else:
     tp_log("Skipped Homing")
 
@@ -135,15 +151,21 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
         #Grinder Selection
         if (v_grinder_id == 1):
             tp_log("Grinder 1")
+            grinder_top = System_grinder_top
             grinder_app = System_grinder_app
+            grinder_invert = System_grinder_invert
             
         elif (v_grinder_id == 2):
-            tp_log("Grinder 2 (NOT SET)")
-            grinder_app = System_grinder_app
+            tp_log("Grinder 2")
+            grinder_top = System_grinder2_top
+            grinder_app = System_grinder2_app
+            grinder_invert = System_grinder2_invert
             
         elif (v_grinder_id == 3):
             tp_log("Grinder 3 (NOT SET)")
-            grinder_app = System_grinder_app
+            grinder_top = System_grinder2_top
+            grinder_app = System_grinder2_app
+            grinder_invert = System_grinder2_invert
         
         else:
             tp_log("Incorrect Grinder ID " + str(get_modbus_slave(REG_GRINDER_ID)))
@@ -290,15 +312,16 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             tp_log("Detected Blade Length: " + str(blade_length))
                 
             # Grinding
-            movel(System_blades_top, 200, 100)        
-            movej(System_init_j, 250, 100)
-            movel(System_grinder_top, 250, 100)
+            movel(System_blades_top, 200, 100)
+            if (v_grinder_id != 2):
+                movej(System_init_j, 250, 100)
+            movel(grinder_top, 250, 100)
             movel(grinder_app, 200, 100)
 
             #tp_log("Setting Stiffness")
             #task_compliance_ctrl([5000,10000,10000,300,300,300])
             
-            new_grinder_invert = posx(System_grinder_invert)
+            new_grinder_invert = posx(grinder_invert)
             new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
             
             movel(new_grinder_invert, 20, 20)
@@ -449,7 +472,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             tp_log("Grinder_app")
             movel(grinder_app, 50, 20)
             tp_log("Grinder top")
-            movel(System_grinder_top, 100, 50)
+            movel(grinder_top, 100, 50)
             #movej(System_grinder_top_j, time=3)
             movel(System_init, 150, 80)
             
@@ -484,6 +507,13 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
 
         
         set_modbus_slave(REG_START, 0)
+        
+        
+        
+        #g2 top posx(330, 0, 600, 0.14, 134.96, 135)
+        #g2 app posx(355, 0, 134, 0, 160, 135)
+        #g2 invert posx(520, 0, 117, 180, -90, -45)
+        
         
         
 

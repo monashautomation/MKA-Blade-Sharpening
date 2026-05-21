@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Rahul/Uni/5882 - Design/**)",
+      "Bash(unzip -p Workshop_Report.docx word/document.xml)",
+      "Bash(python -c \"import xml.etree.ElementTree as ET; ET.parse\\('doc.xml'\\); print\\('document.xml OK'\\)\")",
+      "Bash(unzip -p Workshop_Report.docx word/numbering.xml)",
+      "Bash(python -c \"import xml.etree.ElementTree as ET; ET.parse\\('num.xml'\\); print\\('numbering.xml OK'\\)\")"
+    ]
+  }
+}

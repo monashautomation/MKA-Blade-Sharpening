@@ -59,11 +59,16 @@
 
 <div class="controls">
   <button id="btn-start">▶ START CYCLE</button>
-  <button id="btn-estop" class="danger">■ EMERGENCY STOP</button>
-  <button id="btn-clear-estop" class="warning">CLEAR E-STOP</button>
-  <button id="btn-status0" class="ghost">STATUS = 0 (stop grind)</button>
-  <button id="btn-status1" class="ghost">STATUS = 1 (resume)</button>
+  <button id="btn-stop" class="warning">■ STOP (start=0, status=0)</button>
+  <button id="btn-estop" class="danger">⛔ EMERGENCY STOP</button>
+  <button id="btn-clear-estop" class="ghost">CLEAR E-STOP</button>
+  <button id="btn-status1" class="ghost">RESUME (status=1)</button>
   <button id="btn-grind-tick" class="ghost">GRIND = 1 (one cut)</button>
+</div>
+<div class="small" style="margin: -8px 0 16px; color: var(--dim);">
+  STOP clears START and sets STATUS=0, which aborts the grinding inner loop. Stages already running
+  will finish their current motion. EMERGENCY STOP halts everything immediately (DR_QSTOP) — robot
+  program must be re-started on the controller.
 </div>
 
 <div class="grid">
@@ -133,12 +138,15 @@ async function fetchRegs() {
 }
 
 async function writeReg(name, value) {
+  return writeRegs({[name]: value});
+}
+async function writeRegs(payload) {
   writing = true;
   try {
     await fetch('/api/registers', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({[name]: value})
+      body: JSON.stringify(payload)
     });
   } catch (e) {
     alert('Write failed: ' + e.message);
@@ -148,6 +156,7 @@ async function writeReg(name, value) {
   }
 }
 window.writeReg = writeReg;
+window.writeRegs = writeRegs;
 
 function fmt(v) {
   if (v === null || v === undefined) return '—';
@@ -248,12 +257,12 @@ function render() {
     row('CALIBRATION_ANGLE',  'Calibration Angle (°)', {step: 0.1, forceEditable: ovr});
 }
 
-document.getElementById('btn-start').onclick = () => writeReg('START', 1);
+document.getElementById('btn-start').onclick = () => writeRegs({START: 1, STATUS: 1});
+document.getElementById('btn-stop').onclick = () => writeRegs({START: 0, STATUS: 0});
 document.getElementById('btn-estop').onclick = () => writeReg('EMERGENCY', 1);
 document.getElementById('btn-clear-estop').onclick = () => {
   if (confirm('Clear emergency stop? Robot program must be re-started on the controller.')) writeReg('EMERGENCY', 0);
 };
-document.getElementById('btn-status0').onclick = () => writeReg('STATUS', 0);
 document.getElementById('btn-status1').onclick = () => writeReg('STATUS', 1);
 document.getElementById('btn-grind-tick').onclick = () => writeReg('GRIND', 1);
 document.getElementById('override-handshake').onchange = (e) => { overrideHandshake = e.target.checked; render(); };
