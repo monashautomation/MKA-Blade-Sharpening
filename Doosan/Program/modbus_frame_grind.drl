@@ -26,7 +26,7 @@ CMD_READ_DETECTION = 11
 CMD_RESET = 22
 
 # Code Settings
-homing_val = True
+homing_val = False
 
 #movej(System_init_j, 100, 20)
 
@@ -71,7 +71,7 @@ def safe_movel(*args, **kwargs):
         raise ProcessAborted()
         
     movel(*args, **kwargs)
-    #tp_log("Status: " + str(status))
+    tp_log("Status: " + str(status))
         
     if status == 0:
         raise ProcessAborted()
@@ -245,11 +245,11 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             movel(blade_pos, vel=50, acc=20)
             set_analog_output(ch=1, val=3.3)
             
-            movel(System_ir_top, 300, 200)
-            #movel(System_init, 300, 200)
+            movel(System_blades_top, 300, 200)
+            movel(System_init, 300, 200)
             ir_adjusted = posx(IR_sensor)
-            ir_adjusted[1] = ir_adjusted[1] - blade_depth
-            tp_log("IR adjusted x val: " + str(ir_adjusted[1]))
+            ir_adjusted[0] = ir_adjusted[0] + blade_depth
+            tp_log("IR adjusted x val: " + str(ir_adjusted[0]))
             
             movel(ir_adjusted, 200, 100)
             
@@ -258,19 +258,17 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             set_digital_output(1, ON)
             wait(1)
             # Used to be 500. Should we keep as 500 or no? Robot will stop moving anyway...
-            amovel(posx(-400,0,0,0,0,0), vel=60, acc=10,mod=DR_MV_MOD_REL)
+            amovel(posx(0,50+(v_length/2),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
             while (get_digital_input(1) == 0):
                 wait(0.01)
             stop(DR_SSTOP)
             
             blade_left, sol = get_current_posx(ref=DR_WORLD)
             
-            movel(posx(30,0,0,0,0,0), vel=60, acc=10,mod=DR_MV_MOD_REL)
+            movel(posx(0,-30,0,0,0,0), vel=40, acc=10,mod=DR_MV_MOD_REL)
             
             # Used to be -400
-            tp_log("Move pos x: " + str(800+(blade_left[0])-30))
-
-            amovel(posx((800+(blade_left[0])-30),0,0,0,0,0), vel=60, acc=10,mod=DR_MV_MOD_REL)
+            amovel(posx(0,-(v_length+50),0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
             
             while (get_digital_input(1) == 0):
                 wait(0.01)
@@ -278,7 +276,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             stop(DR_SSTOP)
             blade_right, sol = get_current_posx(ref=DR_WORLD)
             
-            blade_length = blade_left[0] - blade_right[0]
+            blade_length = blade_left[1] - blade_right[1]
             
             if (blade_length<260):
                 set_analog_output(ch=1, val=1.2)
@@ -290,13 +288,10 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             tp_log("Detected Blade Length: " + str(blade_length))
                 
             # Grinding
-            movel(System_blades_top, 200, 100)        
+                    
             movej(System_init_j, 250, 100)
             movel(System_grinder_top, 250, 100)
             movel(grinder_app, 200, 100)
-
-            #tp_log("Setting Stiffness")
-            #task_compliance_ctrl([5000,10000,10000,300,300,300])
             
             new_grinder_invert = posx(System_grinder_invert)
             new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
@@ -306,8 +301,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
             
             # Notify System
-            ## CHANGE THIS FROM 110 TO blade_right[1] - 3  +15
-            movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
+            ## CHANGE THIS FROM 110 TO blade_right[1] - 3 
+            movel(posx(blade_right[1] + 15, 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
             
             #and (x1[0]*-1 < blade_left[1])
@@ -316,11 +311,6 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             set_modbus_slave(REG_GRIND_READY,1)
     
             wait(5)
-            #
-#
-            #
-            #wait(1) 
-            
             try:
                 while (1):
                     if (get_modbus_slave(REG_STATUS) == 0):
@@ -351,48 +341,40 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             safe_movel(posx(delta_x), vel=250, acc=100,mod=DR_MV_MOD_REL)
                             
                             # Requesting offset value
-                            #set_modbus_slave(REG_FINE_REQ, 1)
-                            #wait(0.05)
-                            #
-                            ## Waiting till offset is updated
-                            #while (get_modbus_slave(REG_FINE_REQ) == 1):
-                                #wait(0.1)
-                            #
-                            ## Reading and moving offset
-                            #fine_x = get_modbus_slave(REG_FINE_X_OFFSET)/100
-                            #if fine_x > 0.05:   
-                                #tp_log("Moving fine x offset: " + str(fine_x))
-                                #safe_movel(posx([fine_x, 0, 0, 0, 0, 0]), vel=10, acc=10,mod=DR_MV_MOD_REL)
-                            #else:
-                                #tp_log("Fine x offset too small: " + str(fine_x))
+                            set_modbus_slave(REG_FINE_REQ, 1)
+                            wait(0.05)
+                            
+                            # Waiting till offset is updated
+                            while (get_modbus_slave(REG_FINE_REQ) == 1):
+                                wait(0.1)
+                            
+                            # Reading and moving offset
+                            fine_x = get_modbus_slave(REG_FINE_X_OFFSET)/100
+                            if fine_x > 0.05:   
+                                tp_log("Moving fine x offset: " + str(fine_x))
+                                safe_movel(posx([fine_x, 0, 0, 0, 0, 0]), vel=10, acc=10,mod=DR_MV_MOD_REL)
+                            else:
+                                tp_log("Fine x offset too small: " + str(fine_x))
 
                             # Starting cut
                             start_cut_pos, sol = get_current_posx()
-                            tp_log("Start cut y: " + str(start_cut_pos[1]))
                             safe_movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
                             safe_movel(posx(delta_y), vel=250, acc=100,mod=DR_MV_MOD_REL)
-
-
-                            # # Full cut if needed
-                            # rel_move = [0, depth, 0, 0, 0, 0]
-                            # safe_movel(posx(rel_move), vel=200, acc=100, mod=DR_MV_MOD_REL)
-
-                            # rel_move = [0, 0, move_range, 0, 0, 0]
-                            # safe_movel(posx(rel_move), vel=200, acc=100, mod=DR_MV_MOD_REL)
-
+                            
+                            #movel(posx(delta_up), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                            #movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
+                            
                             
                             # Alternating Direction Cut
                             direction = 1 # 1 = up, -1 = down
-                            current_depth = get_current_posx()[0][1] - start_cut_pos[1] - val_y
-                            tp_log("Current pre_cut depth: " + str(current_depth))
+                            current_depth = 0
                             calc_cut = 0
-
                             #Identifying right cut depth
                             if depth != 0:
                                     
-                                for passes in [15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]:
+                                for passes in [12,11,10,9,8,7,6,5,4,3,2,1]:
                                     calc_cut = depth/passes
-                                    if 0.2 <= (calc_cut) <= 0.3:
+                                    if 0.1 <= (calc_cut) <= 0.25:
                                         cut_depth = calc_cut
                                         break
                                 if calc_cut < 0.1:
@@ -403,27 +385,32 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                                     
                                     step = min(cut_depth, depth - current_depth)
                                     
-                                    rel_move = [0, step, direction * move_range, 0, 0, 0]
-                                    scaled_vel = 250 * (1.5 - cut_depth)
-                                    scaled_acc = 0.7 * scaled_vel
-                                    safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
-                                    
-                                    current_depth += step
-                                    tp_log("Target Depth: " + str(current_depth))
-                                    direction *= -1
-
-                                    current_pos = get_current_posx()[0]
+                                    current_pos = get_current_posx()
                                     y_pos_depth = current_pos[1] - start_cut_pos[1] - (val_y + detection_depth - 0.5)
                                     tp_log("Actual depth: " + str(y_pos_depth))
+                                    
+                                    next_pos = posx(current_pos_rel)
+                                    next_pos[1] = next_pos[1] + step
+                                    next_pos[2] = next_pos[2] + direction * move_range
+                                    #rel_move = [0, step, direction * move_range, 0, 0, 0]
+                                    scaled_vel = 250 * (1.5 - cut_depth)
+                                    scaled_acc = 0.8 * scaled_vel
+                                    safe_movel(posx(next_pos), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
+                                    
+                                    current_depth += step
+                                    tp_log("Set Cut Depth: " + str(current_depth))
+                                   
+                                    direction *= -1
 
-                               # Back cut
-                                rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
-                                safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
+                                #rel_move = [0, 0, direction * move_range, 0, 0, 0]
+                                #safe_movel(posx(rel_move), vel=200, acc=50, mod=DR_MV_MOD_REL)
 
                             else:
                                 tp_log("0 depth cut")
 
-                            
+                            # Back cut
+                            rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
+                            safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
 
                             # Moving back and out
                             safe_movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
@@ -436,21 +423,14 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             except ProcessAborted:
             # If abort process, move back, put blade back
                 movel(posx(0,-30,0,0,0,0), 20, 20, mod=DR_MV_MOD_REL)
-            
-            # FINISHING PROCESS
-            tp_log("Finished grinding")
+                
             set_modbus_slave(REG_GRIND_READY,0)
-            #wait(5)
             
             # Put blade back
-            set_tcp("Flange")
-            tp_log("Angle pos")
             movel(angle_pos, 20, 20)
-            tp_log("Grinder_app")
             movel(grinder_app, 50, 20)
-            tp_log("Grinder top")
-            movel(System_grinder_top, 100, 50)
-            #movej(System_grinder_top_j, time=3)
+            #movel(System_grinder_top, 100, 50)
+            movej(System_grinder_top_j, time=3)
             movel(System_init, 150, 80)
             
             movel(System_blades_top, 150, 80)
@@ -484,7 +464,4 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
 
         
         set_modbus_slave(REG_START, 0)
-        
-        
-
         

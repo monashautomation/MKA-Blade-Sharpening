@@ -81,7 +81,7 @@ set_tcp("Flange")
 #movej(System_init_j, 20, 20)
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 set_analog_output(ch=1, val=3.3)
-wait(5)
+wait(1)
 #movel(System_grinder_top, 50, 20)
 movel(System_grinder_app, 50, 20)
 
