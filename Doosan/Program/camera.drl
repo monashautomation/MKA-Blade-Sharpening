@@ -1,0 +1,3 @@
+REG_GRIND_READY = 138 # For camera
+set_modbus_slave(REG_GRIND_READY,1)
+#set_modbus_slave(REG_GRIND_READY,0)
