@@ -154,19 +154,20 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             grinder_top = System_grinder_top
             grinder_app = System_grinder_app
             grinder_invert = System_grinder_invert
+            grinder_rotation = 0
             
         elif (v_grinder_id == 2):
             tp_log("Grinder 2")
             grinder_top = System_grinder2_top
             grinder_app = System_grinder2_app
             grinder_invert = System_grinder2_invert
-            
+            grinder_rotation = -90
         elif (v_grinder_id == 3):
             tp_log("Grinder 3 (NOT SET)")
             grinder_top = System_grinder2_top
             grinder_app = System_grinder2_app
             grinder_invert = System_grinder2_invert
-        
+            grinder_rotation = 90
         else:
             tp_log("Incorrect Grinder ID " + str(get_modbus_slave(REG_GRINDER_ID)))
             break
@@ -327,10 +328,15 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             movel(new_grinder_invert, 20, 20)
             
             angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
+            # Frame aligned with this grinder's blade directions.
+            # Only orientation matters for relative moves; grinder_rotation yaws about world vertical.
+            # grinder_rotation = 0 (grinder 1) reproduces the original world-frame behaviour.
+            grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
+
             
             # Notify System
             ## CHANGE THIS FROM 110 TO blade_right[1] - 3  +15
-            movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
+            movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
             
             #and (x1[0]*-1 < blade_left[1])
@@ -371,7 +377,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             delta_up =  [0, 0, move_range, 0, 0, 0]
                             delta_down =  [0, 0, -(move_range/2) + offset, 0, 0, 0]
                             
-                            safe_movel(posx(delta_x), vel=250, acc=100,mod=DR_MV_MOD_REL)
+                            safe_movel(posx(delta_x), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
                             
                             # Requesting offset value
                             #set_modbus_slave(REG_FINE_REQ, 1)
@@ -390,10 +396,10 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                                 #tp_log("Fine x offset too small: " + str(fine_x))
 
                             # Starting cut
-                            start_cut_pos, sol = get_current_posx()
+                            start_cut_pos, sol = get_current_posx(ref=grind_coord)
                             tp_log("Start cut y: " + str(start_cut_pos[1]))
-                            safe_movel(posx(delta_down), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                            safe_movel(posx(delta_y), vel=250, acc=100,mod=DR_MV_MOD_REL)
+                            safe_movel(posx(delta_down), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
+                            safe_movel(posx(delta_y), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
 
 
                             # # Full cut if needed
@@ -406,7 +412,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             
                             # Alternating Direction Cut
                             direction = 1 # 1 = up, -1 = down
-                            current_depth = get_current_posx()[0][1] - start_cut_pos[1] - val_y
+                            current_depth = get_current_posx(ref=grind_coord)[0][1] - start_cut_pos[1] - val_y
                             tp_log("Current pre_cut depth: " + str(current_depth))
                             calc_cut = 0
 
@@ -429,19 +435,19 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                                     rel_move = [0, step, direction * move_range, 0, 0, 0]
                                     scaled_vel = 250 * (1.5 - cut_depth)
                                     scaled_acc = 0.7 * scaled_vel
-                                    safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
+                                    safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
                                     
                                     current_depth += step
                                     tp_log("Target Depth: " + str(current_depth))
                                     direction *= -1
 
-                                    current_pos = get_current_posx()[0]
+                                    current_pos = get_current_posx(ref=grind_coord)[0]
                                     y_pos_depth = current_pos[1] - start_cut_pos[1] - (val_y + detection_depth - 0.5)
                                     tp_log("Actual depth: " + str(y_pos_depth))
 
                                # Back cut
                                 rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
-                                safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, mod=DR_MV_MOD_REL)
+                                safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
 
                             else:
                                 tp_log("0 depth cut")
@@ -449,8 +455,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             
 
                             # Moving back and out
-                            safe_movel(posx(delta_neg_y), vel=400, acc=200,mod=DR_MV_MOD_REL)
-                            safe_movel(posx(start_cut_pos), vel=400, acc=200)
+                            safe_movel(posx(delta_neg_y), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
+                            safe_movel(posx(start_cut_pos), vel=400, acc=200, ref=grind_coord)
                             
                             wait(1)
                             set_modbus_slave(REG_GRIND,0)
@@ -458,7 +464,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                             
             except ProcessAborted:
             # If abort process, move back, put blade back
-                movel(posx(0,-30,0,0,0,0), 20, 20, mod=DR_MV_MOD_REL)
+                movel(posx(0,-30,0,0,0,0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
             
             # FINISHING PROCESS
             tp_log("Finished grinding")
