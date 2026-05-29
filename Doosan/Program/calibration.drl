@@ -77,8 +77,53 @@ set_tcp("Flange")
 
 #posx(0, 599.74, 177.78, 90, 160, -180)
 
+homing_val = False
+loading_val = False
 
-#movej(System_init_j, 20, 20)
+if (homing_val):
+    tp_log("Homing")
+    x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+    tp_log("Current Pos: " + str(x1))
+    
+    local_zones = [System_grinder_top,fkin(System_init_j), System_blades_top, System_grinder2_top]
+    dist = [0] * 4
+    #dist1 = get_distance(x1, System_grinder_top)
+    #dist2 = get_distance(x1, fkin(System_init_j))
+    #dist3 = get_distance(x1, System_blades_top)
+    #dist4 = get_distance(x1, System_grinder2_top)
+    
+    for i in range(0,len(local_zones)):
+        dist[i] = get_distance(x1, local_zones[i])
+    
+    closest_zone = dist.index(min(dist))
+    while closest_zone != 2:
+        tp_log("Closest_zone: " + str(closest_zone))
+        if closest_zone == 0:
+            movel(local_zones[0], 100, 20)
+            closest_zone += 1
+        elif closest_zone == 1:
+            movej(System_init_j, 100, 20)
+            closest_zone += 1
+        elif closest_zone == 3:
+            movel(local_zones[3], 100, 20)
+            closest_zone -= 1
+            
+    tp_log("Going to blades now")        
+    movel(local_zones[2], 100, 20)
+    
+    
+    
+else:
+    tp_log("Skipped Homing")
+    
+if (loading_val):
+    movel(System_grinder_top, 50, 20)
+    movej(System_init_j, 20, 20)
+    wait(10)
+
+
+
+
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 set_analog_output(ch=1, val=3.3)
 wait(1)
@@ -139,6 +184,7 @@ for i in range(0,60,5):
 set_tcp("Flange")
 
 movel(System_angle_inspection, 20, 20)
+movel(System_grinder_app, 50, 20)
 tp_log("Current pos: " + str(get_current_posx()[0]))
 
 set_modbus_slave(REG_CALIBRATION, 0)
