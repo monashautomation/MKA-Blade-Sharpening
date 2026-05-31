@@ -77,11 +77,14 @@ set_tcp("Flange")
 
 #posx(0, 599.74, 177.78, 90, 160, -180)
 
-homing_val = False
-loading_val = False
+loading_val = True
 
-if (homing_val):
-    tp_log("Homing")
+tp_log("Magnets On")
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+set_analog_output(ch=1, val=3.3)
+
+if (loading_val):
+    tp_log("Loading")
     x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
     tp_log("Current Pos: " + str(x1))
     
@@ -96,37 +99,33 @@ if (homing_val):
         dist[i] = get_distance(x1, local_zones[i])
     
     closest_zone = dist.index(min(dist))
-    while closest_zone != 2:
+    
+    while closest_zone != 1:
         tp_log("Closest_zone: " + str(closest_zone))
         if closest_zone == 0:
             movel(local_zones[0], 100, 20)
             closest_zone += 1
-        elif closest_zone == 1:
-            movej(System_init_j, 100, 20)
-            closest_zone += 1
+        elif closest_zone == 2:
+            movel(local_zones[2], 100, 20)
+            closest_zone -= 1
         elif closest_zone == 3:
             movel(local_zones[3], 100, 20)
             closest_zone -= 1
             
-    tp_log("Going to blades now")        
-    movel(local_zones[2], 100, 20)
+    tp_log("Going to init now")        
+    movej(System_init_j, time=5) 
     
-    
+    wait(5)
+    movel(System_grinder_top, 50, 20)
     
 else:
-    tp_log("Skipped Homing")
-    
-if (loading_val):
-    movel(System_grinder_top, 50, 20)
-    movej(System_init_j, 20, 20)
-    wait(10)
+    tp_log("Skipped Loading")
+       
 
+REG_GRIND_READY = 138 # For camera
+set_modbus_slave(REG_GRIND_READY,1)
+wait(5)
 
-
-
-set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
-set_analog_output(ch=1, val=3.3)
-wait(1)
 #movel(System_grinder_top, 50, 20)
 movel(System_grinder_app, 50, 20)
 

@@ -281,19 +281,19 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             set_digital_output(1, ON)
             wait(1)
             # Used to be 500. Should we keep as 500 or no? Robot will stop moving anyway...
-            amovel(posx(-400,0,0,0,0,0), vel=60, acc=10,mod=DR_MV_MOD_REL)
+            amovel(posx(-400,0,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
             while (get_digital_input(1) == 0):
                 wait(0.01)
             stop(DR_SSTOP)
             
             blade_left, sol = get_current_posx(ref=DR_WORLD)
             
-            movel(posx(30,0,0,0,0,0), vel=60, acc=10,mod=DR_MV_MOD_REL)
+            movel(posx(30,0,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
             
             # Used to be -400
             tp_log("Move pos x: " + str(800+(blade_left[0])-30))
 
-            amovel(posx((800+(blade_left[0])-30),0,0,0,0,0), vel=60, acc=10,mod=DR_MV_MOD_REL)
+            amovel(posx((800+(blade_left[0])-30),0,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
             
             while (get_digital_input(1) == 0):
                 wait(0.01)
@@ -335,13 +335,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
 
             
             # Notify System
-<<<<<<< HEAD
             ## CHANGE THIS FROM 110 TO blade_right[1] - 3  +15
             movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
-=======
-            ## CHANGE THIS FROM 110 TO blade_right[1] - 10
-            movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, mod=DR_MV_MOD_REL)
->>>>>>> b9adf6c41166c3c89c12545ae9abede0eebe6bf7
             x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
             
             #and (x1[0]*-1 < blade_left[1])
@@ -474,6 +469,8 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             # FINISHING PROCESS
             tp_log("Finished grinding")
             set_modbus_slave(REG_GRIND_READY,0)
+            
+            set_ref_coord(DR_WORLD)
             #wait(5)
             
             # Put blade back
@@ -485,7 +482,14 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             tp_log("Grinder top")
             movel(grinder_top, 100, 50)
             #movej(System_grinder_top_j, time=3)
-            movel(System_init, 150, 80)
+            if (v_grinder_id == 1):
+                tp_log("Grinder 1 exit")
+                movel(System_init, 150, 80)
+                
+            elif (v_grinder_id == 2):
+                tp_log("Grinder 2 exit")
+            elif (v_grinder_id == 3):
+                tp_log("Grinder 3 exit")
             
             movel(System_blades_top, 150, 80)
             #movel(blade_pos, 50, 50)
