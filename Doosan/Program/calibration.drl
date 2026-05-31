@@ -1,83 +1,7 @@
 set_tcp("Flange")
-#tp_log("Homing")
-#x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
-#tp_log("Current Pos: " + str(x1))
-#
-#dist1 = get_distance(x1, System_grinder_top)
-#dist2 = get_distance(x1, fkin(System_init_j))
-#dist3 = get_distance(x1, System_blades_top)
-#
-#if dist1 < dist2:
-    #movel(System_grinder_top, 50, 20)
-#elif dist3 < dist2:
-    #movel(System_blades_top, 50, 20)
-    #
-    
-#set_tcp("Flange")
-##movej(System_init_j, 20, 20)
-##
-##movel(System_grinder_top, 50, 20)
-#
-#movel(System_grinder_app, 50, 20)
-#
-#movel(System_grinder_invert, 20, 20)
-
-
-#set_tcp("Tool_v1")
-#wait(2)
-#depth_offset = posx(20, 0, 0, 0, 0, 0)
-#current_pose = get_current_posx()[0]
-#
-#new_tcp = trans(current_pose, depth_offset, DR_TOOL, DR_BASE)
-#
-#ucs_id = set_user_cart_coord(new_tcp, ref=DR_BASE) # apparently sets tcp
-#current_pose2 = get_current_posx(ref=ucs_id)[0]
-#tp_log(str(current_pose2))
-#movel(posx(0,0,0,0,90,0), time=5, ref=ucs_id)   # rotate about pivot
-
-#set_tcp("Flange")
-
-#set_tcp("Tool_v1")
-#
-#def on_arc(base, pivot, transformation):
-    ## pivot: [px, py, pz] offset in tool frame
-    ## transformation: posx whose orientation is the rotation to apply about pivot
-    #px, py, pz = pivot[0], pivot[1], pivot[2]
-    #rz1, ry, rz2 = transformation[3]/2, transformation[4]/2, transformation[5]/2
-    #rz11, ry1, rz21 = transformation[3], transformation[4], transformation[5]
-#
-    #R = eul2rotm([rz1, ry, rz2])
-    #tx = px - (R[0][0]*px + R[0][1]*py + R[0][2]*pz)
-    #ty = py - (R[1][0]*px + R[1][1]*py + R[1][2]*pz)
-    #tz = pz - (R[2][0]*px + R[2][1]*py + R[2][2]*pz)
-    #delta = posx(tx, ty, tz, rz1, ry, rz2)
-    #mid = trans(base, delta, DR_TOOL, DR_BASE)
-    #
-    #R1 = eul2rotm([rz11, ry1, rz21])
-    #tx1 = px - (R1[0][0]*px + R1[0][1]*py + R1[0][2]*pz)
-    #ty1 = py - (R1[1][0]*px + R1[1][1]*py + R1[1][2]*pz)
-    #tz1 = pz - (R1[2][0]*px + R1[2][1]*py + R1[2][2]*pz)
-    #delta1 = posx(tx1, ty1, tz1, rz11, ry1, rz21)
-    #end = trans(base, delta1, DR_TOOL, DR_BASE)
-    #
-    #return mid, end
-#
-#start = get_current_posx()[0]
-#pivot = [20, 0, 0] 
-#
-#mid, end = on_arc(start, pivot, posx(0, 0, 0, 0, -5, 0))
-
-#movec(mid, end, time=10, ref=DR_BASE)
-
-# Bottom
-#posj(-270.24, 37.41, 109.48, -0.23, -41.1, 134.99)
-
-# Top
-#posj(-270.22, 28.33, 97.08, -0.04, 28.05, 134.9)
-
-#posx(0, 599.74, 177.78, 90, 160, -180)
 
 loading_val = True
+grinder_val = 1
 
 tp_log("Magnets On")
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
@@ -94,29 +18,65 @@ if (loading_val):
     #dist2 = get_distance(x1, fkin(System_init_j))
     #dist3 = get_distance(x1, System_blades_top)
     #dist4 = get_distance(x1, System_grinder2_top)
+
+    if (grinder_val == 1):
+        target = 1
+    elif (grinder_val == 2):
+        target = 3
+    else:
+        tp_log("Default Grinder 1")
+        target = 1
     
     for i in range(0,len(local_zones)):
         dist[i] = get_distance(x1, local_zones[i])
     
     closest_zone = dist.index(min(dist))
     
-    while closest_zone != 1:
+    loading_target = 1
+    while closest_zone != loading_target:
         tp_log("Closest_zone: " + str(closest_zone))
         if closest_zone == 0:
             movel(local_zones[0], 100, 20)
-            closest_zone += 1
+            # closest_zone += 1
+        elif closest_zone == 1:
+            movej(System_init_j, 100, 20)
+            # closest_zone += 1
         elif closest_zone == 2:
             movel(local_zones[2], 100, 20)
-            closest_zone -= 1
+            # closest_zone -= 1
         elif closest_zone == 3:
             movel(local_zones[3], 100, 20)
-            closest_zone -= 1
+            # closest_zone -= 1
+        closest_zone += 1 if closest_zone < loading_target else -1
             
-    tp_log("Going to init now")        
+    tp_log("Going to loading now")        
     movej(System_init_j, time=5) 
     
     wait(5)
-    movel(System_grinder_top, 50, 20)
+
+    if grinder_val == 1:
+        loading_target = 0
+    elif grinder_val == 2:
+        loading_target = 3
+    else:
+        tp_log("Default Grinder 1")
+        loading_target = 0
+
+    while closest_zone != loading_target:
+        tp_log("Closest_zone: " + str(closest_zone))
+        if closest_zone == 0:
+            movel(local_zones[0], 100, 20)
+            # closest_zone += 1
+        elif closest_zone == 1:
+            movej(System_init_j, 100, 20)
+            # closest_zone += 1
+        elif closest_zone == 2:
+            movel(local_zones[2], 100, 20)
+            # closest_zone -= 1
+        elif closest_zone == 3:
+            movel(local_zones[3], 100, 20)
+            # closest_zone -= 1
+        closest_zone += 1 if closest_zone < loading_target else -1
     
 else:
     tp_log("Skipped Loading")
@@ -126,24 +86,49 @@ REG_GRIND_READY = 138 # For camera
 set_modbus_slave(REG_GRIND_READY,1)
 wait(5)
 
-#movel(System_grinder_top, 50, 20)
-movel(System_grinder_app, 50, 20)
-
-
 set_tcp("Flange")
 REG_CALIBRATION = 141
 REG_CALIBRATION_ANGLE = 142
 
 set_modbus_slave(REG_CALIBRATION, 0)
 
-movel(System_angle_inspection, 20, 20)
+#movel(System_grinder_top, 50, 20)
+if (grinder_val == 1):
+    tp_log("Grinder 1")
+    movel(System_grinder_app, 50, 20)
+    grind_coord = set_user_cart_coord(posx(0, 0, 0, 0, 0, 0), ref=DR_WORLD)
+    
+    movel(System_angle_inspection, 20, 20)
 
-inspection_depth = posx(System_angle_inspection)
-#41
-inspection_depth[1] = (inspection_depth[1] + 39) - blade_depth
-tp_log("New Y: " + str(inspection_depth))
+    inspection_depth = posx(System_angle_inspection)
+    #41
+    inspection_depth[1] = (inspection_depth[1] + 39) - blade_depth
+    tp_log("New Y: " + str(inspection_depth))
 
-movel(inspection_depth, 20, 20)
+    movel(inspection_depth, 20, 20)
+elif (grinder_val == 2):
+    tp_log("Grinder 2")
+    movel(System_grinder2_app, 50, 20)
+    grind_coord = set_user_cart_coord(posx(0, 0, 0, -90, 0, 0), ref=DR_WORLD)
+
+    System_angle_inspection2 = posx(433, 0, 137, 0, 160, 135)
+    movel(System_angle_inspection2, 20, 20)
+
+    # Depth plunge as a relative move along grind_coord Y (radial for both grinders)
+    movel(posx(0, 39 - blade_depth, 0, 0, 0, 0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
+else:
+    tp_log("Default Grinder 1")
+    movel(System_grinder_app, 50, 20)
+    grind_coord = set_user_cart_coord(posx(0, 0, 0, 0, 0, 0), ref=DR_WORLD)
+
+    movel(System_angle_inspection, 20, 20)
+
+    inspection_depth = posx(System_angle_inspection)
+    #41
+    inspection_depth[1] = (inspection_depth[1] + 39) - blade_depth
+    tp_log("New Y: " + str(inspection_depth))
+
+    movel(inspection_depth, 20, 20)
 
 # STARTING INSPECTION
 set_tcp("Tool_v1")
@@ -167,7 +152,9 @@ current_angle = 70
 
 set_modbus_slave(REG_CALIBRATION, 1)
 set_modbus_slave(REG_CALIBRATION_ANGLE, 70 * 10)
-    
+
+# Local Pivot rotation
+
 for i in range(0,60,5):
     current_rot = get_current_posx()[0]
     pivot = [blade_depth,0,0]
