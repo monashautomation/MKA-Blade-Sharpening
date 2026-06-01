@@ -14,18 +14,6 @@ if (loading_val):
     
     local_zones = [System_grinder_top,fkin(System_init_j), System_blades_top, System_grinder2_top]
     dist = [0] * 4
-    #dist1 = get_distance(x1, System_grinder_top)
-    #dist2 = get_distance(x1, fkin(System_init_j))
-    #dist3 = get_distance(x1, System_blades_top)
-    #dist4 = get_distance(x1, System_grinder2_top)
-
-    if (grinder_val == 1):
-        target = 1
-    elif (grinder_val == 2):
-        target = 3
-    else:
-        tp_log("Default Grinder 1")
-        target = 1
     
     for i in range(0,len(local_zones)):
         dist[i] = get_distance(x1, local_zones[i])
@@ -39,7 +27,7 @@ if (loading_val):
             movel(local_zones[0], 100, 20)
             # closest_zone += 1
         elif closest_zone == 1:
-            movej(System_init_j, 100, 20)
+            movej(System_init_j, time=5)
             # closest_zone += 1
         elif closest_zone == 2:
             movel(local_zones[2], 100, 20)
@@ -48,9 +36,11 @@ if (loading_val):
             movel(local_zones[3], 100, 20)
             # closest_zone -= 1
         closest_zone += 1 if closest_zone < loading_target else -1
-            
-    tp_log("Going to loading now")        
-    movej(System_init_j, time=5) 
+
+    if closest_zone == 1:
+        movej(System_init_j, time=5)
+    else:
+        movel(local_zones[closest_zone], 100, 20)
     
     wait(5)
 
@@ -68,7 +58,7 @@ if (loading_val):
             movel(local_zones[0], 100, 20)
             # closest_zone += 1
         elif closest_zone == 1:
-            movej(System_init_j, 100, 20)
+            movej(System_init_j, time=5)
             # closest_zone += 1
         elif closest_zone == 2:
             movel(local_zones[2], 100, 20)
@@ -77,6 +67,11 @@ if (loading_val):
             movel(local_zones[3], 100, 20)
             # closest_zone -= 1
         closest_zone += 1 if closest_zone < loading_target else -1
+
+    if closest_zone == 1:
+        movej(System_init_j, time=5)
+    else:
+        movel(local_zones[closest_zone], 100, 20)
     
 else:
     tp_log("Skipped Loading")
