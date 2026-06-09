@@ -4,7 +4,9 @@ set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 #set_ref_coord(DR_WORLD)
 #
 ##
-##movej(System_init_j, 100, 50)
+#movej(System_init_j, 100, 50)
+
+set_tcp("Flange")
 ##movel(System_init, 20, 20)
 #
 #
@@ -300,7 +302,7 @@ set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 #movel(posx([0,0,-10,0,0,0]), 100, 20, mod=DR_MV_MOD_REL)
 
 #movel(System_grinder2_top, 50, 20)
-movej(System_init_j, 50, 20)
+#movej(System_init_j, 50, 20)
 
 #force_z = get_tool_force(DR_TOOL)[2]
 #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)

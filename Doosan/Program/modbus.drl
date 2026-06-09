@@ -293,7 +293,7 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             # Used to be -400
             tp_log("Move pos x: " + str(800+(blade_left[0])-30))
 
-            amovel(posx((800+(blade_left[0])-30),0,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
+            amovel(posx((500+(blade_left[0])-30),0,0,0,0,0), vel=30, acc=10,mod=DR_MV_MOD_REL)
             
             while (get_digital_input(1) == 0):
                 wait(0.01)
@@ -303,10 +303,10 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
             
             blade_length = blade_left[0] - blade_right[0]
             
-            if (blade_length<260):
-                set_analog_output(ch=1, val=1.2)
+            if (blade_length<120):
+                set_analog_output(ch=1, val=3.2)
             elif (blade_length<520):
-                set_analog_output(ch=1, val=2.2)
+                set_analog_output(ch=1, val=3.2)
             else:
                 set_analog_output(ch=1, val=3.2)
                 
@@ -421,10 +421,10 @@ while(get_modbus_slave(REG_EMERGENCY) == 0):
                                     
                                 for passes in [15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]:
                                     calc_cut = depth/passes
-                                    if 0.2 <= (calc_cut) <= 0.3:
+                                    if 0.1 <= (calc_cut) <= 0.2:
                                         cut_depth = calc_cut
                                         break
-                                if calc_cut < 0.1:
+                                if calc_cut < 0.05:
                                     cut_depth = calc_cut
                                     
                                 

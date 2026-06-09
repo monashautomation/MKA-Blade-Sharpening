@@ -1,0 +1,3 @@
+tp_log("Magnets On")
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+set_analog_output(ch=1, val=3.3)

@@ -1,10 +1,10 @@
 {
-  "Count": "22",
+  "Count": "23",
   "Variable0": {
     "Type": "Registry",
     "Name": "IR_sensor",
     "ValueType": "Posx",
-    "Value": "posx(0, -284, 210, 0, -180, -135)"
+    "Value": "posx(80, -284, 240, 0, -180, -135)"
   },
   "Variable1": {
     "Type": "Registry",
@@ -52,19 +52,19 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[138.602,-300.042,210.005,93.326,179.996,-41.690]"
+    "Value": "[178.688,-305.059,239.932,119.986,179.984,-15.027]"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-136.406,-300.044,209.999,60.037,179.995,-74.947]"
+    "Value": "[49.096,-305.025,240.016,111.953,-179.997,-23.029]"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "blade_length",
     "ValueType": "Float",
-    "Value": "-275.0071258544922"
+    "Value": "-129.59149551391602"
   },
   "Variable11": {
     "Type": "Registry",
@@ -94,7 +94,7 @@
     "Type": "Registry",
     "Name": "blade_depth",
     "ValueType": "Float",
-    "Value": "16.021807861328114"
+    "Value": "21.06492919921874"
   },
   "Variable16": {
     "Type": "Registry",
@@ -130,6 +130,12 @@
     "Type": "Registry",
     "Name": "System_grinder2_invert",
     "ValueType": "Posx",
-    "Value": "posx(520, 0, 117, 180, -90, -45)"
+    "Value": "posx(518, 0, 117, 180, -90, -45)"
+  },
+  "Variable22": {
+    "Type": "Registry",
+    "Name": "System_angle_inspection2",
+    "ValueType": "Posx",
+    "Value": "posx(463, 0, 168, 0, 160, 135)"
   }
 }

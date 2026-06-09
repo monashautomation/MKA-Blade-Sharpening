@@ -1,7 +1,7 @@
 set_tcp("Flange")
 
-loading_val = True
-grinder_val = 1
+loading_val = False
+grinder_val = 2
 
 tp_log("Magnets On")
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
@@ -87,6 +87,8 @@ REG_CALIBRATION_ANGLE = 142
 
 set_modbus_slave(REG_CALIBRATION, 0)
 
+set_ref_coord(DR_WORLD)
+
 #movel(System_grinder_top, 50, 20)
 if (grinder_val == 1):
     tp_log("Grinder 1")
@@ -103,11 +105,12 @@ if (grinder_val == 1):
     movel(inspection_depth, 20, 20)
 elif (grinder_val == 2):
     tp_log("Grinder 2")
-    movel(System_grinder2_app, 50, 20)
+    #movel(System_grinder2_app, 50, 20)
     grind_coord = set_user_cart_coord(posx(0, 0, 0, -90, 0, 0), ref=DR_WORLD)
 
-    System_angle_inspection2 = posx(433, 0, 137, 0, 160, 135)
-    movel(System_angle_inspection2, 20, 20)
+    #System_angle_inspection2 = posx(463, 0, 151, 0, 160, 135)
+    #posx(533.47, 0, 151.03, 0, 159.38, -180)
+    movel(System_angle_inspection2, 20, 20, ref=DR_WORLD)
 
     # Depth plunge as a relative move along grind_coord Y (radial for both grinders)
     movel(posx(0, 39 - blade_depth, 0, 0, 0, 0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
@@ -164,8 +167,17 @@ for i in range(0,60,5):
        
 set_tcp("Flange")
 
-movel(System_angle_inspection, 20, 20)
-movel(System_grinder_app, 50, 20)
+if grinder_val == 1:
+    movel(System_angle_inspection, 20, 20)
+    movel(System_grinder_app, 50, 20)
+elif grinder_val == 2:
+    movel(System_angle_inspection2, 20, 20)
+    movel(System_grinder2_app, 50, 20)
+else: 
+    movel(System_angle_inspection, 20, 20)
+    movel(System_grinder_app, 50, 20)
+    
+    
 tp_log("Current pos: " + str(get_current_posx()[0]))
 
 set_modbus_slave(REG_CALIBRATION, 0)
