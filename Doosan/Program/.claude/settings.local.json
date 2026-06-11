@@ -5,7 +5,19 @@
       "Bash(unzip -p Workshop_Report.docx word/document.xml)",
       "Bash(python -c \"import xml.etree.ElementTree as ET; ET.parse\\('doc.xml'\\); print\\('document.xml OK'\\)\")",
       "Bash(unzip -p Workshop_Report.docx word/numbering.xml)",
-      "Bash(python -c \"import xml.etree.ElementTree as ET; ET.parse\\('num.xml'\\); print\\('numbering.xml OK'\\)\")"
+      "Bash(python -c \"import xml.etree.ElementTree as ET; ET.parse\\('num.xml'\\); print\\('numbering.xml OK'\\)\")",
+      "WebFetch(domain:doosanrobotics.github.io)",
+      "WebFetch(domain:manual.doosanrobotics.com)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell(Copy-Item -Path 'C:\\\\Rahul\\\\Uni\\\\MKA\\\\Github\\\\MKA-Blade-Sharpening\\\\Doosan\\\\Program\\\\modbus.drl' -Destination 'C:\\\\Rahul\\\\Uni\\\\MKA\\\\Github\\\\MKA-Blade-Sharpening\\\\Doosan\\\\Program\\\\modbus_tcp.drl')",
+      "Bash(cp \"C:/Rahul/Uni/MKA/Github/MKA-Blade-Sharpening/MKA_dell_pc/modbus_v2/mka-163w.webp\" \"C:/Rahul/Uni/MKA/Github/MKA-Blade-Sharpening/Doosan/Program/mka-logo.webp\" && ls -la \"C:/Rahul/Uni/MKA/Github/MKA-Blade-Sharpening/Doosan/Program/mka-logo.webp\")",
+      "Bash(sed -n '2p' modbus.drl)",
+      "Bash(sed -n '1p' modbus.drl)",
+      "Bash(rm -f \"../../_logs/blade_project_\"*.json \"../../_logs/modbus_\"*.drl)",
+      "Read(//c/Rahul/Uni/MKA/Github/MKA-Blade-Sharpening/_logs/**)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

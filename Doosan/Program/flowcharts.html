@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blade-Sharpening · Live Flowcharts + DRL builder</title>
+<style>
+  :root{
+    --bg:#eef1f5; --panel:#ffffff; --panel2:#f6f8fa; --line:#d0d7de;
+    --text:#1f2328; --muted:#57606a;
+    --process:#0969da;   --process-bg:#ddf4ff;  --process-tx:#0a3069;
+    --decision:#bf8700;  --decision-bg:#fff8c5; --decision-tx:#6b5200;
+    --io:#8250df;        --io-bg:#f3e8ff;       --io-tx:#5a32a3;
+    --measure:#179187;   --measure-bg:#d3f3ee;  --measure-tx:#0a5c55;
+    --emergency:#cf222e; --emergency-bg:#ffebe9;--emergency-tx:#a40e26;
+    --neutral:#6e7781;
+    --loop:#54aeff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+  header{padding:18px 180px 18px 28px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:50}
+  header h1{margin:0;font-size:20px;letter-spacing:.2px}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .brand{position:absolute;top:14px;right:28px;text-align:center}
+  .brand img{height:46px;width:auto;display:block;margin:0 auto}
+  .brand .by{font-size:11px;color:var(--muted);margin-top:5px;font-weight:600;letter-spacing:.2px}
+  .tabs{display:flex;gap:8px;margin-top:14px}
+  .tab{padding:8px 18px;border:1px solid var(--line);border-radius:8px 8px 0 0;background:var(--panel2);color:var(--muted);cursor:pointer;font-size:14px;font-weight:600;border-bottom:none;transition:.15s}
+  .tab:hover{color:var(--text)}
+  .tab.active{background:var(--panel);color:var(--text);box-shadow:inset 0 3px 0 var(--process)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:11px 28px;border-bottom:1px solid var(--line);background:var(--panel2);position:sticky;top:0;z-index:40}
+  .expand-btn{padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:.15s}
+  .expand-btn:hover{border-color:var(--muted);background:#fff}
+  .expand-btn.primary{border-color:var(--process);color:var(--process)}
+  .expand-btn.primary:hover{background:var(--process-bg)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-left:auto}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* ---------- build / export panel ---------- */
+  .build-panel{padding:0 28px;border-bottom:1px solid var(--line);background:#fbfdff;max-height:0;overflow:hidden;transition:max-height .28s ease,padding .28s ease}
+  .build-panel.open{max-height:360px;padding:16px 28px}
+  .build-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .gen-btn{padding:9px 18px;border:1px solid var(--process);border-radius:8px;background:var(--process);color:#fff;cursor:pointer;font-size:13px;font-weight:700}
+  .gen-btn:hover{background:#0a5fc0}
+  .build-name{font-size:12px;font-family:monospace;color:var(--muted);margin-left:6px}
+  .cfg-preview{margin:12px 0 0;font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;white-space:pre;overflow-x:auto;color:#1f2328}
+  .build-note{font-size:11.5px;color:var(--muted);margin:10px 0 0}
+  .build-status{font-size:12px;margin-top:10px;font-weight:600;min-height:15px}
+  .build-status.ok{color:#1a7f37}
+  .build-status.err{color:#cf222e}
+  .build-config{font-size:11.5px;color:var(--muted);margin-top:8px;font-family:monospace}
+  .build-config b{color:var(--io-tx);font-family:monospace}
+
+  .wrap{display:grid;grid-template-columns:1fr 330px;gap:0}
+  @media(max-width:1080px){.wrap{grid-template-columns:1fr}.side{display:none}}
+  main{padding:26px 28px 90px}
+  .side{border-left:1px solid var(--line);background:var(--panel);padding:20px;height:100vh;position:sticky;top:0;overflow-y:auto}
+  .program{display:none}
+  .program.active{display:block}
+  .flow{display:flex;flex-direction:column;align-items:stretch;max-width:760px;margin:0 auto}
+
+  /* ---------- overview stage blocks ---------- */
+  .stage{border:1px solid var(--line);border-left:5px solid var(--neutral);border-radius:12px;background:var(--panel);overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:.15s}
+  .stage:hover{box-shadow:0 3px 12px rgba(0,0,0,.09)}
+  .stage-head{display:flex;align-items:center;gap:14px;width:100%;border:0;background:transparent;cursor:pointer;padding:14px 16px;text-align:left;font-family:inherit}
+  .snum{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--neutral);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .stext{flex:1;min-width:0}
+  .stitle{display:block;font-size:16px;font-weight:700;color:var(--text)}
+  .stitle em{font-style:normal;font-weight:600;font-size:12px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);padding:1px 7px;border-radius:10px;margin-left:6px;white-space:nowrap}
+  .ssum{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+  .chev{flex:0 0 auto;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .25s ease;margin-right:5px}
+  .stage.open .chev{transform:rotate(45deg)}
+  /* homing on/off switch in the stage header */
+  .head-toggle{display:inline-flex;align-items:center;gap:7px;margin-right:12px;cursor:pointer;user-select:none;flex:0 0 auto}
+  .ht-track{width:34px;height:18px;border-radius:10px;background:var(--line);position:relative;transition:.18s;flex:0 0 auto}
+  .ht-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 1px 2px rgba(0,0,0,.35)}
+  .head-toggle.on .ht-track{background:var(--process)}
+  .head-toggle.on .ht-knob{left:18px}
+  .ht-label{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .head-toggle.on .ht-label{color:var(--process)}
+
+  .stage-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+  .stage.open .stage-body{grid-template-rows:1fr}
+  .stage-inner{overflow:hidden}
+  .stage-pad{padding:4px 16px 18px;border-top:1px dashed var(--line)}
+
+  .stage[data-accent=process]{border-left-color:var(--process)} .stage[data-accent=process] .snum{background:var(--process)}
+  .stage[data-accent=io]{border-left-color:var(--io)}            .stage[data-accent=io] .snum{background:var(--io)}
+  .stage[data-accent=measure]{border-left-color:var(--measure)}  .stage[data-accent=measure] .snum{background:var(--measure)}
+  .stage[data-accent=decision]{border-left-color:var(--decision)}.stage[data-accent=decision] .snum{background:var(--decision)}
+
+  .arrow{align-self:center;width:2px;height:20px;background:var(--line);position:relative;margin:3px 0}
+  .arrow::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--line)}
+
+  /* ---------- detail nodes (summary view) ---------- */
+  .dflow{display:flex;flex-direction:column;align-items:stretch;gap:0;margin-top:12px}
+  .darrow{align-self:center;width:2px;height:16px;background:var(--line);position:relative;margin:2px 0}
+  .darrow::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--line)}
+  .darrow.lbl::before{content:attr(data-l);position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);white-space:nowrap;background:var(--panel);padding:1px 6px;border-radius:4px;border:1px solid var(--line)}
+
+  .node{border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--panel)}
+  .node h4{margin:0;font-size:14px}
+  .node .desc{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+  .node code{display:block;margin-top:8px;font-family:'Cascadia Code',Consolas,monospace;font-size:11.5px;line-height:1.55;color:#1f2328;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:pre;overflow-x:auto}
+  .node code .c{color:var(--muted);font-style:italic}
+  .node code .k{color:#cf222e}
+  .badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .badge{font-size:11px;font-family:monospace;padding:2px 8px;border-radius:5px;border:1px solid;font-weight:600}
+  .badge.var{color:#7a5c00;border-color:#d4a72c;background:#fff8c5}
+  .badge.meas{color:var(--measure-tx);border-color:var(--measure);background:var(--measure-bg)}
+  .badge.reg{color:var(--io-tx);border-color:#a371f7;background:var(--io-bg)}
+
+  .node[data-type=process]{border-left:4px solid var(--process)}
+  .node[data-type=decision]{border-left:4px solid var(--decision);background:#fffdf2}
+  .node[data-type=io]{border-left:4px solid var(--io)}
+  .node[data-type=measure]{border-left:4px solid var(--measure);background:#f4fffd}
+  .node[data-type=emergency]{border-left:4px solid var(--emergency);background:#fff5f5}
+
+  .loopbox{border:2px dashed var(--loop);border-radius:12px;padding:12px;margin:2px 0;background:rgba(84,174,255,.06)}
+  .loopbox>.llabel{font-size:11px;font-weight:800;letter-spacing:.5px;color:#0969da;text-transform:uppercase;margin-bottom:8px}
+
+  /* ---------- summary | code toggle + editor ---------- */
+  .vtoggle{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:12px}
+  .vt{padding:5px 16px;border:0;background:var(--panel);color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+  .vt.active{background:var(--process);color:#fff}
+  .stage .code-view{display:none}
+  .stage.showcode .code-view{display:block;margin-top:12px}
+  .stage.showcode .summary-view{display:none}
+  .code-edit{width:100%;min-height:80px;height:auto;font-family:'Cascadia Code',Consolas,monospace;font-size:12px;line-height:1.5;color:#1f2328;background:#fbfdff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;white-space:pre;overflow:hidden;resize:none;tab-size:4}
+  .code-edit:focus{outline:none;border-color:var(--process);box-shadow:0 0 0 3px var(--process-bg)}
+  .vtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center}
+  .vtab{padding:5px 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--text);cursor:pointer;font-size:12px;font-weight:700;font-family:monospace}
+  .vtab.active{background:var(--measure);color:#fff;border-color:var(--measure)}
+  .vadd{padding:5px 11px;border:1px dashed var(--measure);border-radius:7px;background:transparent;color:var(--measure);cursor:pointer;font-size:13px;font-weight:800;line-height:1}
+  .vadd:hover{background:var(--measure-bg)}
+  .vnote{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .vdel{margin-top:8px;padding:5px 12px;border:1px solid #f1a5a0;border-radius:7px;background:#fff5f5;color:var(--emergency-tx);cursor:pointer;font-size:12px;font-weight:700}
+  .vdel:hover{background:#ffe9e7}
+  .homing-enable{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;cursor:pointer}
+  .homing-enable input{width:16px;height:16px;cursor:pointer}
+  .code-hint{font-size:11px;color:var(--muted);margin:8px 0 0}
+
+  /* ---------- sidebar ---------- */
+  .side h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .side h3:first-child{margin-top:0}
+  .regtable{width:100%;border-collapse:collapse;font-size:11.5px}
+  .regtable td{padding:3px 6px;border-bottom:1px solid #eaeef2;vertical-align:top}
+  .regtable td:first-child{font-family:monospace;color:var(--io-tx);white-space:nowrap}
+  .regtable td:nth-child(2){font-family:monospace;color:var(--muted);text-align:right}
+  .keybox{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--measure);border-radius:6px;padding:9px 11px;margin-bottom:9px}
+  .keybox b{color:var(--measure-tx);font-family:monospace;font-size:12.5px}
+  .keybox p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+  .sidenote{font-size:11.5px;color:var(--muted);font-style:italic}
+  .pill{font-family:monospace;font-size:11px;color:#7a5c00;background:#fff8c5;border:1px solid #e6c77a;padding:0 4px;border-radius:4px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img src="mka-logo.webp" alt="Machine Knives Australia"><div class="by">By Rahul and Claude</div></div>
+  <h1>Blade-Sharpening Cell — Live Flowcharts &amp; DRL Builder</h1>
+  <p>Click a stage to expand · toggle <b>Summary / Code</b> to edit the real source · Pick &amp; Grind have variant tabs · Build exports a runnable modbus.drl</p>
+  <div class="tabs">
+    <div class="tab active" data-prog="modbus">modbus.drl — Production grind loop</div>
+    <div class="tab" data-prog="calib">calibration.drl — Angle inspection</div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="expand-btn" id="expandBtn">Expand all</button>
+  <button class="expand-btn primary" id="buildBtn">Build modbus.drl &#9662;</button>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--process)"></i>Process / motion</span>
+    <span><i class="dot" style="background:var(--decision)"></i>Decision</span>
+    <span><i class="dot" style="background:var(--io)"></i>Modbus I/O</span>
+    <span><i class="dot" style="background:var(--measure)"></i>Measurement</span>
+    <span><i class="dot" style="background:var(--emergency)"></i>Safety / abort</span>
+  </div>
+</div>
+
+<div class="build-panel" id="buildPanel">
+  <div class="build-row">
+    <button class="gen-btn" id="genBtn">Generate &amp; save modbus.drl</button>
+    <button class="expand-btn" id="saveProjBtn">Save project</button>
+    <button class="expand-btn" id="loadProjBtn">Load project</button>
+    <input type="file" id="loadProjInput" accept="application/json,.json" hidden>
+    <button class="expand-btn" id="setBaselineBtn">Set as baseline</button>
+    <button class="expand-btn" id="resetBtn">Reset to baseline</button>
+    <span class="build-name" id="buildName"></span>
+  </div>
+  <pre class="cfg-preview" id="cfgPreview"></pre>
+  <div class="build-status" id="buildStatus"></div>
+  <div class="build-config" id="buildConfig">Checking backend…</div>
+  <p class="build-note">Edits autosave to this browser. <b>Save project</b> keeps a portable/git-trackable copy. Each stage's <b>Code</b> tab edits the real source; <b>Pick</b> &amp; <b>Grind</b> have variant tabs (&#65291; clones the current one; the selected tab sets <span class="pill">pick_variant</span>/<span class="pill">grind_variant</span>). DRL is whitespace-sensitive — <b>validate in DART Studio simulation before production</b>.</p>
+</div>
+
+<div class="wrap">
+<main>
+
+<!-- ===================== MODBUS.DRL ===================== -->
+<section class="program active" id="modbus">
+  <div class="flow">
+
+    <!-- 1 Setup -->
+    <div class="stage" data-accent="io">
+      <button class="stage-head">
+        <span class="snum">1</span>
+        <span class="stext"><span class="stitle">Setup</span>
+        <span class="ssum">Define the Modbus register map, arm the magnet output, declare helpers, launch the emergency thread.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="io">
+          <h4>Register map &amp; analog magnet output</h4>
+<code><span class="c"># Modbus registers 128–146 (full map in sidebar)</span>
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)</code>
+          <div class="badges"><span class="badge reg">REG_BAY_ID … REG_BLADE_COUNT</span></div>
+        </div>
+        <div class="darrow"></div>
+        <div class="node" data-type="process">
+          <h4>Helper functions + abort exception</h4>
+          <p class="desc"><b>rotate_tcp()</b> tilts the tool about a pivot (sets the bevel angle). <b>safe_movel()</b> raises <span class="pill">ProcessAborted</span> when REG_STATUS==0.</p>
+        </div>
+        <div class="darrow"></div>
+        <div class="node" data-type="emergency">
+          <h4>Emergency watch thread</h4>
+<code><span class="k">def</span> check_emergency():
+    <span class="k">if</span> get_modbus_slave(REG_EMERGENCY) != 0:
+        stop(DR_QSTOP); exit()
+thread_run(check_emergency, loop=True)</code>
+          <div class="badges"><span class="badge reg">REG_EMERGENCY ·140</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 2 Homing -->
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">2</span>
+        <span class="stext"><span class="stitle">Homing <em>toggle</em></span>
+        <span class="ssum">If enabled: find the nearest of four safe zones and walk back to the blade rack.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="decision">
+          <h4>Localise against safe zones</h4>
+          <p class="desc">Distance from the current pose to the four zones; walk until at the blade rack (zone 2). Enable/disable via the <b>Code</b> tab toggle.</p>
+          <div class="badges"><span class="badge var">closest_zone</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 3 Start & Read Job -->
+    <div class="stage" data-accent="io">
+      <button class="stage-head">
+        <span class="snum">3</span>
+        <span class="stext"><span class="stitle">Start &amp; Read Job <em>main loop</em></span>
+        <span class="ssum">Wait for REG_START, read the blade recipe, then select grinder &amp; bay.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="io">
+          <h4>Read job configuration (scaled to units)</h4>
+          <div class="badges"><span class="badge meas">v_angle (°)</span><span class="badge meas">v_depth (mm)</span><span class="badge var">v_bay_id / v_grinder_id / v_blade_count</span></div>
+        </div>
+        <div class="darrow"></div>
+        <div class="node" data-type="decision">
+          <h4>Select grinder &amp; blade bay</h4>
+          <p class="desc">REG_GRINDER_ID picks grinder 1/2/3 (pose set + rotation); REG_BAY_ID picks the bay. Invalid id → break.</p>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 4 Pick Blade -->
+    <div class="stage" data-accent="measure">
+      <button class="stage-head">
+        <span class="snum">4</span>
+        <span class="stext"><span class="stitle">Pick Blade <em>variants</em></span>
+        <span class="ssum">Force-probe down to the blade, sense blade_depth on the Y collision, then grab with the magnets.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="measure">
+          <h4>blade_depth via Y collision</h4>
+          <p class="desc">Descend in Z onto the blade top, push in Y until contact, capture pose minus the known datum. Tuning (probe distances, magnet voltages) lives inside the variant — edit it in the <b>Code</b> tab.</p>
+          <div class="badges"><span class="badge meas">blade_depth (mm)</span><span class="badge var">current_z / current_y</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 5 Measure Length -->
+    <div class="stage" data-accent="measure">
+      <button class="stage-head">
+        <span class="snum">5</span>
+        <span class="stext"><span class="stitle">Measure Length <em>per blade</em></span>
+        <span class="ssum">Carry the blade to the IR gate and sweep both ends to compute blade_length.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="measure">
+          <h4>Sweep to both blade ends (IR gate)</h4>
+          <p class="desc">Sweep −X until the IR input trips → <b>blade_left</b>; sweep the other way → <b>blade_right</b>.</p>
+          <div class="badges"><span class="badge meas">blade_length (mm)</span><span class="badge var">blade_left / blade_right</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 6 Approach & Set Angle -->
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">6</span>
+        <span class="stext"><span class="stitle">Approach &amp; Set Angle <em>per blade</em></span>
+        <span class="ssum">Travel to the grinder, invert the pose by −blade_depth, tilt to the bevel angle, signal camera ready.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="process">
+          <h4>Tilt to bevel &amp; build grind frame</h4>
+          <p class="desc">Rotate TCP by −v_angle about the blade-depth pivot, define a user frame aligned to the grinder, then set <span class="pill">REG_GRIND_READY = 1</span>.</p>
+          <div class="badges"><span class="badge var">grind_coord / angle_pos</span><span class="badge reg">REG_GRIND_READY ·138</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 7 Grind Loop -->
+    <div class="stage" data-accent="io">
+      <button class="stage-head">
+        <span class="snum">7</span>
+        <span class="stext"><span class="stitle">Grind Loop <em>variants</em></span>
+        <span class="ssum">while REG_STATUS==1 — per tooth: read camera target, plunge, run the multi-pass alternating cut.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="measure">
+          <h4>Per-tooth cut</h4>
+          <p class="desc">Reads camera X/Y, picks a pass count for a 0.1–0.2 mm step, then alternating-direction passes. Tuning (move_range, pass band, feed) lives inside the variant — edit it in the <b>Code</b> tab.</p>
+          <div class="badges"><span class="badge reg">REG_STATUS ·136</span><span class="badge reg">REG_GRIND ·139</span><span class="badge meas">cut_depth (mm)</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 8 Finish & Return -->
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">8</span>
+        <span class="stext"><span class="stitle">Finish &amp; Return <em>per blade</em></span>
+        <span class="ssum">Retreat through grinder poses, place the blade with force sensing, magnets off, loop for next.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="process">
+          <h4>Place blade &amp; release</h4>
+          <p class="desc">Retreat angle_pos → grinder_app → grinder_top, lower onto the rack with a Z-force probe, magnets off, return to the rack top.</p>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <!-- 9 Main loop -->
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">9</span>
+        <span class="stext"><span class="stitle">Main loop <em>dispatcher</em></span>
+        <span class="ssum">Ties the stages together: optional homing, then wait for REG_START and run the per-blade sequence.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="process">
+          <h4>Dispatcher</h4>
+          <p class="desc">Runs homing if enabled, then loops while not in emergency; on REG_START reads the job, selects grinder/bay, and runs pick → measure → approach → grind → finish for each blade. <span class="pill">run_pick</span>/<span class="pill">run_grind</span> are generated from the variant tabs.</p>
+        </div>
+      </div></div></div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== CALIBRATION.DRL ===================== -->
+<section class="program" id="calib">
+  <div class="flow">
+
+    <div class="stage" data-accent="io">
+      <button class="stage-head">
+        <span class="snum">1</span>
+        <span class="stext"><span class="stitle">Setup</span>
+        <span class="ssum">Set the tool, the config flags (grinder_val = 2), and energise the magnets.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="process">
+          <h4>Tool, flags &amp; magnets</h4>
+<code>set_tcp("Flange")
+loading_val = False
+grinder_val = 2
+set_analog_output(ch=1, val=3.3)     <span class="c"># magnets ON</span></code>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">2</span>
+        <span class="stext"><span class="stitle">Loading <em>if loading_val</em></span>
+        <span class="ssum">Walk zone-by-zone to the init pose, then to the chosen grinder (currently skipped).</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="decision">
+          <h4>Optional homing to grinder</h4>
+          <p class="desc">When enabled: navigate zones to init, then to the grinder zone (G1→0, G2→3). Currently False → skipped.</p>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="stage" data-accent="io">
+      <button class="stage-head">
+        <span class="snum">3</span>
+        <span class="stext"><span class="stitle">Camera Start</span>
+        <span class="ssum">Signal the camera that the robot is ready and reset the calibration flag.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="io">
+          <h4>Hand-off to camera</h4>
+<code>set_modbus_slave(REG_GRIND_READY, 1)   <span class="c"># 138</span>
+wait(5)
+set_modbus_slave(REG_CALIBRATION, 0)   <span class="c"># 141</span></code>
+          <div class="badges"><span class="badge reg">REG_GRIND_READY ·138</span><span class="badge reg">REG_CALIBRATION ·141</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">4</span>
+        <span class="stext"><span class="stitle">Approach</span>
+        <span class="ssum">Branch on grinder_val; move to the inspection pose with a depth-corrected plunge of 39 − blade_depth.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="measure">
+          <h4>Depth-corrected plunge</h4>
+          <p class="desc">Both branches push to a radial depth of <b>39 − blade_depth</b> so the tool tip meets the bevel regardless of how deep the blade sat in the rack.</p>
+          <div class="badges"><span class="badge meas">blade_depth (mm)</span><span class="badge var">grind_coord</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="stage" data-accent="measure">
+      <button class="stage-head">
+        <span class="snum">5</span>
+        <span class="stext"><span class="stitle">Sweep <em>core routine</em></span>
+        <span class="ssum">Pivot the tool 70° → 10° in 5° steps, publishing each angle to the camera.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="measure">
+          <h4>Angle sweep</h4>
+<code><span class="k">for</span> i in range(0, 60, 5):
+    <span class="c"># pivot +5° about [blade_depth,0,0]</span>
+    current_angle -= 5
+    set_modbus_slave(REG_CALIBRATION_ANGLE, current_angle*10)</code>
+          <div class="badges"><span class="badge meas">current_angle 70→10°</span><span class="badge reg">REG_CALIBRATION_ANGLE ·142</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="stage" data-accent="process">
+      <button class="stage-head">
+        <span class="snum">6</span>
+        <span class="stext"><span class="stitle">Finish</span>
+        <span class="ssum">Retreat to the inspection &amp; app pose, then end calibration.</span></span>
+        <span class="chev"></span>
+      </button>
+      <div class="stage-body"><div class="stage-inner"><div class="stage-pad"><div class="dflow">
+        <div class="node" data-type="io">
+          <h4>End calibration</h4>
+<code>set_modbus_slave(REG_CALIBRATION, 0)
+tp_log("Calibration finished")</code>
+          <div class="badges"><span class="badge reg">REG_CALIBRATION ·141</span></div>
+        </div>
+      </div></div></div></div>
+    </div>
+
+    <p class="sidenote" style="max-width:760px;margin:18px auto 0">Code editing &amp; the DRL builder currently cover <b>modbus.drl</b> only — calibration export is a later step.</p>
+
+  </div>
+</section>
+
+</main>
+
+<!-- ===================== SIDEBAR ===================== -->
+<aside class="side">
+  <div id="side-modbus">
+    <h3>Key measurements · modbus</h3>
+    <div class="keybox"><b>blade_depth</b><p>Y-force collision − blade_zero datum. Drives IR offset, grinder invert (−Z), bevel pivot &amp; calibration plunge.</p></div>
+    <div class="keybox"><b>blade_length</b><p>blade_left[0] − blade_right[0] from the IR end-stop sweep.</p></div>
+    <div class="keybox"><b>cut_depth</b><p>depth ÷ passes, constrained to 0.1–0.2 mm; sets per-pass feed.</p></div>
+
+    <h3>Register map</h3>
+    <table class="regtable">
+      <tr><td>REG_BAY_ID</td><td>128</td><td>blade bay</td></tr>
+      <tr><td>REG_GRINDER_ID</td><td>129</td><td>grinder 1/2/3</td></tr>
+      <tr><td>REG_ANGLE</td><td>130</td><td>×10 → °</td></tr>
+      <tr><td>REG_DEPTH</td><td>131</td><td>×100 → mm</td></tr>
+      <tr><td>REG_LENGTH</td><td>132</td><td>mm</td></tr>
+      <tr><td>REG_CONFIG_VERSION</td><td>133</td><td>recipe ver</td></tr>
+      <tr><td>REG_DETECTION_X</td><td>134</td><td>×100 mm</td></tr>
+      <tr><td>REG_DETECTION_Y</td><td>135</td><td>×100 mm</td></tr>
+      <tr><td>REG_STATUS</td><td>136</td><td>0=abort,1,2</td></tr>
+      <tr><td>REG_START</td><td>137</td><td>job start</td></tr>
+      <tr><td>REG_GRIND_READY</td><td>138</td><td>→ camera</td></tr>
+      <tr><td>REG_GRIND</td><td>139</td><td>tooth trigger</td></tr>
+      <tr><td>REG_EMERGENCY</td><td>140</td><td>e-stop</td></tr>
+      <tr><td>REG_CALIBRATION</td><td>141</td><td>calib active</td></tr>
+      <tr><td>REG_CALIBRATION_ANGLE</td><td>142</td><td>×10 → °</td></tr>
+      <tr><td>REG_DETECTION_DEPTH</td><td>143</td><td>×100 mm</td></tr>
+      <tr><td>REG_FINE_X_OFFSET</td><td>144</td><td>×100 mm</td></tr>
+      <tr><td>REG_FINE_REQ</td><td>145</td><td>offset req</td></tr>
+      <tr><td>REG_BLADE_COUNT</td><td>146</td><td>count</td></tr>
+    </table>
+    <p class="sidenote">Host PC = Modbus master, robot = slave.</p>
+  </div>
+
+  <div id="side-calib" style="display:none">
+    <h3>Key measurements · calibration</h3>
+    <div class="keybox"><b>current_angle</b><p>Swept 70° → 10° in 5° steps (12 poses), published to REG_CALIBRATION_ANGLE ×10 each step.</p></div>
+    <div class="keybox"><b>blade_depth</b><p>Re-used from a prior grind run as the pivot point and the 39 − blade_depth plunge depth.</p></div>
+    <div class="keybox"><b>grinder_val</b><p>Hard-coded = 2 → uses grinder-2 poses &amp; a −90° grind frame.</p></div>
+    <p class="sidenote">A pure orientation sweep so the vision system can map measured vs. commanded bevel angle.</p>
+  </div>
+</aside>
+
+</div>
+
+<!-- ===================== DRL BASELINE (parsed into the editable model) ===================== -->
+<script type="text/plain" id="drlBaseline">
+#@SECTION:setup
+# Modbus Register Addresses
+REG_BAY_ID = 128
+REG_GRINDER_ID = 129
+REG_ANGLE = 130
+REG_DEPTH = 131
+REG_LENGTH = 132
+REG_CONFIG_VERSION = 133
+
+REG_DETECTION_X = 134
+REG_DETECTION_Y = 135
+REG_STATUS = 136 # 1,0,2 - teeth detected
+REG_START = 137 # Program start
+REG_GRIND_READY = 138 # For camera
+REG_GRIND = 139 # Grind loop
+REG_EMERGENCY = 140
+
+REG_CALIBRATION_READY = 141
+REG_CALIBRATION_ANGLE = 142
+REG_DETECTION_DEPTH = 143
+REG_FINE_X_OFFSET = 144
+REG_FINE_REQ = 145
+REG_BLADE_COUNT = 146
+
+# Command codes
+CMD_READ_DETECTION = 11
+CMD_RESET = 22
+
+# I/O settings
+set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
+
+def rotate_tcp(tcp, pivot, transformation):
+    # pivot: [px, py, pz] offset in tool frame
+    set_tcp(tcp)
+    base = get_current_posx()[0]
+    px, py, pz = pivot[0], pivot[1], pivot[2]
+    rz1, ry, rz2 = transformation[3], transformation[4], transformation[5]
+    R = eul2rotm([rz1, ry, rz2])
+    tx = px - (R[0][0]*px + R[0][1]*py + R[0][2]*pz)
+    ty = py - (R[1][0]*px + R[1][1]*py + R[1][2]*pz)
+    tz = pz - (R[2][0]*px + R[2][1]*py + R[2][2]*pz)
+    delta = posx(tx, ty, tz, rz1, ry, rz2)
+    final = trans(base, delta, DR_TOOL, DR_BASE)
+    movel(final, time=5, ref=DR_BASE)
+    set_tcp("Flange")
+    tp_log("TCP set back to Flange")
+    rotated_pos = get_current_posx()[0]
+    tp_log("Current position: " + str(rotated_pos))
+    return rotated_pos
+
+class ProcessAborted(Exception):
+    pass
+
+def safe_movel(*args, **kwargs):
+    status = get_modbus_slave(REG_STATUS)
+    if status == 0:
+        raise ProcessAborted()
+    movel(*args, **kwargs)
+    if status == 0:
+        raise ProcessAborted()
+
+def check_emergency():
+    if get_modbus_slave(REG_EMERGENCY) != 0:
+        tp_log("Emergency triggered - stopping program")
+        stop(DR_QSTOP)
+        exit()
+    wait(0.5)
+
+thread_run(check_emergency, loop=True)
+#@SECTION:homing
+def home():
+    tp_log("Homing")
+    x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
+    tp_log("Current Pos: " + str(x1))
+    local_zones = [System_grinder_top, fkin(System_init_j), System_blades_top, System_grinder2_top]
+    dist = [0] * 4
+    for i in range(0, len(local_zones)):
+        dist[i] = get_distance(x1, local_zones[i])
+    closest_zone = dist.index(min(dist))
+    while closest_zone != 2:
+        tp_log("Closest_zone: " + str(closest_zone))
+        if closest_zone == 0:
+            movel(local_zones[0], 100, 20)
+            closest_zone += 1
+        elif closest_zone == 1:
+            movej(System_init_j, 100, 20)
+            closest_zone += 1
+        elif closest_zone == 3:
+            movel(local_zones[3], 100, 20)
+            closest_zone -= 1
+    tp_log("Going to blades now")
+    movel(local_zones[2], 100, 20)
+#@SECTION:startjob
+def read_job():
+    global v_angle, v_depth, v_length, v_bay_id, v_grinder_id, v_config_version, v_blade_count
+    v_angle = get_modbus_slave(REG_ANGLE)/10
+    v_depth = get_modbus_slave(REG_DEPTH)/100
+    v_length = get_modbus_slave(REG_LENGTH)
+    v_bay_id = get_modbus_slave(REG_BAY_ID)
+    v_grinder_id = get_modbus_slave(REG_GRINDER_ID)
+    v_config_version = get_modbus_slave(REG_CONFIG_VERSION)
+    v_blade_count = get_modbus_slave(REG_BLADE_COUNT)
+    tp_log("Start command received")
+    tp_log("-----------------------------------------------")
+    tp_log("Bay ID: " + str(v_bay_id))
+    tp_log("Grinder ID: " + str(v_grinder_id))
+    tp_log("Angle: " + str(v_angle))
+    tp_log("Depth: " + str(v_depth))
+    tp_log("Length: " + str(v_length))
+    tp_log("Config Version: " + str(v_config_version))
+    tp_log("Blade count: " + str(v_blade_count))
+    tp_log("-----------------------------------------------")
+    set_modbus_slave(REG_GRIND_READY, 0)
+
+def select_grinder():
+    global grinder_top, grinder_app, grinder_invert, grinder_rotation
+    if (v_grinder_id == 1):
+        tp_log("Grinder 1")
+        grinder_top = System_grinder_top
+        grinder_app = System_grinder_app
+        grinder_invert = System_grinder_invert
+        grinder_rotation = 0
+    elif (v_grinder_id == 2):
+        tp_log("Grinder 2")
+        grinder_top = System_grinder2_top
+        grinder_app = System_grinder2_app
+        grinder_invert = System_grinder2_invert
+        grinder_rotation = -90
+    elif (v_grinder_id == 3):
+        tp_log("Grinder 3 (NOT SET)")
+        grinder_top = System_grinder2_top
+        grinder_app = System_grinder2_app
+        grinder_invert = System_grinder2_invert
+        grinder_rotation = 90
+    else:
+        tp_log("Incorrect Grinder ID " + str(get_modbus_slave(REG_GRINDER_ID)))
+        return False
+    return True
+
+def select_blade():
+    global blade_pos
+    if (v_bay_id == 1):
+        tp_log("Blade 1")
+        blade_pos = System_blade1
+    elif (v_bay_id == 2):
+        tp_log("Blade 2 (NOT SET)")
+        blade_pos = System_blade1
+    elif (v_bay_id == 3):
+        tp_log("Blade 3 (NOT SET)")
+        blade_pos = System_blade1
+    elif (v_bay_id == 4):
+        tp_log("Blade 4 (NOT SET)")
+        blade_pos = System_blade1
+    elif (v_bay_id == 5):
+        tp_log("Blade 5 (NOT SET)")
+        blade_pos = System_blade1
+    else:
+        tp_log("Incorrect Bay ID " + str(get_modbus_slave(REG_BAY_ID)))
+        return False
+    return True
+#@SECTION:pick
+def pick_v1():
+    global blade_depth
+    # --- tuning (pick_v1) ---
+    z_probe = -50          # mm, descend onto blade top
+    y_probe = -40          # mm, push into blade edge
+    grab_v = 1.2           # magnet voltage on grab
+    hold_v = 3.3           # magnet voltage on hold
+    # ------------------------
+    movel(System_blades_top, 200, 100)
+    movel(blade_pos, 200, 100)
+    set_ref_coord(DR_WORLD)
+    current_z = get_tool_force(DR_TOOL)[2]
+    fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+    amovel(posx([0,0,z_probe,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
+    while (fcon_z):
+        fcon_z = check_force_condition(DR_AXIS_Z, min=max(current_z - 5,0), max=current_z + 2, ref=DR_TOOL)
+    stop(DR_SSTOP)
+    set_ref_coord(DR_WORLD)
+    pos1, sol = get_current_posx(DR_WORLD)
+    current_y = get_tool_force(DR_WORLD)[1]
+    tp_log("Current y: " + str(current_y))
+    if (current_y < -2):
+        max_current_y = -current_y
+    else:
+        max_current_y = current_y + 10
+    tp_log("Max y:" + str(max_current_y))
+    fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
+    amovel(posx([0, y_probe, 0,0,0,0]), vel=10, acc=20, mod=DR_MV_MOD_REL)
+    wait(0.5)
+    while (fcon_y):
+        if (check_motion() == 0):
+            tp_log("No blade detected")
+            movel(blade_pos, vel=20, acc=20)
+            movel(System_blades_top, 100, 80)
+            exit()
+        fcon_y = check_force_condition(DR_AXIS_Y, min=max(current_y - 5,0), max=max_current_y, ref=DR_WORLD)
+    stop(DR_SSTOP)
+    pos2, sol2 = get_current_posx(DR_WORLD)
+    tp_log("Collision Y detected")
+    blade_depth = pos2[1] - blade_zero[1]
+    tp_log("Detected Blade Depth: " + str(blade_depth))
+    set_analog_output(ch=1, val=grab_v)
+    set_ref_coord(DR_WORLD)
+    movel(blade_pos, vel=50, acc=20)
+    set_analog_output(ch=1, val=hold_v)
+#@SECTION:measure
+def measure_length():
+    global blade_left, blade_right, blade_length
+    movel(System_ir_top, 300, 200)
+    ir_adjusted = posx(IR_sensor)
+    ir_adjusted[1] = ir_adjusted[1] - blade_depth
+    tp_log("IR adjusted x val: " + str(ir_adjusted[1]))
+    movel(ir_adjusted, 200, 100)
+    set_digital_output(1, ON)
+    wait(1)
+    amovel(posx(-400,0,0,0,0,0), vel=30, acc=10, mod=DR_MV_MOD_REL)
+    while (get_digital_input(1) == 0):
+        wait(0.01)
+    stop(DR_SSTOP)
+    blade_left, sol = get_current_posx(ref=DR_WORLD)
+    movel(posx(30,0,0,0,0,0), vel=30, acc=10, mod=DR_MV_MOD_REL)
+    tp_log("Move pos x: " + str(800+(blade_left[0])-30))
+    amovel(posx((500+(blade_left[0])-30),0,0,0,0,0), vel=30, acc=10, mod=DR_MV_MOD_REL)
+    while (get_digital_input(1) == 0):
+        wait(0.01)
+    stop(DR_SSTOP)
+    blade_right, sol = get_current_posx(ref=DR_WORLD)
+    blade_length = blade_left[0] - blade_right[0]
+    if (blade_length<120):
+        set_analog_output(ch=1, val=3.2)
+    elif (blade_length<520):
+        set_analog_output(ch=1, val=3.2)
+    else:
+        set_analog_output(ch=1, val=3.2)
+    tp_log("Detected Blade Length: " + str(blade_length))
+#@SECTION:approach
+def approach_grinder():
+    global angle_pos, grind_coord
+    movel(System_blades_top, 200, 100)
+    if (v_grinder_id != 2):
+        movej(System_init_j, 250, 100)
+    movel(grinder_top, 250, 100)
+    movel(grinder_app, 200, 100)
+    new_grinder_invert = posx(grinder_invert)
+    new_grinder_invert[2] = new_grinder_invert[2] - blade_depth
+    movel(new_grinder_invert, 20, 20)
+    angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
+    grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
+    movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
+    set_modbus_slave(REG_GRIND_READY, 1)
+    wait(5)
+#@SECTION:grind
+def grind_v1():
+    # --- tuning (grind_v1) ---
+    move_range = 30
+    offset = 8
+    pass_options = [15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
+    cut_min = 0.1
+    cut_max = 0.2
+    # -------------------------
+    try:
+        while (1):
+            if (get_modbus_slave(REG_STATUS) == 0):
+                tp_log("Stopping operation")
+                break
+            while (get_modbus_slave(REG_STATUS) == 1):
+                if (get_modbus_slave(REG_GRIND) == 1):
+                    tp_log("Start command received")
+                    val_x = get_modbus_slave(REG_DETECTION_X)/100
+                    val_y = get_modbus_slave(REG_DETECTION_Y)/100
+                    depth = get_modbus_slave(REG_DEPTH)/100
+                    detection_depth = get_modbus_slave(REG_DETECTION_DEPTH)/100
+                    tp_log("Binary Move Received: X={0}, Y={1}".format(val_x, val_y))
+                    tp_log("Detection depth: " + str(detection_depth))
+                    delta_x = [val_x, 0, 0, 0, 0, 0]
+                    delta_y = [0, val_y + detection_depth - 0.5, 0, 0, 0, 0]
+                    delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0]
+                    delta_up = [0, 0, move_range, 0, 0, 0]
+                    delta_down = [0, 0, -(move_range/2) + offset, 0, 0, 0]
+                    safe_movel(posx(delta_x), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
+                    start_cut_pos, sol = get_current_posx(ref=grind_coord)
+                    tp_log("Start cut y: " + str(start_cut_pos[1]))
+                    safe_movel(posx(delta_down), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
+                    safe_movel(posx(delta_y), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
+                    direction = 1
+                    current_depth = get_current_posx(ref=grind_coord)[0][1] - start_cut_pos[1] - val_y
+                    tp_log("Current pre_cut depth: " + str(current_depth))
+                    calc_cut = 0
+                    if depth != 0:
+                        for passes in pass_options:
+                            calc_cut = depth/passes
+                            if cut_min <= (calc_cut) <= cut_max:
+                                cut_depth = calc_cut
+                                break
+                        if calc_cut < 0.05:
+                            cut_depth = calc_cut
+                        while (current_depth < depth):
+                            step = min(cut_depth, depth - current_depth)
+                            rel_move = [0, step, direction * move_range, 0, 0, 0]
+                            scaled_vel = 250 * (1.5 - cut_depth)
+                            scaled_acc = 0.7 * scaled_vel
+                            safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                            current_depth += step
+                            tp_log("Target Depth: " + str(current_depth))
+                            direction *= -1
+                            current_pos = get_current_posx(ref=grind_coord)[0]
+                            y_pos_depth = current_pos[1] - start_cut_pos[1] - (val_y + detection_depth - 0.5)
+                            tp_log("Actual depth: " + str(y_pos_depth))
+                        rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
+                        safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                    else:
+                        tp_log("0 depth cut")
+                    safe_movel(posx(delta_neg_y), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
+                    safe_movel(posx(start_cut_pos), vel=400, acc=200, ref=grind_coord)
+                    wait(1)
+                    set_modbus_slave(REG_GRIND, 0)
+                    wait(0.5)
+    except ProcessAborted:
+        movel(posx(0,-30,0,0,0,0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
+#@SECTION:finish
+def finish_return():
+    tp_log("Finished grinding")
+    set_modbus_slave(REG_GRIND_READY, 0)
+    set_ref_coord(DR_WORLD)
+    set_tcp("Flange")
+    tp_log("Angle pos")
+    movel(angle_pos, 20, 20)
+    tp_log("Grinder_app")
+    movel(grinder_app, 50, 20)
+    tp_log("Grinder top")
+    movel(grinder_top, 100, 50)
+    if (v_grinder_id == 1):
+        tp_log("Grinder 1 exit")
+        movel(System_init, 150, 80)
+    elif (v_grinder_id == 2):
+        tp_log("Grinder 2 exit")
+    elif (v_grinder_id == 3):
+        tp_log("Grinder 3 exit")
+    movel(System_blades_top, 150, 80)
+    movel(System_blade_drop, 150, 80)
+    amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+    force_z = get_tool_force(DR_TOOL)[2]
+    fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+    while (fcon_z and (check_motion() != 0)):
+        fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+    stop(DR_SSTOP)
+    set_analog_output(ch=1, val=0)
+    movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+    movel(System_blade_drop, 100, 50)
+    movel(System_blades_top, 150, 80)
+#@SECTION:main
+if (homing_val):
+    home()
+else:
+    tp_log("Skipped Homing")
+
+while (get_modbus_slave(REG_EMERGENCY) == 0):
+    if (get_modbus_slave(REG_START) == 1):
+        set_tcp("Flange")
+        read_job()
+        if not select_grinder():
+            break
+        if not select_blade():
+            break
+        for i in range(0, max(1, v_blade_count), 1):
+            run_pick()
+            measure_length()
+            approach_grinder()
+            run_grind()
+            finish_return()
+        set_modbus_slave(REG_START, 0)
+</script>
+
+<script>
+  // ---------- flowchart tabs + expand ----------
+  const tabs = document.querySelectorAll('.tab');
+  const progs = {modbus:document.getElementById('modbus'), calib:document.getElementById('calib')};
+  const sides = {modbus:document.getElementById('side-modbus'), calib:document.getElementById('side-calib')};
+  const expandBtn = document.getElementById('expandBtn');
+  let activeProg = 'modbus';
+
+  document.querySelectorAll('.stage-head').forEach(h=>{
+    h.addEventListener('click', ()=> h.parentElement.classList.toggle('open'));
+  });
+  tabs.forEach(t=> t.addEventListener('click', ()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    activeProg = t.dataset.prog;
+    Object.keys(progs).forEach(k=>{
+      progs[k].classList.toggle('active', k===activeProg);
+      sides[k].style.display = (k===activeProg) ? 'block' : 'none';
+    });
+    syncExpandBtn();
+  }));
+  function syncExpandBtn(){
+    const stages = progs[activeProg].querySelectorAll('.stage');
+    const allOpen = [...stages].every(s=>s.classList.contains('open'));
+    expandBtn.textContent = allOpen ? 'Collapse all' : 'Expand all';
+  }
+  expandBtn.addEventListener('click', ()=>{
+    const stages = progs[activeProg].querySelectorAll('.stage');
+    const allOpen = [...stages].every(s=>s.classList.contains('open'));
+    stages.forEach(s=> s.classList.toggle('open', !allOpen));
+    syncExpandBtn();
+  });
+
+  // ---------- editable model ----------
+  const STAGE_KEYS = ['setup','homing','startjob','pick','measure','approach','grind','finish','main'];
+  const VARIANT_STAGES = {pick:1, grind:1};
+  const LS_KEY = 'bladeSharpProject_v2';
+  const codeViews = {};
+
+  function parseBaseline(){
+    const raw = document.getElementById('drlBaseline').textContent;
+    const parts = {}; let cur = null, buf = [];
+    raw.split('\n').forEach(line=>{
+      const m = line.match(/^#@SECTION:(\w+)\s*$/);
+      if(m){ if(cur!==null) parts[cur]=buf.join('\n').replace(/^\n+|\n+$/g,''); cur=m[1]; buf=[]; }
+      else if(cur!==null){ buf.push(line); }
+    });
+    if(cur!==null) parts[cur]=buf.join('\n').replace(/^\n+|\n+$/g,'');
+    const m = { code:{}, variants:{}, homing:true };
+    STAGE_KEYS.forEach(k=>{
+      if(VARIANT_STAGES[k]) m.variants[k] = { list:[parts[k]||''], active:0 };
+      else m.code[k] = parts[k] || '';
+    });
+    return m;
+  }
+  function validModel(m){
+    return m && m.code && m.variants && m.variants.pick && m.variants.grind
+           && Array.isArray(m.variants.pick.list) && Array.isArray(m.variants.grind.list);
+  }
+  function loadLocal(){ try{ const s=localStorage.getItem(LS_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
+  function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(model)); }catch(e){} updateCfgPreview(); }
+
+  const deepClone = (o)=> JSON.parse(JSON.stringify(o));
+  const embeddedBaseline = parseBaseline();
+  let baselineModel = embeddedBaseline;                 // updated from /baseline if the backend has one
+  const savedLocal = loadLocal();
+  const hadLocal = validModel(savedLocal);
+  let model = hadLocal ? savedLocal : deepClone(embeddedBaseline);
+
+  // ---------- editor widgets ----------
+  function tabHandler(e){
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      const s=this.selectionStart, en=this.selectionEnd;
+      this.value = this.value.slice(0,s) + '    ' + this.value.slice(en);
+      this.selectionStart = this.selectionEnd = s + 4;
+      this.dispatchEvent(new Event('input'));
+    }
+  }
+  function autosize(ta){
+    const se = document.scrollingElement || document.documentElement;
+    const sy = se.scrollTop;                 // preserve page scroll (fixes caret jump on Enter)
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+    se.scrollTop = sy;
+  }
+  function autosizeView(key){ const c=codeViews[key]; if(!c || c.offsetParent===null) return; c.querySelectorAll('.code-edit').forEach(autosize); }
+  function makeEditor(getVal, setVal){
+    const ta = document.createElement('textarea');
+    ta.className = 'code-edit'; ta.spellcheck = false;
+    ta.value = getVal();
+    ta.addEventListener('input', ()=>{ setVal(ta.value); autosize(ta); saveLocal(); });
+    ta.addEventListener('keydown', tabHandler);
+    return ta;
+  }
+  function renderCodeView(key){
+    const container = codeViews[key];
+    if(!container) return;
+    container.innerHTML = '';
+
+    if(key === 'homing'){
+      const note = document.createElement('p'); note.className='code-hint';
+      note.textContent = 'Enable/disable homing with the switch next to this stage’s arrow (sets homing_val).';
+      container.appendChild(note);
+      container.appendChild(makeEditor(()=>model.code.homing, v=>model.code.homing=v));
+      autosizeView(key);
+      return;
+    }
+
+    if(VARIANT_STAGES[key]){
+      const pool = model.variants[key];
+      const tabsRow = document.createElement('div'); tabsRow.className = 'vtabs';
+      pool.list.forEach((code, idx)=>{
+        const t = document.createElement('button'); t.type='button';
+        t.className = 'vtab' + (idx===pool.active ? ' active' : '');
+        t.textContent = key + '_v' + (idx+1);
+        t.addEventListener('click', ()=>{ pool.active = idx; saveLocal(); renderCodeView(key); });
+        tabsRow.appendChild(t);
+      });
+      const add = document.createElement('button'); add.type='button'; add.className='vadd';
+      add.textContent = '＋'; add.title = 'Add a variant (copy of current)';
+      add.addEventListener('click', ()=>{
+        const n = pool.list.length + 1;
+        const clone = (pool.list[pool.active]||'').replace(/def\s+\w+\s*\(/, 'def '+key+'_v'+n+'(');
+        pool.list.push(clone); pool.active = pool.list.length - 1;
+        saveLocal(); renderCodeView(key);
+      });
+      tabsRow.appendChild(add);
+      container.appendChild(tabsRow);
+
+      const note = document.createElement('div'); note.className = 'vnote';
+      note.innerHTML = 'Selected &rarr; <b>'+key+'_variant = '+(pool.active+1)+'</b>. Editing changes this variant only; &#65291; clones it.';
+      container.appendChild(note);
+
+      container.appendChild(makeEditor(
+        ()=>pool.list[pool.active],
+        v=>{ pool.list[pool.active]=v; }
+      ));
+
+      if(pool.list.length > 1){
+        const del = document.createElement('button'); del.type='button'; del.className='vdel';
+        del.textContent = 'Delete ' + key + '_v' + (pool.active+1);
+        del.addEventListener('click', ()=>{
+          if(pool.list.length<=1) return;
+          pool.list.splice(pool.active,1);
+          pool.active = Math.max(0, pool.active-1);
+          saveLocal(); renderCodeView(key);
+        });
+        container.appendChild(del);
+      }
+      autosizeView(key);
+      return;
+    }
+
+    // plain code section
+    container.appendChild(makeEditor(()=>model.code[key], v=>model.code[key]=v));
+    const hint = document.createElement('p'); hint.className='code-hint';
+    hint.textContent = 'Renaming functions here may break the Main-loop dispatcher.';
+    container.appendChild(hint);
+    autosizeView(key);
+  }
+
+  // ---------- inject Summary | Code toggle into each modbus stage ----------
+  function setupStages(){
+    const stages = [...document.querySelectorAll('#modbus .stage')];
+    stages.forEach((stage, i)=>{
+      const key = STAGE_KEYS[i];
+      if(!key) return;
+      stage.dataset.key = key;
+      const pad = stage.querySelector('.stage-pad');
+      if(!pad) return;
+
+      const summary = document.createElement('div'); summary.className = 'summary-view';
+      while(pad.firstChild) summary.appendChild(pad.firstChild);
+
+      const tg = document.createElement('div'); tg.className = 'vtoggle';
+      const bSum = document.createElement('button'); bSum.type='button'; bSum.className='vt active'; bSum.textContent='Summary';
+      const bCode = document.createElement('button'); bCode.type='button'; bCode.className='vt'; bCode.textContent='Code';
+      tg.appendChild(bSum); tg.appendChild(bCode);
+
+      const codeView = document.createElement('div'); codeView.className = 'code-view';
+      codeViews[key] = codeView;
+
+      pad.appendChild(tg);
+      pad.appendChild(summary);
+      pad.appendChild(codeView);
+
+      bSum.addEventListener('click', ()=>{ stage.classList.remove('showcode'); bSum.classList.add('active'); bCode.classList.remove('active'); });
+      bCode.addEventListener('click', ()=>{ stage.classList.add('showcode'); bCode.classList.add('active'); bSum.classList.remove('active'); autosizeView(key); });
+
+      if(key === 'homing') injectHomingToggle(stage);
+
+      renderCodeView(key);
+    });
+  }
+  function injectHomingToggle(stage){
+    const head = stage.querySelector('.stage-head');
+    const chev = head.querySelector('.chev');
+    const tog = document.createElement('span');
+    tog.className = 'head-toggle' + (model.homing ? ' on' : '');
+    tog.title = 'Run homing on startup (homing_val)';
+    tog.innerHTML = '<span class="ht-track"><span class="ht-knob"></span></span><span class="ht-label">Homing ' + (model.homing?'ON':'OFF') + '</span>';
+    tog.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      model.homing = !model.homing;
+      tog.classList.toggle('on', model.homing);
+      tog.querySelector('.ht-label').textContent = 'Homing ' + (model.homing?'ON':'OFF');
+      saveLocal();
+    });
+    head.insertBefore(tog, chev);
+  }
+  function syncHomingToggle(){
+    const tog = document.querySelector('#modbus .head-toggle');
+    if(!tog) return;
+    tog.classList.toggle('on', !!model.homing);
+    tog.querySelector('.ht-label').textContent = 'Homing ' + (model.homing?'ON':'OFF');
+  }
+  setupStages();
+
+  // ---------- build / export ----------
+  const buildBtn   = document.getElementById('buildBtn');
+  const buildPanel = document.getElementById('buildPanel');
+  const cfgPreview = document.getElementById('cfgPreview');
+  const buildName  = document.getElementById('buildName');
+  const genBtn     = document.getElementById('genBtn');
+  const saveProjBtn= document.getElementById('saveProjBtn');
+  const loadProjBtn= document.getElementById('loadProjBtn');
+  const loadProjInput = document.getElementById('loadProjInput');
+  const resetBtn   = document.getElementById('resetBtn');
+  const setBaselineBtn = document.getElementById('setBaselineBtn');
+  const buildStatus= document.getElementById('buildStatus');
+  const buildConfig= document.getElementById('buildConfig');
+  let backendOnline = false;
+
+  function status(msg, ok){ buildStatus.textContent = msg; buildStatus.className = 'build-status ' + (ok ? 'ok' : 'err'); }
+  async function refreshConfig(){
+    try{
+      const r = await fetch('/config', {cache:'no-store'});
+      if(!r.ok) throw 0;
+      const c = await r.json();
+      backendOnline = true;
+      buildConfig.innerHTML = 'Backend on &middot; .drl &rarr; <b>'+c.drl_target+'</b> &middot; archives &rarr; <b>'+c.logs_dir+'</b> &middot; projects &rarr; <b>'+(c.projects_dir||'?')+'</b>';
+    }catch(e){
+      backendOnline = false;
+      buildConfig.innerHTML = 'Backend offline — buttons fall back to browser downloads. Run <b>python server.py</b> to save into the repo.';
+    }
+  }
+
+  buildBtn.addEventListener('click', ()=> buildPanel.classList.toggle('open'));
+
+  function stamp(){
+    const d = new Date(), p = n => String(n).padStart(2,'0');
+    return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
+  }
+  function dispatcher(key, count){
+    let s = 'def run_'+key+'():\n';
+    for(let i=1;i<=count;i++){
+      s += (i===1 ? '    if ' : '    elif ') + key+'_variant == '+i+':\n        '+key+'_v'+i+'()\n';
+    }
+    s += '    else:\n        tp_log("Unknown '+key+'_variant " + str('+key+'_variant) + " - using '+key+'_v1")\n        '+key+'_v1()\n';
+    return s;
+  }
+  function normalize(code, name){ return code.replace(/def\s+\w+\s*\(/, 'def '+name+'('); }
+
+  // heuristic DRL sanity check (whitespace-sensitive Python; not a real compiler)
+  function lintDrl(text){
+    const issues = [];
+    const lines = text.split('\n');
+    let paren=0, brack=0, brace=0, hasTab=false, hasSpace=false;
+    const blockKw = /^\s*(def|if|elif|else|for|while|try|except|finally|with|class)\b.*:\s*$/;
+    for(let i=0;i<lines.length;i++){
+      const ln = lines[i];
+      const code = ln.replace(/"[^"]*"/g,'""').replace(/'[^']*'/g,"''").replace(/#.*$/,'');
+      for(const ch of code){
+        if(ch==='(')paren++; else if(ch===')')paren--;
+        else if(ch==='[')brack++; else if(ch===']')brack--;
+        else if(ch==='{')brace++; else if(ch==='}')brace--;
+      }
+      const indent = (ln.match(/^[ \t]*/)||[''])[0];
+      if(indent.indexOf('\t')>=0) hasTab=true;
+      if(indent.indexOf(' ')>=0) hasSpace=true;
+      if(indent.indexOf('\t')>=0 && indent.indexOf(' ')>=0) issues.push('Line '+(i+1)+': mixed tabs and spaces in indentation');
+      if(blockKw.test(code)){
+        let j=i+1; while(j<lines.length && lines[j].trim()==='') j++;
+        if(j>=lines.length) issues.push('Line '+(i+1)+': block header with no body');
+        else{
+          const ni=(lines[j].match(/^[ \t]*/)||[''])[0];
+          if(ni.length<=indent.length) issues.push('Line '+(i+1)+': "'+code.trim().slice(0,32)+'" not followed by an indented block');
+        }
+      }
+    }
+    if(paren!==0) issues.push('Unbalanced parentheses ( ) — net '+paren);
+    if(brack!==0) issues.push('Unbalanced brackets [ ] — net '+brack);
+    if(brace!==0) issues.push('Unbalanced braces { } — net '+brace);
+    if(hasTab && hasSpace) issues.push('File mixes tab- and space-indented lines');
+    return issues;
+  }
+
+  function buildDrl(){
+    const pick = model.variants.pick, grind = model.variants.grind;
+    const cfg =
+      '# ===================== CONFIG (generated by flowchart) =====================\n' +
+      'homing_val    = ' + (model.homing ? 'True' : 'False') + '\n' +
+      'pick_variant  = ' + (pick.active+1) + '\n' +
+      'grind_variant = ' + (grind.active+1) + '\n' +
+      '# ===========================================================================';
+    const header =
+      '# ============================================================\n' +
+      '#  modbus.drl  -  generated by the blade-sharpening flowchart\n' +
+      '#  VALIDATE against a known-good program before production use.\n' +
+      '# ============================================================';
+    const pickCode  = pick.list.map((c,i)=>normalize(c,'pick_v'+(i+1))).join('\n\n');
+    const grindCode = grind.list.map((c,i)=>normalize(c,'grind_v'+(i+1))).join('\n\n');
+    return [
+      header,
+      model.code.setup,
+      cfg,
+      model.code.homing,
+      model.code.startjob,
+      pickCode,
+      dispatcher('pick', pick.list.length),
+      model.code.measure,
+      model.code.approach,
+      grindCode,
+      dispatcher('grind', grind.list.length),
+      model.code.finish,
+      model.code.main
+    ].join('\n\n') + '\n';
+  }
+  function updateCfgPreview(){
+    cfgPreview.textContent =
+      'homing_val    = ' + (model.homing ? 'True' : 'False') + '\n' +
+      'pick_variant  = ' + (model.variants.pick.active+1) + '   (' + model.variants.pick.list.length + ' variant(s))\n' +
+      'grind_variant = ' + (model.variants.grind.active+1) + '   (' + model.variants.grind.list.length + ' variant(s))';
+    buildName.textContent = 'modbus_' + stamp() + '.drl';
+  }
+  function download(name, text){
+    const blob = new Blob([text], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+  function rerenderAll(){ STAGE_KEYS.forEach(k=> renderCodeView(k)); syncHomingToggle(); updateCfgPreview(); }
+
+  genBtn.addEventListener('click', async ()=>{
+    const text = buildDrl();
+    const issues = lintDrl(text);
+    if(issues.length){
+      console.warn('DRL sanity-check issues:', issues);
+      const msg = 'Sanity check found ' + issues.length + ' possible issue(s):\n\n' +
+                  issues.slice(0,12).join('\n') + (issues.length>12 ? '\n…' : '') +
+                  '\n\nSave anyway?';
+      if(!confirm(msg)){ status('Save cancelled — ' + issues.length + ' issue(s) flagged (see console).', false); return; }
+    }
+    if(backendOnline){
+      try{
+        const r = await fetch('/save-drl', {method:'POST', headers:{'Content-Type':'text/plain'}, body:text});
+        const j = await r.json();
+        if(!r.ok) throw new Error(j.error || r.status);
+        let extra = '';
+        try{
+          const pr = await fetch('/save-project', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(model)});
+          if(pr.ok) extra = ' · project snapshot saved';
+        }catch(e2){}
+        status('Saved → '+j.drl + (j.archived ? '  (prev archived → '+j.archived+')' : '') + extra, true);
+        return;
+      }catch(e){ status('Backend save failed ('+e.message+') — downloaded instead.', false); }
+    }
+    download('modbus_'+stamp()+'.drl', text);
+    if(!backendOnline) status('Backend offline — downloaded the .drl to your Downloads folder.', true);
+  });
+  saveProjBtn.addEventListener('click', async ()=>{
+    const text = JSON.stringify(model, null, 2);
+    if(backendOnline){
+      try{
+        const r = await fetch('/save-project', {method:'POST', headers:{'Content-Type':'application/json'}, body:text});
+        const j = await r.json();
+        if(!r.ok) throw new Error(j.error || r.status);
+        status('Project saved → '+j.project, true);
+        return;
+      }catch(e){ status('Backend save failed ('+e.message+') — downloaded instead.', false); }
+    }
+    download('blade_project_'+stamp()+'.json', text);
+    if(!backendOnline) status('Backend offline — downloaded the project JSON.', true);
+  });
+  loadProjBtn.addEventListener('click', ()=> loadProjInput.click());
+  loadProjInput.addEventListener('change', (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const m = JSON.parse(r.result);
+        if(validModel(m)){ model = m; saveLocal(); rerenderAll(); }
+        else alert('That file is not a valid project.');
+      }catch(err){ alert('Could not parse the project file.'); }
+      loadProjInput.value = '';
+    };
+    r.readAsText(f);
+  });
+  resetBtn.addEventListener('click', ()=>{
+    if(confirm('Discard all edits/variants and reset to the baseline program?')){
+      model = deepClone(baselineModel); saveLocal(); rerenderAll(); status('Reset to baseline.', true);
+    }
+  });
+  setBaselineBtn.addEventListener('click', async ()=>{
+    if(!backendOnline){ status('“Set as baseline” needs the backend running (python server.py).', false); return; }
+    if(!confirm('Save the current editor state as the new baseline?\nReset to baseline will return here, and it is git-tracked (baseline.json).')) return;
+    try{
+      const r = await fetch('/set-baseline', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(model)});
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.error || r.status);
+      baselineModel = deepClone(model);
+      status('Saved current as baseline → '+j.baseline, true);
+    }catch(e){ status('Set-as-baseline failed: '+e.message, false); }
+  });
+  async function loadBaseline(){
+    try{
+      const r = await fetch('/baseline', {cache:'no-store'});
+      if(!r.ok) return;
+      const b = await r.json();
+      if(validModel(b)){ baselineModel = b; if(!hadLocal){ model = deepClone(b); rerenderAll(); } }
+    }catch(e){}
+  }
+
+  updateCfgPreview();
+  refreshConfig();
+  loadBaseline();
+</script>
+</body>
+</html>

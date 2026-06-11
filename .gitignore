@@ -2,3 +2,7 @@
 venv/
 */venv/
 .env/
+
+# Blade-sharpening flowchart builder: generated artifacts (not source of truth)
+Doosan/Program/_logs/
+Doosan/Program/Projects/
