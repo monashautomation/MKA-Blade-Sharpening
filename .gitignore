@@ -6,3 +6,5 @@ venv/
 # Blade-sharpening flowchart builder: generated artifacts (not source of truth)
 Doosan/Program/_logs/
 Doosan/Program/Projects/
+Doosan/Program/save_config.json
+Doosan/Program/auth.json

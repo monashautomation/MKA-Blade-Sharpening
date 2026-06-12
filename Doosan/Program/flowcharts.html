@@ -51,6 +51,9 @@
   .build-status.err{color:#cf222e}
   .build-config{font-size:11.5px;color:var(--muted);margin-top:8px;font-family:monospace}
   .build-config b{color:var(--io-tx);font-family:monospace}
+  .cfg-grid{display:flex;flex-wrap:wrap;gap:14px}
+  .cfg-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);font-weight:700;flex:1;min-width:240px}
+  .cfg-field input{padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:'Cascadia Code',Consolas,monospace;color:var(--text)}
 
   .wrap{display:grid;grid-template-columns:1fr 330px;gap:0}
   @media(max-width:1080px){.wrap{grid-template-columns:1fr}.side{display:none}}
@@ -79,6 +82,9 @@
   .head-toggle.on .ht-knob{left:18px}
   .ht-label{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
   .head-toggle.on .ht-label{color:var(--process)}
+  .head-toggle.locked{opacity:.45;cursor:not-allowed}
+  .expand-btn:disabled, .gen-btn:disabled{opacity:.4;cursor:not-allowed}
+  .code-edit[readonly]{background:#f0f2f5;cursor:default}
 
   .stage-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
   .stage.open .stage-body{grid-template-rows:1fr}
@@ -169,6 +175,8 @@
 <div class="toolbar">
   <button class="expand-btn" id="expandBtn">Expand all</button>
   <button class="expand-btn primary" id="buildBtn">Build modbus.drl &#9662;</button>
+  <button class="expand-btn" id="cfgBtn">Folders &#9662;</button>
+  <button class="expand-btn primary" id="unlockBtn" style="display:none">Unlock editing</button>
   <div class="legend">
     <span><i class="dot" style="background:var(--process)"></i>Process / motion</span>
     <span><i class="dot" style="background:var(--decision)"></i>Decision</span>
@@ -192,6 +200,22 @@
   <div class="build-status" id="buildStatus"></div>
   <div class="build-config" id="buildConfig">Checking backend…</div>
   <p class="build-note">Edits autosave to this browser. <b>Save project</b> keeps a portable/git-trackable copy. Each stage's <b>Code</b> tab edits the real source; <b>Pick</b> &amp; <b>Grind</b> have variant tabs (&#65291; clones the current one; the selected tab sets <span class="pill">pick_variant</span>/<span class="pill">grind_variant</span>). DRL is whitespace-sensitive — <b>validate in DART Studio simulation before production</b>.</p>
+</div>
+
+<div class="build-panel" id="cfgPanel">
+  <div class="cfg-grid">
+    <label class="cfg-field">.drl output file
+      <input type="text" id="cfgDrl" spellcheck="false" placeholder="C:\path\to\modbus.drl"></label>
+    <label class="cfg-field">Archives folder (diff .drl)
+      <input type="text" id="cfgLogs" spellcheck="false" placeholder="C:\path\to\_logs"></label>
+    <label class="cfg-field">Projects folder (.json)
+      <input type="text" id="cfgProjects" spellcheck="false" placeholder="C:\path\to\Projects"></label>
+  </div>
+  <div class="build-actions" style="margin-top:12px">
+    <button class="gen-btn" id="saveCfgBtn">Save folders</button>
+  </div>
+  <div class="build-status" id="cfgStatus"></div>
+  <p class="build-note">Paths are on the <b>machine running server.py</b> (not your browser) — type absolute paths; folders are created if missing. Saved to <span class="pill">save_config.json</span> (gitignored, per-machine).</p>
 </div>
 
 <div class="wrap">
@@ -959,6 +983,7 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
   const VARIANT_STAGES = {pick:1, grind:1};
   const LS_KEY = 'bladeSharpProject_v2';
   const codeViews = {};
+  let canEdit = false;   // unlocked by the edit token (see /config can_edit)
 
   function parseBaseline(){
     const raw = document.getElementById('drlBaseline').textContent;
@@ -1011,6 +1036,7 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
   function makeEditor(getVal, setVal){
     const ta = document.createElement('textarea');
     ta.className = 'code-edit'; ta.spellcheck = false;
+    ta.readOnly = !canEdit;
     ta.value = getVal();
     ta.addEventListener('input', ()=>{ setVal(ta.value); autosize(ta); saveLocal(); });
     ta.addEventListener('keydown', tabHandler);
@@ -1125,6 +1151,7 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
     tog.innerHTML = '<span class="ht-track"><span class="ht-knob"></span></span><span class="ht-label">Homing ' + (model.homing?'ON':'OFF') + '</span>';
     tog.addEventListener('click', (e)=>{
       e.stopPropagation();
+      if(!canEdit) return;
       model.homing = !model.homing;
       tog.classList.toggle('on', model.homing);
       tog.querySelector('.ht-label').textContent = 'Homing ' + (model.homing?'ON':'OFF');
@@ -1153,6 +1180,14 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
   const setBaselineBtn = document.getElementById('setBaselineBtn');
   const buildStatus= document.getElementById('buildStatus');
   const buildConfig= document.getElementById('buildConfig');
+  const cfgBtn     = document.getElementById('cfgBtn');
+  const cfgPanel   = document.getElementById('cfgPanel');
+  const cfgDrl     = document.getElementById('cfgDrl');
+  const cfgLogs    = document.getElementById('cfgLogs');
+  const cfgProjects= document.getElementById('cfgProjects');
+  const saveCfgBtn = document.getElementById('saveCfgBtn');
+  const cfgStatus  = document.getElementById('cfgStatus');
+  const unlockBtn  = document.getElementById('unlockBtn');
   let backendOnline = false;
 
   function status(msg, ok){ buildStatus.textContent = msg; buildStatus.className = 'build-status ' + (ok ? 'ok' : 'err'); }
@@ -1162,14 +1197,32 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
       if(!r.ok) throw 0;
       const c = await r.json();
       backendOnline = true;
-      buildConfig.innerHTML = 'Backend on &middot; .drl &rarr; <b>'+c.drl_target+'</b> &middot; archives &rarr; <b>'+c.logs_dir+'</b> &middot; projects &rarr; <b>'+(c.projects_dir||'?')+'</b>';
+      buildConfig.innerHTML = 'Backend on &middot; .drl &rarr; <b>'+(c.drl_target_disp||c.drl_target)+'</b> &middot; archives &rarr; <b>'+(c.logs_dir_disp||c.logs_dir)+'</b> &middot; projects &rarr; <b>'+(c.projects_dir_disp||c.projects_dir)+'</b>';
+      if(cfgDrl && document.activeElement!==cfgDrl) cfgDrl.value = c.drl_target || '';
+      if(cfgLogs && document.activeElement!==cfgLogs) cfgLogs.value = c.logs_dir || '';
+      if(cfgProjects && document.activeElement!==cfgProjects) cfgProjects.value = c.projects_dir || '';
+      canEdit = !!c.can_edit; applyEditLock();
     }catch(e){
       backendOnline = false;
+      canEdit = false; applyEditLock();
       buildConfig.innerHTML = 'Backend offline — buttons fall back to browser downloads. Run <b>python server.py</b> to save into the repo.';
     }
   }
 
   buildBtn.addEventListener('click', ()=> buildPanel.classList.toggle('open'));
+  cfgBtn.addEventListener('click', ()=> cfgPanel.classList.toggle('open'));
+  function setCfgStatus(msg, ok){ cfgStatus.textContent = msg; cfgStatus.className = 'build-status ' + (ok ? 'ok' : 'err'); }
+  saveCfgBtn.addEventListener('click', async ()=>{
+    if(!backendOnline){ setCfgStatus('Needs the backend running (python server.py).', false); return; }
+    const body = JSON.stringify({ drl_target: cfgDrl.value, logs_dir: cfgLogs.value, projects_dir: cfgProjects.value });
+    try{
+      const r = await fetch('/set-config', {method:'POST', headers:{'Content-Type':'application/json'}, body});
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.error || r.status);
+      await refreshConfig();
+      setCfgStatus('Saved — files now write to these folders.', true);
+    }catch(e){ setCfgStatus('Could not save: ' + e.message, false); }
+  });
 
   function stamp(){
     const d = new Date(), p = n => String(n).padStart(2,'0');
@@ -1264,7 +1317,25 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
   }
-  function rerenderAll(){ STAGE_KEYS.forEach(k=> renderCodeView(k)); syncHomingToggle(); updateCfgPreview(); }
+  function rerenderAll(){ STAGE_KEYS.forEach(k=> renderCodeView(k)); syncHomingToggle(); updateCfgPreview(); applyEditLock(); }
+  function applyEditLock(){
+    document.querySelectorAll('.code-edit').forEach(t=> t.readOnly = !canEdit);
+    document.querySelectorAll('.vadd, .vdel').forEach(b=> b.disabled = !canEdit);
+    [genBtn, saveProjBtn, loadProjBtn, setBaselineBtn, resetBtn, saveCfgBtn].forEach(b=>{ if(b) b.disabled = !canEdit; });
+    document.querySelectorAll('#modbus .head-toggle').forEach(t=> t.classList.toggle('locked', !canEdit));
+    unlockBtn.style.display = canEdit ? 'none' : '';
+  }
+  unlockBtn.addEventListener('click', async ()=>{
+    const t = window.prompt('Enter the EDIT token to unlock editing:');
+    if(!t) return;
+    try{
+      const r = await fetch('/auth', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:t.trim()})});
+      const j = await r.json();
+      if(!r.ok) throw 0;
+      if(j.level !== 'edit'){ alert('Valid token, but it only grants view access. Enter the EDIT token.'); return; }
+      location.reload();
+    }catch(e){ alert('Invalid token.'); }
+  });
 
   genBtn.addEventListener('click', async ()=>{
     const text = buildDrl();
