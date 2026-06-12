@@ -1,12 +1,23 @@
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
 #set_analog_output(ch=1, val=3.3)
 #
-#set_ref_coord(DR_WORLD)
+set_ref_coord(DR_WORLD)
 #
 ##
 #movej(System_init_j, 100, 50)
+#movel(System_blades_top, 50, 20)
+#movel(System_blade1, 50, 20)
+#movel(System_ir_top, 50, 20)
 
-set_tcp("Flange")
+#movel(System_grinder_app, 50, 20)
+movel(System_grinder_top, 50, 20)
+movel(System_blades_top, 50, 20)
+#movel(System_grinder_app, 50, 20)
+#movel(System_grinder_invert, 50, 20)
+#movel(System_grinder_app, 50, 20)
+
+
+#set_tcp("Flange")
 ##movel(System_init, 20, 20)
 #
 #
@@ -317,4 +328,3 @@ set_tcp("Flange")
 #
 #stop(DR_SSTOP)
 #tp_log("Placed")
-
