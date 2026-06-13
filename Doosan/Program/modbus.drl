@@ -237,7 +237,7 @@ def approach_grinder():
     movel(new_grinder_invert, 20, 20)
     angle_pos = rotate_tcp("Tool_v1", [blade_depth,0,0], posx(0,0,0,0,-v_angle,0))
     grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
-    movel(posx(-(blade_right[0]-10), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
+    movel(posx(-(blade_right[0]-60), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     wait(5)
 
@@ -297,8 +297,9 @@ def grind_v1():
                     set_modbus_slave(REG_GRIND, 0)
                     wait(0.5)
     except ProcessAborted:
-        movel(posx(0,-30,0,0,0,0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
-
+        #movel(posx(0,-30,0,0,0,0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
+        movel(grinder_app, 50, 20)
+        
 def grind_v2():
     # --- tuning (grind_v2) --- Loop(in + out) + up + down
     move_range = 30
@@ -365,7 +366,7 @@ def finish_return():
     set_modbus_slave(REG_GRIND_READY, 0)
     set_ref_coord(DR_WORLD)
     set_tcp("Flange")
-    movel(angle_pos, 20, 20)
+    #movel(angle_pos, 20, 20)
     movel(grinder_app, 50, 20)
     movel(grinder_top, 100, 50)
     if (v_grinder_id == 1):
