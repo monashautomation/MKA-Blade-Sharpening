@@ -234,7 +234,7 @@ def approach_grinder():
     global angle_pos, grind_coord
     #movel(System_blades_top, 200, 100)
     set_analog_output(ch=1, val=3.3)
-    #movel(grinder_top, 250, 100)
+    movel(grinder_top, 250, 100)
     #movel(angle_pos, 50, 20)
     movel(grinder_app, 50, 100)
     new_grinder_invert = posx(grinder_invert)
@@ -244,7 +244,7 @@ def approach_grinder():
     grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
     tp_log("Blade right: " + str(blade_right[0]))
     # Manually calibrated 18 - current cut
-    movel(posx(-(blade_right[0]+18-62), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
+    movel(posx(-(blade_right[0]+18-185), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     tp_log("Grind Ready 1")
     wait(5)
@@ -375,11 +375,11 @@ def run_grind():
 
 def finish_return():
     tp_log("Finished grinding")
-    set_modbus_slave(REG_GRIND_READY, 0)
+    #set_modbus_slave(REG_GRIND_READY, 0)
     set_ref_coord(DR_WORLD)
     set_tcp("Flange")
     #movel(angle_pos, 20, 20)
-    #grinder_invert
+    movel(grinder_invert, 50, 20)
     movel(grinder_app, 50, 20)
     movel(grinder_top, 100, 50)
     #if (v_grinder_id == 1):
