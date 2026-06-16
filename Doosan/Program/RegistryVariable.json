@@ -46,25 +46,25 @@
     "Type": "Registry",
     "Name": "System_grinder_invert",
     "ValueType": "Posx",
-    "Value": "posx(0, 470, 102, 90, 90, 135)"
+    "Value": "posx(0, 474, 100, 90, 90, 135)"
   },
   "Variable8": {
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[176.974,-371.244,299.922,116.032,179.987,-18.977]"
+    "Value": "[104.193,-371.959,299.986,103.449,179.994,-31.565]"
   },
   "Variable9": {
     "Type": "Registry",
     "Name": "blade_left",
     "ValueType": "Posx",
-    "Value": "[-281.282,-371.241,299.929,55.470,179.992,-79.521]"
+    "Value": "[-184.060,-371.949,299.948,58.974,179.991,-76.016]"
   },
   "Variable10": {
     "Type": "Registry",
     "Name": "blade_length",
     "ValueType": "Float",
-    "Value": "-458.25599670410156"
+    "Value": "288.25315856933594"
   },
   "Variable11": {
     "Type": "Registry",
@@ -94,7 +94,7 @@
     "Type": "Registry",
     "Name": "blade_depth",
     "ValueType": "Float",
-    "Value": "20.777587890625"
+    "Value": "20.0751953125"
   },
   "Variable16": {
     "Type": "Registry",

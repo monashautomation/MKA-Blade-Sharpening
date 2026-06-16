@@ -1,0 +1,2 @@
+move_home(DR_HOME_TARGET_MECHANIC)
+movej(System_init_j, time=5)

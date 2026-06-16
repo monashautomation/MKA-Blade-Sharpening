@@ -1,0 +1,4 @@
+while True:
+    [singularity, mod, stx, fd, ref]=get_force_control_state()
+    tp_log("s={0}, m={1}, k={2}, f={3}, r={4}".format(singularity,mod,stx,fd,ref))
+    wait(0.5)
