@@ -1,0 +1,5 @@
+from collections import deque
+import numpy as np
+my_data = deque(maxlen=5)
+my_data.append(1)
+tp_log(str(list(my_data)))
