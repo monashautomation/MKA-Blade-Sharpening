@@ -281,8 +281,8 @@ def grind_v1():
                     depth = get_modbus_slave(REG_DEPTH)/100
                     detection_depth = get_modbus_slave(REG_DETECTION_DEPTH)/100
                     tp_log("X: " + str(val_x) + " Y: " + str(val_y) + " Depth: " + str(depth) + " DetD: " + str(detection_depth))
-                    depth_pct = np.abs(val_y/np.mean(prev_depths)) - 1)
-                    pitch_pct = np.abs(val_x/np.mean(prev_pitch)) - 1)
+                    depth_pct = np.abs(val_y/np.mean(prev_depths) - 1)
+                    pitch_pct = np.abs(val_x/np.mean(prev_pitch) - 1)
                     if(depth_pct>0.1):
                         tp_log("ERROR Received depth: " + str(val_y) + " Ave. Depth: " + str(np.mean(prev_depths)) + "(" + str(depth_pct) + ")")
                         set_modbus_slave(REG_GRIND, 0)
@@ -297,6 +297,8 @@ def grind_v1():
                     delta_y = [0, val_y + detection_depth - 0.5, 0, 0, 0, 0]
                     delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0]
                     delta_down = [0, 0, -(move_range/2) + offset, 0, 0, 0]
+                    # --- DIAGNOSTIC: capture arm reference position before cutting (actual vs commanded travel) ---
+                    diag_ref, diag_sol = get_current_posx(ref=grind_coord)
                     safe_movel(posx(delta_x), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
                     start_cut_pos, sol = get_current_posx(ref=grind_coord)
                     safe_movel(posx(delta_down), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
@@ -305,6 +307,9 @@ def grind_v1():
                     current_depth = get_current_posx(ref=grind_coord)[0][1] - start_cut_pos[1] - val_y
                     calc_cut = 0
                     tp_log("Current_depth: " + str(current_depth))
+                    # --- DIAGNOSTIC: actual travel after approach move (dX=along blade, dY=depth into blade) ---
+                    diag_now, diag_sol = get_current_posx(ref=grind_coord)
+                    tp_log("DIAG approach: dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
                     if depth != 0:
                         for passes in pass_options:
                             calc_cut = depth/passes
@@ -323,6 +328,19 @@ def grind_v1():
                             current_depth += step
                             direction *= -1
                             tp_log("Current_depth: " + str(current_depth))
+                            # --- DIAGNOSTIC: commanded vs actual depth each pass (dX=along, dY=depth from ref) ---
+                            diag_now, diag_sol = get_current_posx(ref=grind_coord)
+                            tp_log("DIAG pass: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-start_cut_pos[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
+                        # ===== FINISHING SPARK-OUT PASS (no forward/depth advance) - remove block to disable =====
+                        # Sweep up & down at the final depth (depth/Y step = 0) to settle to a consistent
+                        # depth and reduce cutting force on the last cut. Tune fin_vel if needed.
+                        fin_vel = 150
+                        fin_acc = 100
+                        fin_up   = [0, 0,  direction * move_range, 0, 0, 0]
+                        fin_down = [0, 0, -direction * move_range, 0, 0, 0]
+                        safe_movel(posx(fin_up),   vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        safe_movel(posx(fin_down), vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        # ===== END FINISHING SPARK-OUT PASS =====
                         rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
                         safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
                     else:
