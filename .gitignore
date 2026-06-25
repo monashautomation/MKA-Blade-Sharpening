@@ -8,5 +8,6 @@ Doosan/Program/_logs/
 Doosan/Program/Projects/
 Doosan/Program/save_config.json
 Doosan/Program/auth.json
+Doosan/Program/__pycache__/
 Doosan/Backup/
 Dell_pc_code/

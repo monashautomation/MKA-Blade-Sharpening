@@ -266,6 +266,8 @@ def grind_v1():
     prev_depths = deque(maxlen=5)
     prev_pitch = deque(maxlen=5)
     cut_num = 0
+    reject_count = 0
+    WARMUP = 3          # enforce the outlier check only once this many good samples exist
     # -------------------------
     try:
         while (1):
@@ -276,23 +278,32 @@ def grind_v1():
                 if (get_modbus_slave(REG_GRIND) == 1):
                     val_x = get_modbus_slave(REG_DETECTION_X)/100
                     val_y = get_modbus_slave(REG_DETECTION_Y)/100
-                    prev_depths.append(val_y)
-                    prev_pitch.append(val_x)
                     depth = get_modbus_slave(REG_DEPTH)/100
                     detection_depth = get_modbus_slave(REG_DETECTION_DEPTH)/100
                     tp_log("X: " + str(val_x) + " Y: " + str(val_y) + " Depth: " + str(depth) + " DetD: " + str(detection_depth))
-                    depth_pct = np.abs(val_y/np.mean(prev_depths) - 1)
-                    pitch_pct = np.abs(val_x/np.mean(prev_pitch) - 1)
-                    if(depth_pct>0.1):
-                        tp_log("ERROR Received depth: " + str(val_y) + " Ave. Depth: " + str(np.mean(prev_depths)) + "(" + str(depth_pct) + ")")
-                        set_modbus_slave(REG_GRIND, 0)
-                        wait(0.5)
-                        continue
-                    if(pitch_pct>0.1):
-                        tp_log("ERROR Received pitch: " + str(val_x) + " Ave. Pitch: " + str(np.mean(prev_pitch)) + "(" + str(pitch_pct) + ")")
-                        set_modbus_slave(REG_GRIND, 0)
-                        wait(0.5)
-                        continue
+                    if cut_num == 0:
+                        # first tooth = grinder->tooth-1 gap, not a pitch: grind it, don't check, don't queue
+                        tp_log("First tooth - no outlier check, not queued")
+                    elif len(prev_pitch) >= WARMUP:
+                        depth_pct = np.abs(val_y/np.mean(prev_depths) - 1)
+                        pitch_pct = np.abs(val_x/np.mean(prev_pitch) - 1)
+                        if (depth_pct > 0.1) or (pitch_pct > 0.1):
+                            reject_count += 1
+                            tp_log("ERROR outlier #" + str(reject_count) + "  depth: " + str(val_y) + " (ave " + str(np.mean(prev_depths)) + ", " + str(depth_pct) + ")  pitch: " + str(val_x) + " (ave " + str(np.mean(prev_pitch)) + ", " + str(pitch_pct) + ")")
+                            set_modbus_slave(REG_GRIND, 0)      # ask the camera for a fresh detection
+                            wait(0.5)
+                            if reject_count >= 3:
+                                tp_log("3 bad detections in a row - aborting grind")
+                                raise ProcessAborted()
+                            continue
+                        reject_count = 0                        # good reading -> reset the streak
+                        prev_depths.append(val_y)
+                        prev_pitch.append(val_x)
+                    else:
+                        # still warming up the baseline -> accept and queue, no rejection yet
+                        prev_depths.append(val_y)
+                        prev_pitch.append(val_x)
+                    cut_num += 1
                     delta_x = [val_x, 0, 0, 0, 0, 0]
                     delta_y = [0, val_y + detection_depth - 0.5, 0, 0, 0, 0]
                     delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0]
