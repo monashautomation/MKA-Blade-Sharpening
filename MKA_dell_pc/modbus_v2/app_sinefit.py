@@ -28,6 +28,8 @@ import time
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from sine_fit_core import apply_sine_correction, draw_sine_overlay
+
 app = Flask(__name__)
 CORS(app)
 
@@ -48,6 +50,7 @@ blade_analyzer        = None
 last_detection_result = None
 detection_enabled     = False
 pixels_per_mm           = 76.812
+pitch_mm                = 0.0    # 0.0 = disabled; set from dashboard
 grinder_positions_file  = 'grinder_positions.json'   # was grinder_position.json (singular)
 stored_grinder_tips     = {}                         # {grinder_id: (x, y)}
 
@@ -231,12 +234,28 @@ class SerratedBladeAnalyzer:
         self.grad = 0.0
         self.m1 = 0
         self.m2 = 0
-    def preprocess_image(self, blur_kernel=3):
-            self.blurred = cv2.GaussianBlur(self.gray, (blur_kernel, blur_kernel), 0)
-            self.binary  = cv2.adaptiveThreshold(
-                self.blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                cv2.THRESH_BINARY_INV, 11, 2)
-            return self.binary
+
+    def preprocess_image(self, blur_kernel=5):
+        """
+        Preprocess for grey-background images.
+
+        Uses Otsu thresholding (auto-selects the blade/background boundary)
+        instead of adaptive threshold which required near-white background.
+        Morphological close removes small burr noise before edge extraction.
+        """
+        self.blurred = cv2.GaussianBlur(self.gray, (blur_kernel, blur_kernel), 0)
+
+        # Otsu: automatically finds threshold between dark blade and grey background
+        self._otsu_thresh, self.binary = cv2.threshold(
+            self.blurred, 0, 255,
+            cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+        )
+
+        # Morphological close: fills in burr gaps, smooths edge noise
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        self.binary = cv2.morphologyEx(self.binary, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+        return self.binary
 
     # def detect_blade_and_grinder(self, sampling_step=1):
     #     blade_edge = []; grinder_points = []
@@ -260,51 +279,147 @@ class SerratedBladeAnalyzer:
     #         self.grinder_edge_center = (int(np.mean(tip_points[:, 0])), int(np.mean(tip_points[:, 1])))
     #     return self.blade_edge_points, self.grinder_tip
     def detect_blade_and_grinder(self, sampling_step=1):
-        """Detect blade edge (left) and grinder (right). Fit V-shape to grinder edge
-        and compute tip as the intersection of two fitted lines."""
-        blade_edge = []
-        grinder_points = []
+        """
+        Detect blade edge (left) and grinder tip (right) for grey-background images.
 
-        for y in range(0, self.height, sampling_step):
-            row = self.binary[y, :]
-            white_pixels = np.where(row > 250)[0]
-            if len(white_pixels) > 5:
-                rightmost = white_pixels[white_pixels > self.width // 3 * 2]
-                if len(rightmost) > 0:
-                    # Leftmost pixel of the grinder blob on this row
-                    grinder_points.append((rightmost[0], y))
-                leftmost_blade = white_pixels[white_pixels < self.width // 3*2]
-                if len(leftmost_blade) > 0:
-                    blade_edge.append((leftmost_blade[0], y))
+        Blade edge
+        ----------
+        Scans every row for the rightmost dark (blade) pixel in the left 45% of
+        the image. Uses the Otsu binary from preprocess_image().
+
+        Grinder edge
+        ------------
+        The grinder is a separate dark object in the RIGHT half of the image.
+        It is only slightly darker than the grey background, so we use an
+        adaptive threshold: 82% of the mean brightness of a mid-image background
+        sample patch. Scans every row in the right half (bottom 2/3 of frame)
+        for the leftmost dark pixel — that is the grinder's left edge.
+        The existing V-fit (_fit_grinder_v) is then applied unchanged to find
+        the precise tip.
+        """
+        h, w = self.gray.shape
+        blade_limit = int(w * 0.45)  # blade is always in the left ~45%
+
+        # ── Blade edge ────────────────────────────────────────────────────────────
+        blade_edge = []
+        for y in range(0, h, sampling_step):
+            row = self.binary[y, :blade_limit]
+            dark = np.where(row > 0)[0]
+            if len(dark) > 10:  # skip rows with barely any blade
+                blade_edge.append((int(dark.max()), y))
 
         self.blade_edge_points = np.array(blade_edge) if blade_edge else None
+
+        # ── Grinder edge ──────────────────────────────────────────────────────────
+        # Sample background brightness from a region that never contains blade/grinder
+        bg_sample = self.gray[h // 4: h // 2, w // 4: w // 2]
+        bg_mean = float(bg_sample.mean())
+        grinder_thresh = int(bg_mean * 0.82)  # 82% of background = reliably below grinder tone
+
+        grinder_points = []
+        for y in range(h // 3, h, sampling_step):  # grinder only appears in bottom 2/3
+            row = self.gray[y, w // 2:]  # right half only
+            dark = np.where(row < grinder_thresh)[0]
+            if len(dark) > 5:
+                grinder_points.append((int(dark.min()) + w // 2, y))  # leftmost = grinder left edge
+
         self.grinder_edge_points = np.array(grinder_points) if grinder_points else None
 
-        # ── Fit V-shape to grinder edge to find apex (tip) ────────────────────────
+        # ── V-fit for grinder tip (unchanged from original) ───────────────────────
         self.grinder_tip = None
         self.grinder_edge_center = None
-        self.grinder_upper_line = None  # (slope, intercept) for debug/overlay
+        self.grinder_upper_line = None
         self.grinder_lower_line = None
 
         if self.grinder_edge_points is not None and len(self.grinder_edge_points) >= 6:
-            tip, upper, lower,self.grad, self.m1, self.m2= self._fit_grinder_v(self.grinder_edge_points)
+            tip, upper, lower, self.grad, self.m1, self.m2 = \
+                self._fit_grinder_v(self.grinder_edge_points)
             if tip is not None:
                 self.grinder_tip = tip
                 self.grinder_edge_center = tip
                 self.grinder_upper_line = upper
                 self.grinder_lower_line = lower
             else:
-                # Fallback to old method if V-fit fails
+                # Fallback: use the leftmost grinder point
                 min_x_idx = np.argmin(self.grinder_edge_points[:, 0])
                 self.grinder_tip = tuple(self.grinder_edge_points[min_x_idx])
                 min_x = self.grinder_edge_points[min_x_idx, 0]
-                tip_points = self.grinder_edge_points[
+                tip_pts = self.grinder_edge_points[
                     np.abs(self.grinder_edge_points[:, 0] - min_x) < 10]
                 self.grinder_edge_center = (
-                    int(np.mean(tip_points[:, 0])), int(np.mean(tip_points[:, 1])))
+                    int(np.mean(tip_pts[:, 0])), int(np.mean(tip_pts[:, 1])))
 
         return self.blade_edge_points, self.grinder_tip
 
+    def _generate_coordinates_sine(self, grinder_tip):
+        global pixels_per_mm, pitch_mm
+
+        gt_y = grinder_tip[1]
+        gt_x = grinder_tip[0]
+
+        corrected_apexes, corrected_valleys, info, above_profiles = apply_sine_correction(
+            self.teeth_profiles,
+            grinder_tip,
+            pixels_per_mm,
+            pitch_mm,
+            blade_edge_points=self.blade_edge_points,
+            min_teeth_for_fit=2,
+            baseline_poly_degree=1,
+        )
+
+        if corrected_apexes is None or corrected_valleys is None or len(corrected_apexes) < 2:
+            return None
+
+        self._sine_corrected_apexes = corrected_apexes
+        self._sine_corrected_valleys = corrected_valleys
+        self._sine_info = info
+
+        sorted_valleys = sorted(corrected_valleys, key=lambda v: v[1])
+        closest_valley = None
+        min_distance = float('inf')
+
+        for (vx, vy) in sorted_valleys:
+            move_x_mm = (gt_x - vx) / pixels_per_mm
+            move_y_mm = (gt_y - vy) / pixels_per_mm
+            if move_y_mm < 0.5:
+                continue
+            dist = (move_x_mm ** 2 + move_y_mm ** 2) ** 0.5
+            if dist < min_distance:
+                min_distance = dist
+                depth_x_mm = abs(info['A_mean']) / pixels_per_mm
+                apexes_above = [a for a in corrected_apexes if a[1] < vy]
+                ct_lbl = len(apexes_above)
+                closest_valley = {
+                    'valley_x': vx,
+                    'valley_y': vy,
+                    'move_x_mm': move_x_mm,
+                    'move_y_mm': move_y_mm,
+                    'depth_x_mm': depth_x_mm,
+                    'between_teeth': f"{ct_lbl}-{ct_lbl + 1}",
+                    'distance_mm': dist,
+                }
+
+        if not closest_valley:
+            return None
+
+        num_teeth = len([a for a in corrected_apexes if a[1] < gt_y])
+
+        return {
+            'valley_id': closest_valley['between_teeth'],
+            'x_mm': round(float(closest_valley['move_y_mm']), 2),
+            'y_mm': round(float(closest_valley['move_x_mm']), 2),
+            'depth_x_mm': round(float(closest_valley['depth_x_mm']), 2),
+            'valley_x_px': int(closest_valley['valley_x']),
+            'valley_y_px': int(closest_valley['valley_y']),
+            'grinder_tip_x_px': int(grinder_tip[0]),
+            'grinder_tip_y_px': int(grinder_tip[1]),
+            'num_teeth': num_teeth,
+            'distance_mm': round(float(closest_valley['distance_mm']), 2),
+            'status': 1,
+            'all_valleys': [],
+            'sine_fit': True,
+            'pitch_mm': pitch_mm,
+        }
     def _fit_grinder_v(self, points, min_points_per_side=3, max_iter=3, trim_frac=0.15):
         """
         Fit two lines (upper + lower halves of V) to grinder edge points and return
@@ -697,35 +812,36 @@ class SerratedBladeAnalyzer:
         except Exception as e:
             print(f"Analysis error: {e}");import traceback;traceback.print_exc();return None
 
+
     def _generate_coordinates(self):
-        global pixels_per_mm
+        global pixels_per_mm, pitch_mm
         if len(self.teeth_profiles) < 2:
             return None
         grinder_tip = self.grinder_tip if self.grinder_tip else get_current_grinder_tip()
-        # … rest unchanged
         if not grinder_tip:
             return None
 
-        # ── Step 1: collapse tooth clusters (remove duplicates) ───────────────────
+        # ── Sine-fit path (pitch_mm > 0) ─────────────────────────────────────
+        if pitch_mm > 0.0:
+            result = self._generate_coordinates_sine(grinder_tip)
+            if result is not None:
+                return result
+            print("[sine_fit] fit failed or too few teeth — falling back to raw detection")
+
+        # ── Raw path (original logic) ─────────────────────────────────────────
         deduped = _dedupe_clusters(
             self.teeth_profiles,
-            y_threshold_mm=1.5,  # adjust: 0.5mm = teeth closer than this are "same tooth"
-            grinder_tip=grinder_tip,  # bias selection toward the grinder
+            y_threshold_mm=1.5,
+            grinder_tip=grinder_tip,
         )
-
         if len(deduped) < 2:
             return None
 
-        # ── Step 2: iterate ALL consecutive pairs in the deduped list ────────────
         closest_valley = None
         min_distance = float('inf')
         for i in range(len(deduped) - 1):
-            # when there is less than three teeth detected
             ct = deduped[i]
             nt = deduped[i + 1]
-
-            # X-depth from tip line down into the valley between ct and nt.
-            # ct.bottom_valley is the valley below ct in image-Y, i.e. between ct & nt.
             avg_tip_x = (ct.grinding_point[0] + nt.grinding_point[0]) / 2.0
             depth_x_mm = abs(avg_tip_x - ct.bottom_valley[0]) / pixels_per_mm
 
@@ -744,7 +860,7 @@ class SerratedBladeAnalyzer:
             move_x_mm = (grinder_tip[0] - valley_x) / pixels_per_mm
             move_y_mm = (grinder_tip[1] - valley_y) / pixels_per_mm
 
-            if move_y_mm > 1:
+            if move_y_mm > 0.3:
                 dist = (move_x_mm ** 2 + move_y_mm ** 2) ** 0.5
                 if dist < min_distance:
                     min_distance = dist
@@ -753,84 +869,31 @@ class SerratedBladeAnalyzer:
                         'valley_y': valley_y,
                         'move_x_mm': move_x_mm,
                         'move_y_mm': move_y_mm,
-                        'depth_x_mm': depth_x_mm,  # ← NEW
+                        'depth_x_mm': depth_x_mm,
                         'between_teeth': f"{ct.tooth_id}-{nt.tooth_id}",
                         'distance_mm': dist,
                     }
-            # if len(deduped) < 3:
-            #     ct = deduped[i]
-            #     nt = deduped[i + 1]
-            #     valley_x = (ct.grinding_point[0] + nt.grinding_point[0]) / 2
-            #     valley_y = (ct.grinding_point[1] + nt.grinding_point[1]) / 2
-            #     move_x_mm = (grinder_tip[0] - valley_x) / pixels_per_mm
-            #     move_y_mm = (grinder_tip[1] - valley_y) / pixels_per_mm
-            #     if move_y_mm > 0.5:
-            #         dist = (move_x_mm ** 2 + move_y_mm ** 2) ** 0.5
-            #         if dist < min_distance:
-            #             min_distance = dist
-            #             closest_valley = {
-            #                 'valley_x': valley_x,
-            #                 'valley_y': valley_y,
-            #                 'move_x_mm': move_x_mm,
-            #                 'move_y_mm': move_y_mm,
-            #                 'between_teeth': f"{ct.tooth_id}-{nt.tooth_id}",
-            #                 'distance_mm': dist,
-            #             }
-            # else:
-            #     ct = deduped[i]
-            #     nt = deduped[i + 1]
-            #     if i - 1 >= 0:
-            #         pt = deduped[i - 1]  # previous (top, unsharpened) tooth
-            #         pt_pitch = (ct.grinding_point[1] - pt.grinding_point[1]) / 2
-            #         valley_y = ct.grinding_point[1] + pt_pitch  # half-pitch below ct
-            #     else:
-            #         valley_y = (ct.grinding_point[1] + nt.grinding_point[1]) / 2
-            #     valley_x = (ct.grinding_point[0] + nt.grinding_point[0]) / 2
-            #     move_x_mm = (grinder_tip[0] - valley_x) / pixels_per_mm
-            #     move_y_mm = (grinder_tip[1] - valley_y) / pixels_per_mm
-            #     if move_y_mm > 0.5:
-            #         dist = (move_x_mm ** 2 + move_y_mm ** 2) ** 0.5
-            #         if dist < min_distance:
-            #             min_distance = dist
-            #             closest_valley = {
-            #                 'valley_x': valley_x,
-            #                 'valley_y': valley_y,
-            #                 'move_x_mm': move_x_mm,
-            #                 'move_y_mm': move_y_mm,
-            #                 'between_teeth': f"{ct.tooth_id}-{nt.tooth_id}",
-            #                 'distance_mm': dist,
-            #                     }
+
         if not closest_valley:
             return None
 
         print(closest_valley)
-        # return {
-        #     'valley_id': closest_valley['between_teeth'],
-        #     'x_mm': round(float(closest_valley['move_y_mm']), 2),
-        #     'y_mm': round(float(closest_valley['move_x_mm']), 2),
-        #     'valley_x_px': int(closest_valley['valley_x']),
-        #     'valley_y_px': int(closest_valley['valley_y']),
-        #     'grinder_tip_x_px': int(grinder_tip[0]),
-        #     'grinder_tip_y_px': int(grinder_tip[1]),
-        #     'num_teeth': int(len(deduped)),  # now reports deduped count
-        #     'distance_mm': round(float(closest_valley['distance_mm']), 2),
-        #     'status': 1,
-        #     'all_valleys': [],
-        # }
         return {
             'valley_id': closest_valley['between_teeth'],
-            'x_mm': round(float(closest_valley['move_y_mm']), 2),
-            'y_mm': round(float(closest_valley['move_x_mm']), 2),
-            'depth_x_mm': round(float(closest_valley['depth_x_mm']), 2),  # ← NEW
+            'x_mm':      round(float(closest_valley['move_y_mm']), 2),
+            'y_mm':      round(float(closest_valley['move_x_mm']), 2),
+            'depth_x_mm': round(float(closest_valley['depth_x_mm']), 2),
             'valley_x_px': int(closest_valley['valley_x']),
             'valley_y_px': int(closest_valley['valley_y']),
             'grinder_tip_x_px': int(grinder_tip[0]),
             'grinder_tip_y_px': int(grinder_tip[1]),
-            'num_teeth': int(len(deduped)),
+            'num_teeth':  int(len(deduped)),
             'distance_mm': round(float(closest_valley['distance_mm']), 2),
             'status': 1,
             'all_valleys': [],
+            'sine_fit': False,
         }
+
 
 # ── Inspection helpers ────────────────────────────────────────────
 def _write_inspection_log(event_log, samples, blurry_samples):
@@ -1370,6 +1433,10 @@ def robot_registers():
         return jsonify({'success':False,'message':'Failed to read registers'}),500
     except Exception as e: return jsonify({'success':False,'message':str(e)}),500
 
+@app.route('/api/camera/ready', methods=['GET'])
+def camera_ready():
+    return jsonify({'ready': camera_active and last_frame is not None})
+
 # ── Inspection endpoints ──────────────────────────────────────────────────────
 @app.route('/api/inspection/start',methods=['POST'])
 def start_inspection():
@@ -1639,6 +1706,10 @@ def draw_detection_overlay(frame,detection_result):
             vp=(int(vx),int(vy)); cv2.circle(overlay,vp,10,(255,0,255),-1); cv2.circle(overlay,vp,12,(255,255,255),2)
             cv2.putText(overlay,f"({detection_result.get('x_mm',0):+.1f},{detection_result.get('y_mm',0):+.1f})mm",(vp[0]-35,vp[1]-15),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,255),2)
             if gt and gt[0]>0: cv2.arrowedLine(overlay,vp,(int(gt[0]),int(gt[1])),(0,255,255),2,tipLength=0.02)
+        if detection_result.get('sine_fit'):
+            p_mm = detection_result.get('pitch_mm', 0)
+            cv2.putText(overlay, f'SINE-FIT  pitch={p_mm:.2f}mm',
+                        (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 128), 2)
     except Exception as e: print(f"Overlay error: {e}")
     return overlay
 
@@ -1706,7 +1777,22 @@ def send_auto_detection():
 
 @app.route('/api/detection/status',methods=['GET'])
 def get_detection_status():
-    return jsonify({'enabled':detection_enabled,'last_result':last_detection_result,'pixels_per_mm':pixels_per_mm})
+    return jsonify({'enabled':detection_enabled,'last_result':last_detection_result,'pixels_per_mm':pixels_per_mm,'pitch_mm':pitch_mm})
+
+
+@app.route('/api/detection/pitch', methods=['POST'])
+def set_pitch():
+    global pitch_mm
+    data = request.json or {}
+    val  = data.get('pitch_mm', 0)
+    try:
+        pitch_mm = max(0.0, float(val))
+        msg = (f'Pitch = {pitch_mm:.3f} mm — '
+               f"sine-fit {'ENABLED' if pitch_mm > 0 else 'DISABLED'}")
+        print(f'[pitch] {msg}')
+        return jsonify({'success': True, 'pitch_mm': pitch_mm, 'message': msg})
+    except (TypeError, ValueError) as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
 
 @app.route('/api/detection/calibrate',methods=['POST'])
 def calibrate_detection():
@@ -1737,6 +1823,8 @@ def update_grinder_position():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+
+
 @app.route('/api/detection/teeth_profiles', methods=['GET'])
 def get_teeth_profiles():
     try:
@@ -1751,9 +1839,16 @@ def get_teeth_profiles():
         analyzer = SerratedBladeAnalyzer(frame_to_process)
         analyzer.preprocess_image(); analyzer.detect_blade_and_grinder()
         analyzer.draw_grinder_v_overlay(frame_to_process)
-        if stored: analyzer.grinder_tip = stored
+
         profiles = analyzer.extract_tooth_profiles()
         grinder_tip = None
+        if pitch_mm > 0 and stored:
+            _apx, _vly, _info, _ = apply_sine_correction(
+                profiles, stored, pixels_per_mm, pitch_mm,
+                blade_edge_points=analyzer.blade_edge_points)
+            if _info:
+                draw_sine_overlay(frame_to_process, _apx, _vly, _info)
+        if stored: analyzer.grinder_tip = stored
         if analyzer.grinder_tip:
             grinder_tip = {'x': int(analyzer.grinder_tip[0]), 'y': int(analyzer.grinder_tip[1])}
         elif stored:

@@ -1,0 +1,2956 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<link rel="icon" type="image/webp" sizes="32x32" href="mka-163w.webp">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>MKA - Automated Blade Sharpening System</title>-->
+<!--    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">-->
+<!--    <style>-->
+<!--        * { margin: 0; padding: 0; box-sizing: border-box; }-->
+<!--        :root {-->
+<!--            &#45;&#45;background: hsl(240, 33%, 1%);-->
+<!--            &#45;&#45;foreground: hsl(0 0% 98%);-->
+<!--            &#45;&#45;card: hsl(240, 8%, 7%);-->
+<!--            &#45;&#45;card-foreground: hsl(0 0% 98%);-->
+<!--            &#45;&#45;primary: hsl(0 0% 98%);-->
+<!--            &#45;&#45;primary-foreground: hsl(0 0% 9%);-->
+<!--            &#45;&#45;secondary: hsl(0 0% 14.9%);-->
+<!--            &#45;&#45;muted: hsl(0 0% 14.9%);-->
+<!--            &#45;&#45;muted-foreground: hsl(0 0% 63.9%);-->
+<!--            &#45;&#45;accent: hsl(0 0% 14.9%);-->
+<!--            &#45;&#45;accent-foreground: hsl(0 0% 98%);-->
+<!--            &#45;&#45;border: hsl(0 0% 14.9%);-->
+<!--            &#45;&#45;ring: hsl(0 0% 83.1%);-->
+<!--            &#45;&#45;radius: 1.5rem;-->
+<!--            &#45;&#45;success: hsl(142 76% 36%);-->
+<!--            &#45;&#45;warning: hsl(38 92% 50%);-->
+<!--            &#45;&#45;danger: hsl(0 62.8% 30.6%);-->
+<!--            &#45;&#45;info: hsl(217 91% 60%);-->
+<!--        }-->
+<!--        body {-->
+<!--            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;-->
+<!--            background: var(&#45;&#45;background); color: var(&#45;&#45;foreground);-->
+<!--            min-height: 100vh; overflow-x: hidden;-->
+<!--            -webkit-font-smoothing: antialiased;-->
+<!--        }-->
+<!--        .container { height: 100vh; display: flex; flex-direction: column; padding: 24px; }-->
+<!--        .header { text-align: center; margin-bottom: 10px; }-->
+<!--        .header p { font-size: 12px; color: var(&#45;&#45;muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; }-->
+<!--        .header h1 { display: flex; justify-content: center; align-items: center; }-->
+
+<!--        /* Status bar */-->
+<!--        .status-bar { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }-->
+<!--        .status-item {-->
+<!--            flex: 1; min-width: 140px; background: var(&#45;&#45;card);-->
+<!--            border: 1px solid var(&#45;&#45;border); border-radius: var(&#45;&#45;radius); padding: 14px 18px;-->
+<!--            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;-->
+<!--            box-shadow: 0 1px 0 0 hsl(0 0% 20%) inset, 0 4px 6px -1px hsl(0 0% 0% / 0.4);-->
+<!--        }-->
+<!--        .status-item:hover { border-color: var(&#45;&#45;ring); transform: translateY(-1px); }-->
+<!--        .status-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(&#45;&#45;muted-foreground); margin-bottom: 6px; }-->
+<!--        .status-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; display: flex; align-items: center; }-->
+
+<!--        /* Layout */-->
+<!--        .main-grid { flex: 1; display: grid; grid-template-columns: 4fr 1fr; gap: 24px; min-height: 0; }-->
+<!--        .left-grid { display: grid; grid-template-columns: 2fr 2fr; gap: 24px; overflow-y: auto; padding-right: 10px; min-height: 0; }-->
+<!--        @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }-->
+<!--        @media (max-width: 700px) { .left-grid { grid-template-columns: 1fr; } }-->
+
+<!--        /* Panel */-->
+<!--        .panel {-->
+<!--            background: var(&#45;&#45;card); border: 1px solid var(&#45;&#45;border); border-radius: var(&#45;&#45;radius);-->
+<!--            padding: 24px; position: relative;-->
+<!--            box-shadow: 0 1px 0 0 hsl(0 0% 20%) inset, 0 4px 6px -1px hsl(0 0% 0% / 0.4);-->
+<!--        }-->
+<!--        .panel-title { font-size: 14px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(&#45;&#45;border); }-->
+
+<!--        /* Forms */-->
+<!--        .form-group { margin-bottom: 16px; }-->
+<!--        .form-label { display: block; font-size: 12px; font-weight: 500; color: var(&#45;&#45;foreground); margin-bottom: 6px; }-->
+<!--        .form-input { width: 100%; background: var(&#45;&#45;background); border: 1px solid var(&#45;&#45;border); border-radius: calc(var(&#45;&#45;radius) - 2px); padding: 10px 12px; font-family: 'Inter', sans-serif; font-size: 12px; color: var(&#45;&#45;foreground); transition: border-color 0.2s, box-shadow 0.2s; }-->
+<!--        .form-input:focus { outline: none; border-color: var(&#45;&#45;ring); box-shadow: 0 0 0 2px hsla(0,0%,83%,.15); }-->
+<!--        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }-->
+
+<!--        /* Buttons */-->
+<!--        .btn { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; padding: 10px 20px; border: none; border-radius: calc(var(&#45;&#45;radius) - 2px); cursor: pointer; transition: opacity 0.2s, background-color 0.2s; }-->
+<!--        .btn:hover { opacity: 0.9; }-->
+<!--        .btn:active { opacity: 0.8; }-->
+<!--        .btn-primary { background: var(&#45;&#45;primary); color: var(&#45;&#45;primary-foreground); }-->
+<!--        .btn-primary:disabled, .btn:disabled { background: var(&#45;&#45;muted); color: var(&#45;&#45;muted-foreground); cursor: not-allowed; opacity: 0.5; }-->
+<!--        .btn-danger  { background: hsl(0 84% 60%); color: hsl(0 0% 98%); }-->
+<!--        .btn-warning { background: var(&#45;&#45;warning); color: hsl(0 0% 9%); }-->
+<!--        .btn-success { background: var(&#45;&#45;success); color: hsl(0 0% 98%); }-->
+<!--        .btn-info    { background: var(&#45;&#45;info); color: hsl(0 0% 98%); }-->
+<!--        .btn-connect { width: 100%; margin-bottom: 16px; }-->
+<!--        .control-panel { display: flex; gap: 12px; margin-top: 16px; }-->
+<!--        .control-panel .btn { flex: 1; }-->
+
+<!--        /* Loop status panel */-->
+<!--        .loop-status-grid {-->
+<!--            display: grid; grid-template-columns: 1fr 1fr 1fr;-->
+<!--            gap: 10px; margin-bottom: 16px;-->
+<!--        }-->
+<!--        .reg-badge {-->
+<!--            background: var(&#45;&#45;background); border: 1px solid var(&#45;&#45;border);-->
+<!--            border-radius: 10px; padding: 10px 12px; text-align: center;-->
+<!--            transition: border-color 0.3s, box-shadow 0.3s;-->
+<!--        }-->
+<!--        .reg-badge.active-green {-->
+<!--            border-color: hsl(142 76% 46%);-->
+<!--            box-shadow: 0 0 8px hsl(142 76% 46% / 0.4);-->
+<!--        }-->
+<!--        .reg-badge.active-blue {-->
+<!--            border-color: var(&#45;&#45;info);-->
+<!--            box-shadow: 0 0 8px hsl(217 91% 60% / 0.4);-->
+<!--        }-->
+<!--        .reg-badge.active-orange {-->
+<!--            border-color: var(&#45;&#45;warning);-->
+<!--            box-shadow: 0 0 8px hsl(38 92% 50% / 0.4);-->
+<!--        }-->
+<!--        .reg-badge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(&#45;&#45;muted-foreground); margin-bottom: 4px; }-->
+<!--        .reg-badge-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; }-->
+<!--        .reg-badge-sub { font-size: 9px; color: var(&#45;&#45;muted-foreground); margin-top: 2px; }-->
+
+<!--        /* Loop sequence steps */-->
+<!--        .loop-steps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }-->
+<!--        .loop-step {-->
+<!--            display: flex; align-items: center; gap: 10px;-->
+<!--            padding: 8px 12px; border-radius: 8px;-->
+<!--            border: 1px solid var(&#45;&#45;border); background: var(&#45;&#45;background);-->
+<!--            font-size: 11px; transition: all 0.2s;-->
+<!--        }-->
+<!--        .loop-step.step-active {-->
+<!--            border-color: var(&#45;&#45;info); background: hsl(217 91% 60% / 0.07);-->
+<!--            color: hsl(217 91% 80%);-->
+<!--        }-->
+<!--        .loop-step.step-done {-->
+<!--            border-color: hsl(142 76% 36%); background: hsl(142 76% 36% / 0.07);-->
+<!--            color: hsl(142 74% 56%);-->
+<!--        }-->
+<!--        .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(&#45;&#45;border); flex-shrink: 0; }-->
+<!--        .loop-step.step-active .step-dot { background: var(&#45;&#45;info); box-shadow: 0 0 5px var(&#45;&#45;info); }-->
+<!--        .loop-step.step-done .step-dot { background: hsl(142 76% 46%); }-->
+
+<!--        /* Indicators */-->
+<!--        .indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }-->
+<!--        .indicator.connected    { background: hsl(142 76% 46%); box-shadow: 0 0 6px hsl(142 76% 46%); animation: blink 2s ease-in-out infinite; }-->
+<!--        .indicator.disconnected { background: hsl(0 84% 60%); box-shadow: 0 0 6px hsl(0 84% 60%); }-->
+<!--        .indicator.active       { background: var(&#45;&#45;info); box-shadow: 0 0 6px var(&#45;&#45;info); animation: blink 2s ease-in-out infinite; }-->
+<!--        .indicator.warning      { background: var(&#45;&#45;warning); box-shadow: 0 0 6px var(&#45;&#45;warning); animation: blink 1s ease-in-out infinite; }-->
+<!--        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }-->
+<!--        @keyframes estopPulse { 0%,100%{box-shadow:0 0 16px 4px hsl(0 84% 40%/0.7)} 50%{box-shadow:0 0 32px 12px hsl(0 84% 55%/0.9)} }-->
+
+<!--        /* Log */-->
+<!--        .log { background: var(&#45;&#45;background); border: 1px solid var(&#45;&#45;border); border-radius: calc(var(&#45;&#45;radius) - 2px); padding: 16px; max-height: 600px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; }-->
+<!--        .log-entry { padding: 4px 0; border-bottom: 1px solid var(&#45;&#45;border); animation: fadeIn 0.2s ease; }-->
+<!--        .log-entry:last-child { border-bottom: none; }-->
+<!--        .log-time { color: var(&#45;&#45;muted-foreground); margin-right: 10px; }-->
+<!--        .log-success { color: hsl(142,74%,46%); }-->
+<!--        .log-error   { color: hsl(0 84% 60%); }-->
+<!--        .log-warning { color: hsl(38 92% 55%); }-->
+<!--        .log-info    { color: hsl(217 91% 70%); }-->
+<!--        @keyframes fadeIn { from{opacity:0;transform:translateY(-2px)} to{opacity:1;transform:translateY(0)} }-->
+
+<!--        /* Scrollbar */-->
+<!--        ::-webkit-scrollbar { width: 6px; }-->
+<!--        ::-webkit-scrollbar-track { background: transparent; }-->
+<!--        ::-webkit-scrollbar-thumb { background: var(&#45;&#45;border); border-radius: 3px; }-->
+
+<!--        /* DB lookup */-->
+<!--        .db-lookup-section { background: hsl(240,10%,5%); border: 1px solid hsl(217 91% 60% / 0.25); border-radius: calc(var(&#45;&#45;radius) - 4px); padding: 14px; margin-bottom: 18px; }-->
+<!--        .db-lookup-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(217 91% 70%); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }-->
+<!--        .db-lookup-row { display: flex; gap: 8px; align-items: flex-end; }-->
+<!--        .db-lookup-row .form-group { flex: 1; margin-bottom: 0; }-->
+<!--        .db-blade-badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 99px; margin-top: 8px; }-->
+<!--        .db-blade-badge.loaded { background: hsl(142 76% 36%/0.15); border: 1px solid hsl(142 76% 36%/0.4); color: hsl(142,74%,56%); }-->
+<!--        .db-blade-badge.error  { background: hsl(0 62.8% 30.6%/0.15); border: 1px solid hsl(0 62.8% 30.6%/0.4); color: hsl(0 84% 60%); }-->
+<!--        .db-extra-fields { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(&#45;&#45;border); }-->
+<!--        .db-extra-fields.visible { display: block; }-->
+<!--        .db-field-readonly .form-input { opacity: 0.7; cursor: default; color: hsl(217 91% 75%); }-->
+
+<!--        select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }-->
+<!--        input[type="number"] { -moz-appearance: textfield; }-->
+<!--        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }-->
+<!--        .number-input-wrapper { position: relative; display: flex; align-items: stretch; }-->
+<!--        .number-input-wrapper .form-input { padding-right: 36px; }-->
+<!--        .number-input-spinners { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 28px; display: flex; flex-direction: column; border-left: 1px solid var(&#45;&#45;border); }-->
+<!--        .number-spin-btn { flex: 1; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(&#45;&#45;muted-foreground); transition: background-color 0.15s, color 0.15s; padding: 0; }-->
+<!--        .number-spin-btn:hover { background: var(&#45;&#45;accent); color: var(&#45;&#45;accent-foreground); }-->
+<!--        .number-spin-btn:first-child { border-top-right-radius: calc(var(&#45;&#45;radius) - 3px); border-bottom: 1px solid var(&#45;&#45;border); }-->
+<!--        .number-spin-btn:last-child { border-bottom-right-radius: calc(var(&#45;&#45;radius) - 3px); }-->
+<!--        .number-spin-btn svg { width: 12px; height: 12px; pointer-events: none; }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <div class="header">-->
+<!--        <h1><img src="mka-163w.webp" alt="MKA" style="height:60px;width:auto;"></h1>-->
+<!--        <p>Automated Blade Sharpening System</p>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Status Bar &ndash;&gt;-->
+<!--    <div class="status-bar">-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-label">Connection</div>-->
+<!--            <div class="status-value" id="connectionStatus"><span class="indicator disconnected"></span>DISCONNECTED</div>-->
+<!--        </div>-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-label">Loop State</div>-->
+<!--            <div class="status-value" id="robotState">IDLE</div>-->
+<!--        </div>-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-label">Grinder Ready</div>-->
+<!--            <div class="status-value" id="grinderReadyStatus"><span class="indicator disconnected"></span>—</div>-->
+<!--        </div>-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-label">Grind Start</div>-->
+<!--            <div class="status-value" id="grindStartStatus"><span class="indicator disconnected"></span>—</div>-->
+<!--        </div>-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-label">Camera</div>-->
+<!--            <div class="status-value" id="cameraStatus">OFF</div>-->
+<!--        </div>-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-label">Auto Detect</div>-->
+<!--            <div class="status-value" id="autoUpdateStatus">OFF</div>-->
+<!--        </div>-->
+<!--        <div class="status-item" id="estopStatusItem" style="border-color: hsl(0 0% 14.9%);">-->
+<!--            <div class="status-label">E-STOP</div>-->
+<!--            <div class="status-value" id="estopStatus"><span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none;"></span>INACTIVE</div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <div class="main-grid">-->
+<!--        <div class="left-grid">-->
+
+<!--            &lt;!&ndash; Connection Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">🔌 Connection Settings</div>-->
+<!--                <div class="form-group">-->
+<!--                    <label class="form-label">Robot IP Address</label>-->
+<!--                    <input type="text" id="robotIP" class="form-input" value="172.24.9.20">-->
+<!--                </div>-->
+<!--                <div class="form-row">-->
+<!--                    <div class="form-group">-->
+<!--                        <label class="form-label">Port</label>-->
+<!--                        <input type="number" id="robotPort" class="form-input" value="502">-->
+<!--                    </div>-->
+<!--                    <div class="form-group">-->
+<!--                        <label class="form-label">Unit ID</label>-->
+<!--                        <input type="number" id="unitID" class="form-input" value="1">-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <button class="btn btn-primary btn-connect" id="connectBtn" onclick="toggleConnection()">CONNECT TO ROBOT</button>-->
+
+<!--                &lt;!&ndash; Register map reference &ndash;&gt;-->
+<!--                <div style="background:hsl(240,10%,5%);border:1px solid var(&#45;&#45;border);border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(&#45;&#45;muted-foreground);line-height:1.9;">-->
+<!--                    <div style="color:var(&#45;&#45;foreground);font-weight:600;margin-bottom:6px;font-size:11px;">Register Map</div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">128</span> BAY_ID &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">129</span> GRINDER_ID &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">130</span> ANGLE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">×10</span></div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">131</span> DEPTH &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">×100</span></div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">132</span> LENGTH &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">mm</span></div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">133</span> CONFIG_VER &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div style="border-top:1px solid var(&#45;&#45;border);margin:4px 0;"></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%)">134</span> DETECTION_X &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%)">135</span> DETECTION_Y &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%)">136</span> STATUS &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">0=none 1=ok 2=err</span></div>-->
+<!--                    <div><span style="color:hsl(38 92% 65%)">137</span> START &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(142 74% 56%)">138</span> GRINDER_READY <span style="color:var(&#45;&#45;muted-foreground)">(Robot→PC)</span></div>-->
+<!--                    <div><span style="color:hsl(0 84% 65%)">139</span> GRIND_START &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot, robot resets)</span></div>-->
+<!--                    <div><span style="color:hsl(0 100% 70%);font-weight:700;">140</span> <span style="color:hsl(0 100% 70%);font-weight:700;">E-STOP</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot, 1=halt)</span></div>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Grinding Loop Control Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">⚙️ Grinding Loop Control</div>-->
+
+<!--                &lt;!&ndash; Live register badges &ndash;&gt;-->
+<!--                <div class="loop-status-grid">-->
+<!--                    <div class="reg-badge" id="badge-status">-->
+<!--                        <div class="reg-badge-label">Status</div>-->
+<!--                        <div class="reg-badge-val" id="reg-status">—</div>-->
+<!--                        <div class="reg-badge-sub" id="reg-status-name">REG 136</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-start">-->
+<!--                        <div class="reg-badge-label">Start</div>-->
+<!--                        <div class="reg-badge-val" id="reg-start">—</div>-->
+<!--                        <div class="reg-badge-sub">REG 137</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-grinder-ready">-->
+<!--                        <div class="reg-badge-label">Grinder Ready</div>-->
+<!--                        <div class="reg-badge-val" id="reg-grinder-ready">—</div>-->
+<!--                        <div class="reg-badge-sub">REG 138</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-grind-start">-->
+<!--                        <div class="reg-badge-label">Grind Start</div>-->
+<!--                        <div class="reg-badge-val" id="reg-grind-start">—</div>-->
+<!--                        <div class="reg-badge-sub">REG 139</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-x">-->
+<!--                        <div class="reg-badge-label">X (mm)</div>-->
+<!--                        <div class="reg-badge-val" id="reg-x">—</div>-->
+<!--                        <div class="reg-badge-sub">REG 134</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-y">-->
+<!--                        <div class="reg-badge-label">Y (mm)</div>-->
+<!--                        <div class="reg-badge-val" id="reg-y">—</div>-->
+<!--                        <div class="reg-badge-sub">REG 135</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-estop" style="grid-column: 1 / -1; border-color: hsl(0 0% 14.9%);">-->
+<!--                        <div class="reg-badge-label">E-STOP — REG 140</div>-->
+<!--                        <div class="reg-badge-val" id="reg-estop" style="font-size:14px;">—</div>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; Loop step visualiser &ndash;&gt;-->
+<!--                <div class="loop-steps" id="loopSteps">-->
+<!--                    <div class="loop-step" id="step1"><span class="step-dot"></span>1 · Write detection X/Y + STATUS=1</div>-->
+<!--                    <div class="loop-step" id="step2"><span class="step-dot"></span>2 · Send START=1  →  robot moves to tooth valley</div>-->
+<!--                    <div class="loop-step" id="step3"><span class="step-dot"></span>3 · Wait for GRINDER_READY=1 (camera turns on)</div>-->
+<!--                    <div class="loop-step" id="step4"><span class="step-dot"></span>4 · Re-detect, write new X/Y, send GRIND_START=1</div>-->
+<!--                    <div class="loop-step" id="step5"><span class="step-dot"></span>5 · Robot grinds, resets GRIND_START=0 → next tooth</div>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; Main loop buttons &ndash;&gt;-->
+<!--                <div class="control-panel">-->
+<!--                    <button class="btn btn-success" onclick="startLoop()" disabled id="startBtn" style="font-size:12px;font-weight:700;">-->
+<!--                        🚀 START LOOP-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-info" onclick="sendGrindStart()" disabled id="grindStartBtn" style="font-size:12px;">-->
+<!--                        ⚙ GRIND START-->
+<!--                    </button>-->
+<!--                    <button class="btn btn-danger" onclick="stopLoop()" disabled id="stopBtn" style="font-size:12px;">-->
+<!--                        ■ STOP-->
+<!--                    </button>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; Emergency Stop &ndash;&gt;-->
+<!--                <button-->
+<!--                    id="estopBtn"-->
+<!--                    onclick="triggerEStop()"-->
+<!--                    disabled-->
+<!--                    style="-->
+<!--                        width: 100%; margin-top: 14px;-->
+<!--                        padding: 18px; font-size: 15px; font-weight: 800;-->
+<!--                        letter-spacing: 0.08em; text-transform: uppercase;-->
+<!--                        background: hsl(0 84% 38%);-->
+<!--                        color: white; border: 2px solid hsl(0 84% 55%);-->
+<!--                        border-radius: calc(var(&#45;&#45;radius) - 2px);-->
+<!--                        cursor: pointer; transition: all 0.15s;-->
+<!--                        box-shadow: 0 0 0 0 hsl(0 84% 50% / 0.5);-->
+<!--                        font-family: 'Inter', sans-serif;-->
+<!--                    "-->
+<!--                    onmouseover="this.style.background='hsl(0 84% 48%)';this.style.boxShadow='0 0 16px 4px hsl(0 84% 40% / 0.6)'"-->
+<!--                    onmouseout="if(!window._estopActive){this.style.background='hsl(0 84% 38%)';this.style.boxShadow='0 0 0 0 hsl(0 84% 50% / 0.5)'}"-->
+<!--                >-->
+<!--                    🚨 EMERGENCY STOP-->
+<!--                </button>-->
+<!--                <button-->
+<!--                    id="clearEstopBtn"-->
+<!--                    onclick="clearEStop()"-->
+<!--                    disabled-->
+<!--                    style="-->
+<!--                        display:none; width: 100%; margin-top: 8px;-->
+<!--                        padding: 10px; font-size: 12px; font-weight: 600;-->
+<!--                        background: var(&#45;&#45;warning); color: hsl(0 0% 9%);-->
+<!--                        border: none; border-radius: calc(var(&#45;&#45;radius) - 2px);-->
+<!--                        cursor: pointer; font-family: 'Inter', sans-serif;-->
+<!--                        transition: opacity 0.2s;-->
+<!--                    "-->
+<!--                >-->
+<!--                    ↺ CLEAR E-STOP (REG 140=0)-->
+<!--                </button>-->
+
+<!--                <div style="margin-top:10px;font-size:11px;color:var(&#45;&#45;muted-foreground);text-align:center;" id="loopHint">-->
+<!--                    Connect to robot to enable controls-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Configuration Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">📋 Blade Configuration</div>-->
+<!--                <div class="db-lookup-section">-->
+<!--                    <div class="db-lookup-title">-->
+<!--                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>-->
+<!--                        Load from Database-->
+<!--                    </div>-->
+<!--                    <div class="db-lookup-row">-->
+<!--                        <div class="form-group">-->
+<!--                            <label class="form-label">Blade ID</label>-->
+<!--                            <input type="text" id="dbBladeID" class="form-input" placeholder="e.g. BLD-001" style="font-family:'JetBrains Mono',monospace;">-->
+<!--                        </div>-->
+<!--                        <button class="btn btn-primary" onclick="loadBladeFromDB()" id="dbLoadBtn" style="flex-shrink:0;margin-bottom:16px;">LOAD</button>-->
+<!--                    </div>-->
+<!--                    <div id="dbStatus" style="display:none;"></div>-->
+<!--                    <div class="db-extra-fields" id="dbExtraFields">-->
+<!--                        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(&#45;&#45;muted-foreground);margin-bottom:8px;">Additional Properties</div>-->
+<!--                        <div class="form-row db-field-readonly">-->
+<!--                            <div class="form-group"><label class="form-label">Depth 1 (mm)</label><input type="text" class="form-input" id="dbDepth1" readonly></div>-->
+<!--                            <div class="form-group"><label class="form-label">Depth 2 (mm)</label><input type="text" class="form-input" id="dbDepth2" readonly></div>-->
+<!--                        </div>-->
+<!--                        <div class="form-row db-field-readonly">-->
+<!--                            <div class="form-group"><label class="form-label">Thickness (mm)</label><input type="text" class="form-input" id="dbThickness" readonly></div>-->
+<!--                            <div class="form-group"><label class="form-label">Tip Angle (°)</label><input type="text" class="form-input" id="dbTipAngle" readonly></div>-->
+<!--                        </div>-->
+<!--                        <div class="form-row db-field-readonly">-->
+<!--                            <div class="form-group"><label class="form-label">Reach Angle (°)</label><input type="text" class="form-input" id="dbReachAngle" readonly></div>-->
+<!--                            <div class="form-group"><label class="form-label">Depth of Cut (mm)</label><input type="text" class="form-input" id="dbDepthOfCut" readonly></div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="form-row">-->
+<!--                    <div class="form-group"><label class="form-label">Bay ID</label><input type="number" id="bayID" class="form-input" value="5"></div>-->
+<!--                    <div class="form-group"><label class="form-label">Grinder ID</label><input type="number" id="grinderID" class="form-input" value="2"></div>-->
+<!--                </div>-->
+<!--                <div class="form-row">-->
+<!--                    <div class="form-group"><label class="form-label">Angle (°)</label><input type="number" step="0.1" id="angle" class="form-input" value="45.5"></div>-->
+<!--                    <div class="form-group"><label class="form-label">Depth (mm)</label><input type="number" step="0.01" id="depth" class="form-input" value="1.25"></div>-->
+<!--                </div>-->
+<!--                <div class="form-row">-->
+<!--                    <div class="form-group"><label class="form-label">Length (mm)</label><input type="number" id="length" class="form-input" value="150"></div>-->
+<!--                    <div class="form-group"><label class="form-label">Config Ver.</label><input type="number" id="configVersion" class="form-input" value="1"></div>-->
+<!--                </div>-->
+<!--                <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="sendConfiguration()" disabled id="configBtn">-->
+<!--                    SEND CONFIGURATION (REG 128–133)-->
+<!--                </button>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Detection Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">📍 Detection Data</div>-->
+
+<!--                <div style="margin-bottom:14px;">-->
+<!--                    <div style="font-size:11px;color:var(&#45;&#45;muted-foreground);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Manual Input</div>-->
+<!--                    <div class="form-row">-->
+<!--                        <div class="form-group"><label class="form-label">X (mm) — REG 134</label><input type="number" step="0.1" id="detectionX" class="form-input" value="2.5"></div>-->
+<!--                        <div class="form-group"><label class="form-label">Y (mm) — REG 135</label><input type="number" step="0.1" id="detectionY" class="form-input" value="1.8"></div>-->
+<!--                    </div>-->
+<!--                    <div class="form-group">-->
+<!--                        <label class="form-label">Status — REG 136</label>-->
+<!--                        <select id="detectionStatus" class="form-input">-->
+<!--                            <option value="0">0 – No teeth detected</option>-->
+<!--                            <option value="1" selected>1 – Teeth OK</option>-->
+<!--                            <option value="2">2 – Error</option>-->
+<!--                        </select>-->
+<!--                    </div>-->
+<!--                    <div class="control-panel" style="margin-top:8px;">-->
+<!--                        <button class="btn btn-primary" onclick="sendDetection()" disabled id="detectionBtn">WRITE REGISTERS</button>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--                <div style="border-top:1px solid var(&#45;&#45;border);padding-top:14px;">-->
+<!--                    <div style="font-size:11px;color:var(&#45;&#45;muted-foreground);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🤖 Auto-Detection</div>-->
+<!--                    <div class="form-group"><label class="form-label">Calibration (px/mm)</label><input type="number" step="0.01" id="calibration" class="form-input" value="86.96"></div>-->
+<!--                    <div class="form-group"><label class="form-label">Auto-detect interval (ms)</label><input type="number" step="100" id="updateInterval" class="form-input" value="1000" min="100"></div>-->
+<!--                    <div class="control-panel">-->
+<!--                        <button class="btn btn-primary"  onclick="runDetection()"        disabled id="analyzeBtn">DETECT</button>-->
+<!--                        <button class="btn btn-success"  onclick="detectAndSend()"       disabled id="autoSendBtn">DETECT & WRITE</button>-->
+<!--                    </div>-->
+<!--                    <div class="control-panel" style="margin-top:8px;">-->
+<!--                        <button class="btn btn-success" onclick="toggleContinuousUpdate()" disabled id="continuousBtn">AUTO-DETECT LOOP</button>-->
+<!--                        <button class="btn btn-warning" onclick="updateGrinderPosition()"  disabled id="updateGrinderBtn">📍 SET GRINDER</button>-->
+<!--                    </div>-->
+<!--                    <div id="detectionResult" style="margin-top:10px;font-size:12px;color:var(&#45;&#45;muted-foreground);text-align:center;min-height:20px;"></div>-->
+<!--                    <div id="grinderInfo" style="margin-top:5px;font-size:11px;color:var(&#45;&#45;muted-foreground);text-align:center;">Grinder: Not set</div>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Camera Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">📹 Camera Feed</div>-->
+<!--                <div style="position:relative;background:var(&#45;&#45;background);border-radius:8px;overflow:hidden;aspect-ratio:16/9;">-->
+<!--                    <img id="cameraFeed" src="" alt="Camera Feed" style="width:100%;height:100%;object-fit:contain;display:none;">-->
+<!--                    &lt;!&ndash; Canvas overlay for grinder + teeth point detection markers &ndash;&gt;-->
+<!--                    <canvas id="detectionCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none;"></canvas>-->
+<!--                    <div id="cameraPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(&#45;&#45;muted-foreground);">-->
+<!--                        <div style="text-align:center;"><div style="font-size:48px;margin-bottom:10px;">📷</div><div>Camera not active</div></div>-->
+<!--                    </div>-->
+<!--                    <div id="cameraOverlay" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);padding:6px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px;display:none;">-->
+<!--                        <span style="color:hsl(142,74%,56%);">● LIVE</span>-->
+<!--                    </div>-->
+<!--                    &lt;!&ndash; GRINDER_READY alert overlay &ndash;&gt;-->
+<!--                    <div id="grinderReadyOverlay" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:hsl(142 76% 36%/0.9);padding:6px 16px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:white;animation:blink 1s ease-in-out infinite;">-->
+<!--                        ✓ GRINDER READY-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="control-panel" style="margin-top:12px;">-->
+<!--                    <button class="btn btn-success" onclick="toggleCamera()" disabled id="cameraBtn">START CAMERA</button>-->
+<!--                    <button class="btn btn-primary" onclick="captureFrame()" disabled id="captureBtn">CAPTURE</button>-->
+<!--                </div>-->
+<!--                <div style="margin-top:8px;font-size:12px;color:var(&#45;&#45;muted-foreground);text-align:center;">-->
+<!--                    FPS: <span id="fpsCounter">0</span> | Frames: <span id="frameCounter">0</span>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Log Panel &ndash;&gt;-->
+<!--        <div class="panel">-->
+<!--            <div class="panel-title">📋 System Log</div>-->
+<!--            <div class="log" id="systemLog">-->
+<!--                <div class="log-entry"><span class="log-time">[00:00:00]</span><span>System initialized. Ready for connection.</span></div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--    const API_BASE = 'http://localhost:5000/api';-->
+
+<!--    let connected = false;-->
+<!--    let loopRunning = false;-->
+<!--    let continuousUpdateActive = false;-->
+<!--    let updateIntervalId = null;-->
+<!--    let updateCount = 0;-->
+<!--    let cameraActive = false;-->
+<!--    let cameraIntervalId = null;-->
+<!--    let frameCount = 0, fpsStart = Date.now(), fpsFrameCount = 0;-->
+
+<!--    // Register polling-->
+<!--    let registerPollId = null;-->
+<!--    let lastGrinderReady = false;-->
+<!--    let lastGrindStart = false;-->
+<!--    let currentStep = 0; // 0=idle,1=detection written,2=start sent,3=waiting grinder ready,4=grind start sent,5=grinding-->
+
+<!--    function getCurrentTime() {-->
+<!--        return new Date().toLocaleTimeString('en-US', { hour12: false });-->
+<!--    }-->
+
+<!--    function log(message, type = 'info') {-->
+<!--        const logDiv = document.getElementById('systemLog');-->
+<!--        const entry = document.createElement('div');-->
+<!--        entry.className = 'log-entry';-->
+<!--        const cls = { success:'log-success', error:'log-error', warning:'log-warning', info:'log-info' }[type] || '';-->
+<!--        const icon = { success:'✓', error:'✗', warning:'⚠', info:'ℹ' }[type] || '';-->
+<!--        entry.innerHTML = `<span class="log-time">[${getCurrentTime()}]</span><span class="${cls}">${icon} ${message}</span>`;-->
+<!--        logDiv.appendChild(entry);-->
+<!--        logDiv.scrollTop = logDiv.scrollHeight;-->
+<!--        const entries = logDiv.querySelectorAll('.log-entry');-->
+<!--        if (entries.length > 150) entries[0].remove();-->
+<!--    }-->
+
+<!--    // ── Step visualiser ──-->
+<!--    function setStep(step) {-->
+<!--        currentStep = step;-->
+<!--        for (let i = 1; i <= 5; i++) {-->
+<!--            const el = document.getElementById(`step${i}`);-->
+<!--            el.classList.remove('step-active','step-done');-->
+<!--            if (i < step) el.classList.add('step-done');-->
+<!--            else if (i === step) el.classList.add('step-active');-->
+<!--        }-->
+<!--        const hints = {-->
+<!--            0: 'Connect to robot to enable controls',-->
+<!--            1: 'Step 1 done – now press START LOOP',-->
+<!--            2: 'Loop started – waiting for robot to reach grinder position…',-->
+<!--            3: 'Grinder ready! Run detection then press GRIND START',-->
+<!--            4: 'Grinding – robot will reset GRIND_START when done',-->
+<!--            5: 'Cut complete – ready for next tooth'-->
+<!--        };-->
+<!--        document.getElementById('loopHint').textContent = hints[step] || '';-->
+<!--    }-->
+
+<!--    // ── Register polling ──-->
+<!--    function startRegisterPolling() {-->
+<!--        if (registerPollId) return;-->
+<!--        registerPollId = setInterval(pollRegisters, 400);-->
+<!--    }-->
+<!--    function stopRegisterPolling() {-->
+<!--        if (registerPollId) { clearInterval(registerPollId); registerPollId = null; }-->
+<!--    }-->
+
+<!--    async function pollRegisters() {-->
+<!--        if (!connected) return;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/robot_registers`);-->
+<!--            const data = await res.json();-->
+<!--            if (!data.success) return;-->
+<!--            const r = data.registers;-->
+
+<!--            // Update badges-->
+<!--            setRegBadge('reg-x', r.detection_x_mm.toFixed(1), 'badge-x', r.detection_x_mm !== 0 ? 'active-blue' : '');-->
+<!--            setRegBadge('reg-y', r.detection_y_mm.toFixed(1), 'badge-y', r.detection_y_mm !== 0 ? 'active-blue' : '');-->
+
+<!--            const statusNames = { 0:'NONE', 1:'OK', 2:'ERR' };-->
+<!--            setRegBadge('reg-status', r.status, 'badge-status',-->
+<!--                r.status === 1 ? 'active-green' : r.status === 2 ? 'active-orange' : '');-->
+<!--            document.getElementById('reg-status-name').textContent = statusNames[r.status] || 'REG 136';-->
+
+<!--            setRegBadge('reg-start', r.start, 'badge-start', r.start ? 'active-orange' : '');-->
+<!--            setRegBadge('reg-grinder-ready', r.grinder_ready, 'badge-grinder-ready', r.grinder_ready ? 'active-green' : '');-->
+<!--            setRegBadge('reg-grind-start', r.grind_start, 'badge-grind-start', r.grind_start ? 'active-orange' : '');-->
+
+<!--            // Status bar-->
+<!--            document.getElementById('grinderReadyStatus').innerHTML = r.grinder_ready-->
+<!--                ? '<span class="indicator connected"></span>READY'-->
+<!--                : '<span class="indicator disconnected"></span>WAITING';-->
+<!--            document.getElementById('grindStartStatus').innerHTML = r.grind_start-->
+<!--                ? '<span class="indicator warning"></span>ACTIVE'-->
+<!--                : '<span class="indicator disconnected"></span>IDLE';-->
+
+<!--            // GRINDER_READY rising edge → robot is at grinder position-->
+<!--            if (r.grinder_ready && !lastGrinderReady) {-->
+<!--                log('🟢 GRINDER_READY=1 — robot at grinder position, running detection…', 'success');-->
+<!--                document.getElementById('grinderReadyOverlay').style.display = 'block';-->
+<!--                document.getElementById('grindStartBtn').disabled = false;-->
+<!--                setStep(3);-->
+<!--                // Auto-start camera if not already on-->
+<!--                if (!cameraActive) {-->
+<!--                    log('Auto-starting camera (GRINDER_READY triggered)', 'info');-->
+<!--                    await toggleCamera();-->
+<!--                }-->
+<!--                // Trigger detection only after camera has a real frame-->
+<!--                if (continuousUpdateActive) {-->
+<!--                    await waitForCameraReady();-->
+<!--                    sendDetectionWithAnalysis();-->
+<!--                }-->
+<!--            }-->
+<!--            if (!r.grinder_ready && lastGrinderReady) {-->
+<!--                document.getElementById('grinderReadyOverlay').style.display = 'none';-->
+<!--            }-->
+
+<!--            // GRIND_START falling edge → robot completed cut, ready for next tooth-->
+<!--            if (!r.grind_start && lastGrindStart) {-->
+<!--                log('✓ Cut complete (robot reset GRIND_START=0)', 'success');-->
+<!--                document.getElementById('grindStartBtn').disabled = false;-->
+<!--                setStep(5);-->
+<!--                // If auto-detect is on and grinder is still ready, run detection for next tooth-->
+<!--                if (continuousUpdateActive && r.grinder_ready) {-->
+<!--                    log('🔍 Running detection for next tooth…', 'info');-->
+<!--                    setTimeout(() => sendDetectionWithAnalysis(), 200);-->
+<!--                } else if (!continuousUpdateActive) {-->
+<!--                    const currentStatus = parseInt(document.getElementById('detectionStatus').value);-->
+<!--                    if (currentStatus === 1) {-->
+<!--                        log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth', 'info');-->
+<!--                        setTimeout(() => sendGrindStart(), 200);-->
+<!--                    } else {-->
+<!--                        setTimeout(() => setStep(loopRunning ? 3 : 0), 1500);-->
+<!--                    }-->
+<!--                }-->
+<!--            }-->
+
+<!--            lastGrinderReady = r.grinder_ready;-->
+<!--            lastGrindStart = r.grind_start;-->
+
+<!--            // Sync E-STOP state from register (in case set externally)-->
+<!--            if (r.estop && !window._estopActive) {-->
+<!--                window._estopActive = true;-->
+<!--                activateEstopVisual();-->
+<!--                log('⚠ E-STOP active (detected from register)', 'error');-->
+<!--            } else if (!r.estop && window._estopActive) {-->
+<!--                // Register was cleared externally-->
+<!--                window._estopActive = false;-->
+<!--                resetEstopVisual();-->
+<!--                document.getElementById('clearEstopBtn').style.display = 'none';-->
+<!--            }-->
+
+<!--        } catch (e) { /* silent */ }-->
+<!--    }-->
+
+<!--    function setRegBadge(valId, value, badgeId, activeClass) {-->
+<!--        document.getElementById(valId).textContent = value;-->
+<!--        const badge = document.getElementById(badgeId);-->
+<!--        badge.className = 'reg-badge';-->
+<!--        if (activeClass) badge.classList.add(activeClass);-->
+<!--    }-->
+
+<!--    // ── Connection ──-->
+<!--    async function toggleConnection() {-->
+<!--        const btn = document.getElementById('connectBtn');-->
+<!--        const ip = document.getElementById('robotIP').value;-->
+<!--        const port = document.getElementById('robotPort').value;-->
+<!--        const unit = document.getElementById('unitID').value;-->
+
+<!--        if (!connected) {-->
+<!--            log(`Connecting to ${ip}:${port}…`, 'info');-->
+<!--            btn.disabled = true;-->
+<!--            try {-->
+<!--                const res = await fetch(`${API_BASE}/connect`, {-->
+<!--                    method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                    body: JSON.stringify({ host: ip, port, unit })-->
+<!--                });-->
+<!--                const data = await res.json();-->
+<!--                if (data.success) {-->
+<!--                    connected = true;-->
+<!--                    btn.textContent = 'DISCONNECT'; btn.className = 'btn btn-danger btn-connect';-->
+<!--                    document.getElementById('connectionStatus').innerHTML = '<span class="indicator connected"></span>CONNECTED';-->
+<!--                    ['detectionBtn','continuousBtn','analyzeBtn','autoSendBtn','updateGrinderBtn',-->
+<!--                     'startBtn','stopBtn','cameraBtn','configBtn','estopBtn'].forEach(id => document.getElementById(id).disabled = false);-->
+<!--                    startRegisterPolling();-->
+<!--                    setStep(1);-->
+<!--                    log(data.message, 'success');-->
+<!--                } else { log(data.message, 'error'); }-->
+<!--            } catch (e) { log(`Connection failed: ${e.message}`, 'error'); }-->
+<!--            finally { btn.disabled = false; }-->
+<!--        } else {-->
+<!--            if (continuousUpdateActive) toggleContinuousUpdate();-->
+<!--            if (cameraActive) await toggleCamera();-->
+<!--            stopRegisterPolling();-->
+<!--            btn.disabled = true;-->
+<!--            try {-->
+<!--                const res = await fetch(`${API_BASE}/disconnect`, { method: 'POST' });-->
+<!--                const data = await res.json();-->
+<!--                connected = false; loopRunning = false;-->
+<!--                btn.textContent = 'CONNECT TO ROBOT'; btn.className = 'btn btn-primary btn-connect';-->
+<!--                document.getElementById('connectionStatus').innerHTML = '<span class="indicator disconnected"></span>DISCONNECTED';-->
+<!--                document.getElementById('robotState').textContent = 'IDLE';-->
+<!--                document.getElementById('grinderReadyStatus').innerHTML = '<span class="indicator disconnected"></span>—';-->
+<!--                document.getElementById('grindStartStatus').innerHTML = '<span class="indicator disconnected"></span>—';-->
+<!--                ['detectionBtn','continuousBtn','analyzeBtn','autoSendBtn','updateGrinderBtn',-->
+<!--                 'startBtn','stopBtn','cameraBtn','captureBtn','grindStartBtn','configBtn','estopBtn','clearEstopBtn'].forEach(id => document.getElementById(id).disabled = true);-->
+<!--                document.getElementById('clearEstopBtn').style.display = 'none';-->
+<!--                window._estopActive = false;-->
+<!--                resetEstopVisual();-->
+<!--                setStep(0);-->
+<!--                log(data.message, 'warning');-->
+<!--            } catch (e) { log(`Disconnect error: ${e.message}`, 'error'); }-->
+<!--            finally { btn.disabled = false; }-->
+<!--        }-->
+<!--    }-->
+
+<!--    // ── Camera warmup guard ──-->
+<!--    // Polls /api/camera/ready until the capture thread has a real frame,-->
+<!--    // or times out after 3s. Prevents detection firing on null/blank frames.-->
+<!--    async function waitForCameraReady(timeoutMs = 3000) {-->
+<!--        if (!cameraActive) return;-->
+<!--        const deadline = Date.now() + timeoutMs;-->
+<!--        while (Date.now() < deadline) {-->
+<!--            try {-->
+<!--                const res = await fetch(`${API_BASE}/camera/ready`);-->
+<!--                const data = await res.json();-->
+<!--                if (data.ready) return;-->
+<!--            } catch (_) {}-->
+<!--            await new Promise(r => setTimeout(r, 80));-->
+<!--        }-->
+<!--        log('⚠ Camera ready timeout — proceeding anyway', 'warning');-->
+<!--    }-->
+
+<!--    // ── E-STOP ──-->
+<!--    window._estopActive = false;-->
+
+<!--    function resetEstopVisual() {-->
+<!--        const btn = document.getElementById('estopBtn');-->
+<!--        if (btn) {-->
+<!--            btn.style.background = 'hsl(0 84% 38%)';-->
+<!--            btn.style.boxShadow = '0 0 0 0 hsl(0 84% 50% / 0.5)';-->
+<!--            btn.style.animation = '';-->
+<!--            btn.textContent = '🚨 EMERGENCY STOP';-->
+<!--        }-->
+<!--        document.getElementById('estopStatus').innerHTML =-->
+<!--            '<span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none;"></span>INACTIVE';-->
+<!--        document.getElementById('estopStatusItem').style.borderColor = 'hsl(0 0% 14.9%)';-->
+<!--        const badge = document.getElementById('badge-estop');-->
+<!--        badge.className = 'reg-badge';-->
+<!--        badge.style.gridColumn = '1 / -1';-->
+<!--        document.getElementById('reg-estop').textContent = '0';-->
+<!--    }-->
+
+<!--    function activateEstopVisual() {-->
+<!--        const btn = document.getElementById('estopBtn');-->
+<!--        if (btn) {-->
+<!--            btn.style.background = 'hsl(0 84% 55%)';-->
+<!--            btn.style.boxShadow = '0 0 24px 8px hsl(0 84% 40% / 0.8)';-->
+<!--            btn.style.animation = 'estopPulse 0.8s ease-in-out infinite';-->
+<!--            btn.textContent = '🚨 E-STOP ACTIVE';-->
+<!--        }-->
+<!--        document.getElementById('estopStatus').innerHTML =-->
+<!--            '<span class="indicator" style="background:hsl(0 84% 60%);box-shadow:0 0 8px hsl(0 84% 60%);animation:blink 0.5s ease-in-out infinite;"></span>ACTIVE';-->
+<!--        document.getElementById('estopStatusItem').style.borderColor = 'hsl(0 84% 60%)';-->
+<!--        const badge = document.getElementById('badge-estop');-->
+<!--        badge.className = 'reg-badge active-orange';-->
+<!--        badge.style.borderColor = 'hsl(0 84% 60%)';-->
+<!--        badge.style.boxShadow = '0 0 10px hsl(0 84% 40% / 0.6)';-->
+<!--        badge.style.gridColumn = '1 / -1';-->
+<!--        document.getElementById('reg-estop').textContent = '1';-->
+<!--        document.getElementById('clearEstopBtn').style.display = 'block';-->
+<!--        document.getElementById('clearEstopBtn').disabled = false;-->
+<!--    }-->
+
+<!--    async function triggerEStop() {-->
+<!--        log('🚨 EMERGENCY STOP triggered!', 'error');-->
+<!--        window._estopActive = true;-->
+<!--        activateEstopVisual();-->
+<!--        // Immediately kill loop state in UI-->
+<!--        loopRunning = false;-->
+<!--        document.getElementById('robotState').innerHTML = '<span class="indicator" style="background:hsl(0 84% 60%);box-shadow:0 0 6px hsl(0 84% 60%);animation:blink 0.5s ease-in-out infinite;"></span>E-STOP';-->
+<!--        setStep(0);-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/estop`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                log(data.message, 'error');-->
+<!--            } else {-->
+<!--                log(`E-STOP write failed: ${data.message}`, 'error');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            log(`E-STOP request error: ${e.message}`, 'error');-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function clearEStop() {-->
+<!--        log('Clearing E-STOP (REG 140=0)…', 'warning');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/estop/clear`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                window._estopActive = false;-->
+<!--                resetEstopVisual();-->
+<!--                document.getElementById('clearEstopBtn').style.display = 'none';-->
+<!--                document.getElementById('robotState').textContent = 'IDLE';-->
+<!--                log(data.message, 'success');-->
+<!--            } else {-->
+<!--                log(`Clear E-STOP failed: ${data.message}`, 'error');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            log(`Clear E-STOP error: ${e.message}`, 'error');-->
+<!--        }-->
+<!--    }-->
+
+<!--    // ── Configuration ──-->
+<!--    async function sendConfiguration() {-->
+<!--        const bay_id = document.getElementById('bayID').value;-->
+<!--        const grinder_id = document.getElementById('grinderID').value;-->
+<!--        const angle = document.getElementById('angle').value;-->
+<!--        const depth = document.getElementById('depth').value;-->
+<!--        const length = document.getElementById('length').value;-->
+<!--        const config_version = document.getElementById('configVersion').value;-->
+<!--        log(`Sending config: Bay=${bay_id}, Grinder=${grinder_id}, Angle=${angle}°, Depth=${depth}mm, Length=${length}mm`, 'info');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/configuration`, {-->
+<!--                method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                body: JSON.stringify({ bay_id, grinder_id, angle, depth, length, config_version })-->
+<!--            });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) log(data.message, 'success');-->
+<!--            else log(data.message, 'error');-->
+<!--        } catch (e) { log(`Config error: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--    // ── Loop controls ──-->
+<!--    async function startLoop() {-->
+<!--        log('🚀 Sending START=1 — loop begins…', 'info');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/start`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                loopRunning = true;-->
+<!--                document.getElementById('robotState').innerHTML = '<span class="indicator active"></span>RUNNING';-->
+<!--                setStep(2);-->
+<!--                log(data.message, 'success');-->
+<!--            } else { log(data.message, 'error'); }-->
+<!--        } catch (e) { log(`Start failed: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--&lt;!&ndash;    async function stopLoop() {&ndash;&gt;-->
+<!--&lt;!&ndash;        log('■ Sending START=0 — stopping loop', 'warning');&ndash;&gt;-->
+<!--&lt;!&ndash;        try {&ndash;&gt;-->
+<!--&lt;!&ndash;            const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });&ndash;&gt;-->
+<!--&lt;!&ndash;            const data = await res.json();&ndash;&gt;-->
+<!--&lt;!&ndash;            if (data.success) {&ndash;&gt;-->
+<!--&lt;!&ndash;                loopRunning = false;&ndash;&gt;-->
+<!--&lt;!&ndash;                document.getElementById('robotState').textContent = 'IDLE';&ndash;&gt;-->
+<!--&lt;!&ndash;                document.getElementById('grindStartBtn').disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;                setStep(0);&ndash;&gt;-->
+<!--&lt;!&ndash;                log(data.message, 'warning');&ndash;&gt;-->
+<!--&lt;!&ndash;            } else { log(data.message, 'error'); }&ndash;&gt;-->
+<!--&lt;!&ndash;        } catch (e) { log(`Stop failed: ${e.message}`, 'error'); }&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+<!--    async function stopLoop() {-->
+<!--        log('■ Sending START=0 — stopping loop', 'warning');-->
+
+<!--        // Stop auto-detect loop if running-->
+<!--        if (continuousUpdateActive) {-->
+<!--            continuousUpdateActive = false;-->
+<!--            document.getElementById('continuousBtn').textContent = 'AUTO-DETECT LOOP';-->
+<!--            document.getElementById('continuousBtn').className = 'btn btn-success';-->
+<!--            document.getElementById('autoUpdateStatus').textContent = 'OFF';-->
+<!--            log('Auto-detect loop stopped', 'warning');-->
+
+<!--        }-->
+
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                loopRunning = false;-->
+<!--                document.getElementById('robotState').textContent = 'IDLE';-->
+<!--                document.getElementById('grindStartBtn').disabled = true;-->
+<!--                setStep(0);-->
+<!--                log(data.message, 'warning');-->
+
+<!--                // Write STATUS=0 to REG 136-->
+<!--                await fetch(`${API_BASE}/detection`, {-->
+<!--                    method: 'POST', headers: { 'Content-Type': 'application/json' },-->
+<!--                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 0 })-->
+<!--                });-->
+<!--                setDetectionStatus(0);-->
+<!--                log('REG 136 STATUS=0 written', 'warning');-->
+
+<!--            } else { log(data.message, 'error'); }-->
+<!--        } catch (e) { log(`Stop failed: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--    async function sendGrindStart() {-->
+<!--        // Optionally write current detection values first-->
+<!--        const x = parseFloat(document.getElementById('detectionX').value);-->
+<!--        const y = parseFloat(document.getElementById('detectionY').value);-->
+<!--        const status = parseInt(document.getElementById('detectionStatus').value);-->
+<!--        log(`⚙️  Sending GRIND_START=1 (X=${x}mm Y=${y}mm)`, 'info');-->
+<!--        document.getElementById('grindStartBtn').disabled = true;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/grind_start`, {-->
+<!--                method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                body: JSON.stringify({ x_mm: x, y_mm: y, status })-->
+<!--            });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                setStep(4);-->
+<!--                log(data.message, 'success');-->
+<!--            } else {-->
+<!--                document.getElementById('grindStartBtn').disabled = false;-->
+<!--                log(data.message, 'error');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            document.getElementById('grindStartBtn').disabled = false;-->
+<!--            log(`GRIND_START failed: ${e.message}`, 'error');-->
+<!--        }-->
+<!--    }-->
+
+<!--    // ── Detection ──-->
+<!--    async function sendDetection() {-->
+<!--        const x = document.getElementById('detectionX').value;-->
+<!--        const y = document.getElementById('detectionY').value;-->
+<!--        const status = document.getElementById('detectionStatus').value;-->
+<!--        log(`Writing detection: X=${x}mm Y=${y}mm STATUS=${status}`, 'info');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection`, {-->
+<!--                method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                body: JSON.stringify({ x_mm: x, y_mm: y, status })-->
+<!--            });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) { log(data.message, 'success'); if (currentStep === 1) setStep(1); }-->
+<!--            else log(data.message, 'error');-->
+<!--        } catch (e) { log(`Write failed: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--    async function runDetection() {-->
+<!--        log('Running blade detection…', 'info');-->
+<!--        document.getElementById('detectionResult').innerHTML = '<span style="color:var(&#45;&#45;warning)">⏳ Analysing…</span>';-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/analyze`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success && data.detection) {-->
+<!--                const d = data.detection;-->
+<!--                document.getElementById('detectionX').value = d.x_mm;-->
+<!--                document.getElementById('detectionY').value = d.y_mm;-->
+<!--                setDetectionStatus(1);-->
+<!--                document.getElementById('detectionResult').innerHTML =-->
+<!--                    `<span style="color:var(&#45;&#45;success)">✓ Valley ${d.valley_id||'N/A'}: (${d.x_mm}, ${d.y_mm})mm | ${d.num_teeth} teeth</span>`;-->
+<!--                log(`Detected: Valley ${d.valley_id||'N/A'} at (${d.x_mm}, ${d.y_mm})mm`, 'success');-->
+<!--            } else {-->
+<!--                setDetectionStatus(0);-->
+<!--                document.getElementById('detectionResult').innerHTML = '<span style="color:var(&#45;&#45;danger)">✗ No teeth detected</span>';-->
+<!--                log(data.message||'No teeth', 'warning');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            setDetectionStatus(2);-->
+<!--            document.getElementById('detectionResult').innerHTML = '<span style="color:var(&#45;&#45;danger)">✗ Failed</span>';-->
+<!--            log(`Detection failed: ${e.message}`, 'error');-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function detectAndSend() {-->
+<!--        log('Detecting & writing to robot…', 'info');-->
+<!--        document.getElementById('detectionResult').innerHTML = '<span style="color:var(&#45;&#45;warning)">⏳ Detecting…</span>';-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/send_auto`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success && data.detection) {-->
+<!--                const d = data.detection;-->
+<!--                document.getElementById('detectionX').value = d.x_mm;-->
+<!--                document.getElementById('detectionY').value = d.y_mm;-->
+<!--                setDetectionStatus(1);-->
+<!--                document.getElementById('detectionResult').innerHTML =-->
+<!--                    `<span style="color:var(&#45;&#45;success)">✓ Written: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm</span>`;-->
+<!--                log(`Detect & write: Valley ${d.valley_id||'N/A'} — ${d.num_teeth} teeth`, 'success');-->
+<!--            } else {-->
+<!--                setDetectionStatus(0);-->
+<!--                document.getElementById('detectionResult').innerHTML = '<span style="color:var(&#45;&#45;danger)">✗ Failed</span>';-->
+<!--                log(data.message||'Failed', 'error');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            setDetectionStatus(2);-->
+<!--            log(`Error: ${e.message}`, 'error');-->
+<!--        }-->
+<!--    }-->
+
+<!--    // Sets the status dropdown + writes REG 136 immediately if connected-->
+<!--    function setDetectionStatus(value) {-->
+<!--        document.getElementById('detectionStatus').value = value;-->
+<!--    }-->
+
+<!--    let autoDetectFailCount = 0;-->
+<!--    let detectionRunning = false; // guard against overlapping calls-->
+
+<!--    function toggleContinuousUpdate() {-->
+<!--        const btn = document.getElementById('continuousBtn');-->
+<!--        if (!continuousUpdateActive) {-->
+<!--            autoDetectFailCount = 0; continuousUpdateActive = true; updateCount = 0;-->
+<!--            btn.textContent = 'STOP AUTO-DETECT'; btn.className = 'btn btn-danger';-->
+<!--            document.getElementById('autoUpdateStatus').innerHTML = '<span class="indicator active"></span>ON (0)';-->
+<!--            log('Auto-detect enabled — will fire when GRINDER_READY=1 and GRIND_START=0', 'success');-->
+<!--        } else {-->
+<!--            continuousUpdateActive = false;-->
+<!--            btn.textContent = 'AUTO-DETECT LOOP'; btn.className = 'btn btn-success';-->
+<!--            document.getElementById('autoUpdateStatus').textContent = 'OFF';-->
+<!--            log(`Auto-detect disabled after ${updateCount} detections`, 'warning');-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function sendDetectionWithAnalysis() {-->
+<!--        // Guard: don't overlap concurrent detection calls-->
+<!--        if (detectionRunning) return;-->
+<!--        detectionRunning = true;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/send_auto`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success && data.detection) {-->
+<!--                const d = data.detection;-->
+<!--                autoDetectFailCount = 0;-->
+<!--                document.getElementById('detectionX').value = d.x_mm;-->
+<!--                document.getElementById('detectionY').value = d.y_mm;-->
+<!--                setDetectionStatus(1);-->
+<!--                updateCount++;-->
+<!--                document.getElementById('autoUpdateStatus').innerHTML = `<span class="indicator active"></span>ON (${updateCount})`;-->
+<!--                log(`Auto-detect: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm — sending GRIND_START`, 'success');-->
+<!--                // X/Y written + status=1 confirmed → trigger grind-->
+<!--                sendGrindStart();-->
+<!--            } else {-->
+<!--                autoDetectFailCount++;-->
+<!--                // Explicitly write status=0 to REG 136 so robot knows no teeth found-->
+<!--                setDetectionStatus(0);-->
+<!--                await fetch(`${API_BASE}/detection`, {-->
+<!--                    method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 0 })-->
+<!--                });-->
+<!--                log(`Auto-detect miss ×${autoDetectFailCount} — status=0 written to REG 136`, 'warning');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            autoDetectFailCount++;-->
+<!--            setDetectionStatus(2);-->
+<!--            // Write error status to robot-->
+<!--            try {-->
+<!--                await fetch(`${API_BASE}/detection`, {-->
+<!--                    method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 2 })-->
+<!--                });-->
+<!--            } catch (_) {}-->
+<!--            log(`Auto-detect error: ${e.message}`, 'error');-->
+<!--        } finally {-->
+<!--            detectionRunning = false;-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function updateCalibration() {-->
+<!--        const v = document.getElementById('calibration').value;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/calibrate`, {-->
+<!--                method: 'POST', headers: {'Content-Type':'application/json'},-->
+<!--                body: JSON.stringify({ pixels_per_mm: parseFloat(v) })-->
+<!--            });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) log(`Calibration: ${v} px/mm`, 'success');-->
+<!--        } catch (e) { log(`Calibration error: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--    async function updateGrinderPosition() {-->
+<!--        log('Detecting grinder position…', 'info');-->
+<!--        document.getElementById('grinderInfo').innerHTML = '<span style="color:var(&#45;&#45;warning)">⏳ Updating…</span>';-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/update_grinder`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success && data.grinder_tip) {-->
+<!--                document.getElementById('grinderInfo').innerHTML =-->
+<!--                    `<span style="color:var(&#45;&#45;success)">✓ Grinder: (${data.grinder_tip.x}, ${data.grinder_tip.y})</span>`;-->
+<!--                log(`Grinder set: (${data.grinder_tip.x}, ${data.grinder_tip.y})`, 'success');-->
+<!--            } else {-->
+<!--                document.getElementById('grinderInfo').innerHTML = '<span style="color:var(&#45;&#45;danger)">✗ Not found</span>';-->
+<!--                log(data.message||'Could not detect grinder', 'error');-->
+<!--            }-->
+<!--        } catch (e) { log(`Grinder update failed: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--    // ── Camera ──-->
+<!--    async function toggleCamera() {-->
+<!--        const btn = document.getElementById('cameraBtn');-->
+<!--        if (!cameraActive) {-->
+<!--            log('Starting camera…', 'info');-->
+<!--            try {-->
+<!--                const res = await fetch(`${API_BASE}/camera/start`, { method: 'POST' });-->
+<!--                const data = await res.json();-->
+<!--                if (data.success) {-->
+<!--                    cameraActive = true; frameCount = 0; fpsStart = Date.now(); fpsFrameCount = 0;-->
+<!--                    btn.textContent = 'STOP CAMERA'; btn.className = 'btn btn-danger';-->
+<!--                    document.getElementById('cameraStatus').innerHTML = '<span class="indicator active"></span>LIVE';-->
+<!--                    ['captureBtn','analyzeBtn','autoSendBtn','updateGrinderBtn'].forEach(id => document.getElementById(id).disabled = false);-->
+<!--                    document.getElementById('cameraFeed').style.display = 'block';-->
+<!--                    document.getElementById('cameraPlaceholder').style.display = 'none';-->
+<!--                    document.getElementById('cameraOverlay').style.display = 'block';-->
+<!--                    fetchCameraFrame();-->
+<!--                    cameraIntervalId = setInterval(fetchCameraFrame, 100);-->
+<!--                    log(data.message, 'success');-->
+<!--                } else { log(data.message||'Camera failed', 'error'); }-->
+<!--            } catch (e) { log(`Camera start: ${e.message}`, 'error'); }-->
+<!--        } else {-->
+<!--            cameraActive = false;-->
+<!--            if (cameraIntervalId) { clearInterval(cameraIntervalId); cameraIntervalId = null; }-->
+<!--            try {-->
+<!--                await fetch(`${API_BASE}/camera/stop`, { method: 'POST' });-->
+<!--                btn.textContent = 'START CAMERA'; btn.className = 'btn btn-success';-->
+<!--                document.getElementById('cameraStatus').textContent = 'OFF';-->
+<!--                ['captureBtn','analyzeBtn','autoSendBtn','updateGrinderBtn'].forEach(id => document.getElementById(id).disabled = true);-->
+<!--                document.getElementById('cameraFeed').style.display = 'none';-->
+<!--                document.getElementById('cameraPlaceholder').style.display = 'flex';-->
+<!--                document.getElementById('cameraOverlay').style.display = 'none';-->
+<!--                log(`Camera stopped (${frameCount} frames)`, 'warning');-->
+<!--            } catch (e) { log(`Camera stop: ${e.message}`, 'error'); }-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function fetchCameraFrame() {-->
+<!--        if (!cameraActive) return;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/camera/frame?t=${Date.now()}`);-->
+<!--            if (res.ok) {-->
+<!--                const blob = await res.blob();-->
+<!--                const url = URL.createObjectURL(blob);-->
+<!--                const img = document.getElementById('cameraFeed');-->
+<!--                if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);-->
+<!--                img.src = url;-->
+<!--                frameCount++; fpsFrameCount++;-->
+<!--                document.getElementById('frameCounter').textContent = frameCount;-->
+<!--                const now = Date.now();-->
+<!--                if (now - fpsStart >= 1000) {-->
+<!--                    document.getElementById('fpsCounter').textContent = (fpsFrameCount / ((now - fpsStart) / 1000)).toFixed(1);-->
+<!--                    fpsStart = now; fpsFrameCount = 0;-->
+<!--                }-->
+<!--            }-->
+<!--        } catch (e) { if (cameraActive) console.warn(e.message); }-->
+<!--    }-->
+
+<!--    async function captureFrame() {-->
+<!--        log('Capturing frame…', 'info');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/camera/capture`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) log(`Captured: ${data.filename}`, 'success');-->
+<!--            else log(data.message||'Capture failed', 'error');-->
+<!--        } catch (e) { log(`Capture: ${e.message}`, 'error'); }-->
+<!--    }-->
+
+<!--    // ── DB lookup ──-->
+<!--    async function loadBladeFromDB() {-->
+<!--        const bladeId = document.getElementById('dbBladeID').value.trim();-->
+<!--        if (!bladeId) { showDbStatus('Please enter a Blade ID', 'error'); return; }-->
+<!--        const btn = document.getElementById('dbLoadBtn');-->
+<!--        btn.disabled = true; btn.textContent = '…';-->
+<!--        showDbStatus('Loading…', 'loading');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/blade/${encodeURIComponent(bladeId)}`);-->
+<!--            const data = await res.json();-->
+<!--            if (data.success && data.blade) {-->
+<!--                const b = data.blade;-->
+<!--                if (b.reach_angle != null) document.getElementById('angle').value = b.reach_angle;-->
+<!--                if (b.depth1 != null) document.getElementById('depth').value = b.depth1;-->
+<!--                if (b.length != null) document.getElementById('length').value = b.length;-->
+<!--                const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v != null ? v : '—'; };-->
+<!--                set('dbDepth1', b.depth1); set('dbDepth2', b.depth2); set('dbThickness', b.thickness);-->
+<!--                set('dbTipAngle', b.tip_angle); set('dbReachAngle', b.reach_angle); set('dbDepthOfCut', b.depth_of_cut_from_angle);-->
+<!--                document.getElementById('dbExtraFields').classList.add('visible');-->
+<!--                showDbStatus(`✓ Loaded: ${bladeId}`, 'loaded');-->
+<!--                log(`Blade "${bladeId}" loaded — angle=${b.reach_angle}° depth=${b.depth1}mm length=${b.length}mm`, 'success');-->
+<!--            } else {-->
+<!--                document.getElementById('dbExtraFields').classList.remove('visible');-->
+<!--                showDbStatus(`✗ ${data.message||'Not found'}`, 'error');-->
+<!--                log(`Blade lookup: ${data.message||'Not found'}`, 'error');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            showDbStatus('✗ Request failed', 'error');-->
+<!--            log(`DB request failed: ${e.message}`, 'error');-->
+<!--        } finally { btn.disabled = false; btn.textContent = 'LOAD'; }-->
+<!--    }-->
+
+<!--    function showDbStatus(msg, type) {-->
+<!--        const el = document.getElementById('dbStatus');-->
+<!--        el.style.display = 'block';-->
+<!--        el.innerHTML = `<span class="db-blade-badge ${type}">${msg}</span>`;-->
+<!--    }-->
+
+<!--    // ── Init ──-->
+<!--    document.addEventListener('DOMContentLoaded', () => {-->
+<!--        document.getElementById('dbBladeID').addEventListener('keydown', e => { if (e.key === 'Enter') loadBladeFromDB(); });-->
+<!--        document.getElementById('calibration').addEventListener('change', updateCalibration);-->
+
+<!--        // Numeric spinners-->
+<!--        document.querySelectorAll('input[type="number"]').forEach(input => {-->
+<!--            const wrapper = document.createElement('div');-->
+<!--            wrapper.className = 'number-input-wrapper';-->
+<!--            input.parentNode.insertBefore(wrapper, input);-->
+<!--            wrapper.appendChild(input);-->
+<!--            const spinners = document.createElement('div');-->
+<!--            spinners.className = 'number-input-spinners';-->
+<!--            ['up','down'].forEach(dir => {-->
+<!--                const b = document.createElement('button');-->
+<!--                b.type = 'button'; b.className = 'number-spin-btn'; b.tabIndex = -1;-->
+<!--                b.innerHTML = dir === 'up'-->
+<!--                    ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>'-->
+<!--                    : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';-->
+<!--                b.addEventListener('click', () => { dir === 'up' ? input.stepUp() : input.stepDown(); input.dispatchEvent(new Event('change')); });-->
+<!--                if (dir === 'up') spinners.appendChild(b);-->
+<!--                else spinners.appendChild(b);-->
+<!--            });-->
+<!--            wrapper.appendChild(spinners);-->
+<!--        });-->
+<!--    });-->
+
+<!--    // ── Canvas overlay: grinder point + teeth valley points ──────────────────-->
+<!--    // Mirrors draw_detection_overlay() from the backend but rendered client-side-->
+<!--    // so it stays sharp at any display resolution and updates independently of-->
+<!--    // the JPEG frame stream.-->
+<!--    let overlayPollId = null;-->
+<!--    let lastOverlayResult = null;-->
+
+<!--    // Actual pixel dimensions of the source image the backend processes.-->
+<!--    // The canvas scales these coordinates to match the displayed <img> size.-->
+<!--    // We read them from the first frame dimensions reported by the img element.-->
+<!--    let srcWidth = 0, srcHeight = 0;-->
+
+<!--    function startOverlayPolling() {-->
+<!--        if (overlayPollId) return;-->
+<!--        const canvas = document.getElementById('detectionCanvas');-->
+<!--        canvas.style.display = 'block';-->
+<!--        overlayPollId = setInterval(pollAndDrawOverlay, 250);-->
+<!--    }-->
+
+<!--    function stopOverlayPolling() {-->
+<!--        if (overlayPollId) { clearInterval(overlayPollId); overlayPollId = null; }-->
+<!--        const canvas = document.getElementById('detectionCanvas');-->
+<!--        const ctx = canvas.getContext('2d');-->
+<!--        ctx.clearRect(0, 0, canvas.width, canvas.height);-->
+<!--        canvas.style.display = 'none';-->
+<!--    }-->
+
+<!--    async function pollAndDrawOverlay() {-->
+<!--        if (!cameraActive) return;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/status`);-->
+<!--            const data = await res.json();-->
+<!--            lastOverlayResult = data.last_result || null;-->
+<!--            drawOverlay(lastOverlayResult);-->
+<!--        } catch (_) {}-->
+<!--    }-->
+
+<!--    function drawOverlay(det) {-->
+<!--        const canvas = document.getElementById('detectionCanvas');-->
+<!--        const img    = document.getElementById('cameraFeed');-->
+<!--        if (!img || img.naturalWidth === 0) return;-->
+
+<!--        // Match canvas resolution to the displayed size of the img element-->
+<!--        const rect = img.getBoundingClientRect();-->
+<!--        if (rect.width === 0 || rect.height === 0) return;-->
+
+<!--        canvas.width  = rect.width;-->
+<!--        canvas.height = rect.height;-->
+
+<!--        const ctx = canvas.getContext('2d');-->
+<!--        ctx.clearRect(0, 0, canvas.width, canvas.height);-->
+
+<!--        if (!det) return;-->
+
+<!--        // The backend image is the raw camera frame (naturalWidth × naturalHeight).-->
+<!--        // object-fit:contain means letterboxing may be applied — compute the actual-->
+<!--        // rendered image rect inside the canvas.-->
+<!--        const natW = img.naturalWidth  || 640;-->
+<!--        const natH = img.naturalHeight || 480;-->
+<!--        const scale = Math.min(rect.width / natW, rect.height / natH);-->
+<!--        const rendW = natW * scale;-->
+<!--        const rendH = natH * scale;-->
+<!--        const offX  = (rect.width  - rendW) / 2;-->
+<!--        const offY  = (rect.height - rendH) / 2;-->
+
+<!--        // Map a pixel coordinate from the backend frame to canvas space-->
+<!--        function px(x, y) {-->
+<!--            return [offX + x * scale, offY + y * scale];-->
+<!--        }-->
+
+<!--        ctx.font      = `${Math.max(10, 11 * scale)}px "JetBrains Mono", monospace`;-->
+<!--        ctx.lineWidth = Math.max(1, 2 * scale);-->
+
+<!--        // ── Grinder tip (cyan circle + label) ──────────────────────────────-->
+<!--        const gtx = det.grinder_tip_x_px;-->
+<!--        const gty = det.grinder_tip_y_px;-->
+<!--        if (gtx > 0 && gty > 0) {-->
+<!--            const [gx, gy] = px(gtx, gty);-->
+<!--            const r = Math.max(6, 12 * scale);-->
+
+<!--            ctx.beginPath();-->
+<!--            ctx.arc(gx, gy, r, 0, Math.PI * 2);-->
+<!--            ctx.strokeStyle = 'cyan';-->
+<!--            ctx.lineWidth   = Math.max(1.5, 3 * scale);-->
+<!--            ctx.stroke();-->
+
+<!--            ctx.fillStyle = 'cyan';-->
+<!--            ctx.fillText('GRINDER', gx + r + 4, gy - 6 * scale);-->
+<!--        }-->
+
+<!--        // ── Valley / closest tooth point (magenta filled circle) ───────────-->
+<!--        const vx = det.valley_x_px;-->
+<!--        const vy = det.valley_y_px;-->
+<!--        if (vx && vy) {-->
+<!--            const [vpx, vpy] = px(vx, vy);-->
+<!--            const r = Math.max(5, 10 * scale);-->
+
+<!--            // Filled magenta circle-->
+<!--            ctx.beginPath();-->
+<!--            ctx.arc(vpx, vpy, r, 0, Math.PI * 2);-->
+<!--            ctx.fillStyle = 'magenta';-->
+<!--            ctx.fill();-->
+
+<!--            // White ring-->
+<!--            ctx.beginPath();-->
+<!--            ctx.arc(vpx, vpy, r + Math.max(1, 2 * scale), 0, Math.PI * 2);-->
+<!--            ctx.strokeStyle = 'white';-->
+<!--            ctx.lineWidth   = Math.max(1, 2 * scale);-->
+<!--            ctx.stroke();-->
+
+<!--            // mm offset label-->
+<!--            const xmm = (det.x_mm || 0).toFixed(1);-->
+<!--            const ymm = (det.y_mm || 0).toFixed(1);-->
+<!--            const sign = v => (v >= 0 ? '+' : '') + v;-->
+<!--            ctx.fillStyle = 'magenta';-->
+<!--            ctx.fillText(`(${sign(xmm)}, ${sign(ymm)})mm`, vpx - 30 * scale, vpy - 14 * scale);-->
+
+<!--            // Arrow from valley to grinder tip-->
+<!--            if (gtx > 0 && gty > 0) {-->
+<!--                const [gx, gy] = px(gtx, gty);-->
+<!--                drawArrow(ctx, vpx, vpy, gx, gy, 'cyan', Math.max(1.5, 2 * scale));-->
+<!--            }-->
+<!--        }-->
+
+<!--        // ── Info box (top-left, semi-transparent) ──────────────────────────-->
+<!--        const numTeeth = det.num_teeth || 0;-->
+<!--        const valleyId = det.valley_id || 'N/A';-->
+<!--        const distMm   = (det.distance_mm || 0).toFixed(1);-->
+
+<!--        const bx = offX + 10 * scale;-->
+<!--        const by = offY + 10 * scale;-->
+<!--        const bw = 200 * scale;-->
+<!--        const bh = 90 * scale;-->
+<!--        const fs = Math.max(10, 12 * scale);-->
+
+<!--        ctx.fillStyle = 'rgba(0,0,0,0.65)';-->
+<!--        ctx.strokeStyle = 'white';-->
+<!--        ctx.lineWidth = Math.max(1, 2 * scale);-->
+<!--        roundRect(ctx, bx, by, bw, bh, 6 * scale);-->
+<!--        ctx.fill();-->
+<!--        ctx.stroke();-->
+
+<!--        ctx.font = `bold ${fs * 1.1}px "JetBrains Mono", monospace`;-->
+<!--        ctx.fillStyle = 'cyan';-->
+<!--        ctx.fillText('DETECTION', bx + 8 * scale, by + fs * 1.4);-->
+
+<!--        ctx.font = `${fs}px "JetBrains Mono", monospace`;-->
+<!--        ctx.fillStyle = 'white';-->
+<!--        ctx.fillText(`Teeth: ${numTeeth}`,         bx + 8 * scale, by + fs * 2.8);-->
+<!--        ctx.fillStyle = 'magenta';-->
+<!--        ctx.fillText(`Valley: ${valleyId}`,        bx + 8 * scale, by + fs * 4.2);-->
+<!--        ctx.fillStyle = 'limegreen';-->
+<!--        ctx.fillText(`Dist: ${distMm}mm`,          bx + 8 * scale, by + fs * 5.6);-->
+<!--    }-->
+
+<!--    function drawArrow(ctx, x1, y1, x2, y2, color, lw) {-->
+<!--        const headLen = Math.max(8, 14 * (lw / 2));-->
+<!--        const angle   = Math.atan2(y2 - y1, x2 - x1);-->
+<!--        ctx.beginPath();-->
+<!--        ctx.moveTo(x1, y1);-->
+<!--        ctx.lineTo(x2, y2);-->
+<!--        ctx.strokeStyle = color;-->
+<!--        ctx.lineWidth   = lw;-->
+<!--        ctx.stroke();-->
+<!--        // arrowhead-->
+<!--        ctx.beginPath();-->
+<!--        ctx.moveTo(x2, y2);-->
+<!--        ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 7),-->
+<!--                   y2 - headLen * Math.sin(angle - Math.PI / 7));-->
+<!--        ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 7),-->
+<!--                   y2 - headLen * Math.sin(angle + Math.PI / 7));-->
+<!--        ctx.closePath();-->
+<!--        ctx.fillStyle = color;-->
+<!--        ctx.fill();-->
+<!--    }-->
+
+<!--    function roundRect(ctx, x, y, w, h, r) {-->
+<!--        ctx.beginPath();-->
+<!--        ctx.moveTo(x + r, y);-->
+<!--        ctx.lineTo(x + w - r, y);-->
+<!--        ctx.quadraticCurveTo(x + w, y, x + w, y + r);-->
+<!--        ctx.lineTo(x + w, y + h - r);-->
+<!--        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);-->
+<!--        ctx.lineTo(x + r, y + h);-->
+<!--        ctx.quadraticCurveTo(x, y + h, x, y + h - r);-->
+<!--        ctx.lineTo(x, y + r);-->
+<!--        ctx.quadraticCurveTo(x, y, x + r, y);-->
+<!--        ctx.closePath();-->
+<!--    }-->
+
+<!--    // Hook overlay start/stop into camera toggle-->
+<!--    const _origToggleCamera = toggleCamera;-->
+<!--    toggleCamera = async function() {-->
+<!--        await _origToggleCamera();-->
+<!--        if (cameraActive) {-->
+<!--            startOverlayPolling();-->
+<!--        } else {-->
+<!--            stopOverlayPolling();-->
+<!--        }-->
+<!--    };-->
+<!--    // ── End canvas overlay ────────────────────────────────────────────────────-->
+
+<!--    window.addEventListener('beforeunload', () => {-->
+<!--        if (cameraActive) clearInterval(cameraIntervalId);-->
+<!--        if (registerPollId) clearInterval(registerPollId);-->
+<!--        if (overlayPollId) clearInterval(overlayPollId);-->
+<!--    });-->
+
+<!--    async function loadGrinderStatus() {-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/grinder_status`);-->
+<!--            const data = await res.json();-->
+<!--            if (data.success && data.grinder_tip)-->
+<!--                document.getElementById('grinderInfo').innerHTML =-->
+<!--                    `<span style="color:var(&#45;&#45;success)">Grinder: (${data.grinder_tip.x}, ${data.grinder_tip.y})</span>`;-->
+<!--        } catch (e) { /* silent */ }-->
+<!--    }-->
+
+<!--    log('Dashboard loaded – waiting for connection', 'info');-->
+<!--    loadGrinderStatus();-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+<!DOCTYPE html>
+<html lang="en">
+<link rel="icon" type="image/webp" sizes="32x32" href="mka-163w.webp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MKA - Automated Blade Sharpening System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --background: hsl(240, 33%, 1%);
+            --foreground: hsl(0 0% 98%);
+            --card: hsl(240, 8%, 7%);
+            --card-foreground: hsl(0 0% 98%);
+            --primary: hsl(0 0% 98%);
+            --primary-foreground: hsl(0 0% 9%);
+            --secondary: hsl(0 0% 14.9%);
+            --muted: hsl(0 0% 14.9%);
+            --muted-foreground: hsl(0 0% 63.9%);
+            --accent: hsl(0 0% 14.9%);
+            --accent-foreground: hsl(0 0% 98%);
+            --border: hsl(0 0% 14.9%);
+            --ring: hsl(0 0% 83.1%);
+            --radius: 1.5rem;
+            --success: hsl(142 76% 36%);
+            --warning: hsl(38 92% 50%);
+            --danger: hsl(0 62.8% 30.6%);
+            --info: hsl(217 91% 60%);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--background); color: var(--foreground);
+            min-height: 100vh; overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { height: 100vh; display: flex; flex-direction: column; padding: 24px; }
+        .header { text-align: center; margin-bottom: 10px; }
+        .header p { font-size: 12px; color: var(--muted-foreground); letter-spacing: 0.1em; text-transform: uppercase; }
+        .header h1 { display: flex; justify-content: center; align-items: center; }
+
+        /* Status bar */
+        .status-bar { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .status-item {
+            flex: 1; min-width: 140px; background: var(--card);
+            border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px;
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+            box-shadow: 0 1px 0 0 hsl(0 0% 20%) inset, 0 4px 6px -1px hsl(0 0% 0% / 0.4);
+        }
+        .status-item:hover { border-color: var(--ring); transform: translateY(-1px); }
+        .status-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); margin-bottom: 6px; }
+        .status-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; display: flex; align-items: center; }
+
+        /* Layout */
+        .main-grid { flex: 1; display: grid; grid-template-columns: 4fr 1fr; gap: 24px; min-height: 0; }
+        .left-grid { display: grid; grid-template-columns: 2fr 2fr; gap: 24px; overflow-y: auto; padding-right: 10px; min-height: 0; }
+        @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 700px) { .left-grid { grid-template-columns: 1fr; } }
+
+        /* Panel */
+        .panel {
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 24px; position: relative;
+            box-shadow: 0 1px 0 0 hsl(0 0% 20%) inset, 0 4px 6px -1px hsl(0 0% 0% / 0.4);
+        }
+        .panel-title { font-size: 14px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+
+        /* Forms */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--foreground); margin-bottom: 6px; }
+        .form-input { width: 100%; background: var(--background); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: 10px 12px; font-family: 'Inter', sans-serif; font-size: 12px; color: var(--foreground); transition: border-color 0.2s, box-shadow 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--ring); box-shadow: 0 0 0 2px hsla(0,0%,83%,.15); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* Buttons */
+        .btn { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; padding: 10px 20px; border: none; border-radius: calc(var(--radius) - 2px); cursor: pointer; transition: opacity 0.2s, background-color 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn:active { opacity: 0.8; }
+        .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+        .btn-primary:disabled, .btn:disabled { background: var(--muted); color: var(--muted-foreground); cursor: not-allowed; opacity: 0.5; }
+        .btn-danger  { background: hsl(0 84% 60%); color: hsl(0 0% 98%); }
+        .btn-warning { background: var(--warning); color: hsl(0 0% 9%); }
+        .btn-success { background: var(--success); color: hsl(0 0% 98%); }
+        .btn-info    { background: var(--info); color: hsl(0 0% 98%); }
+        .btn-connect { width: 100%; margin-bottom: 16px; }
+        .control-panel { display: flex; gap: 12px; margin-top: 16px; }
+        .control-panel .btn { flex: 1; }
+
+        /* Loop status panel */
+        .loop-status-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px; margin-bottom: 16px;
+        }
+        .reg-badge {
+            background: var(--background); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 12px; text-align: center;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .reg-badge.active-green {
+            border-color: hsl(142 76% 46%);
+            box-shadow: 0 0 8px hsl(142 76% 46% / 0.4);
+        }
+        .reg-badge.active-blue {
+            border-color: var(--info);
+            box-shadow: 0 0 8px hsl(217 91% 60% / 0.4);
+        }
+        .reg-badge.active-orange {
+            border-color: var(--warning);
+            box-shadow: 0 0 8px hsl(38 92% 50% / 0.4);
+        }
+        .reg-badge-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); margin-bottom: 4px; }
+        .reg-badge-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; }
+        .reg-badge-sub { font-size: 9px; color: var(--muted-foreground); margin-top: 2px; }
+
+        /* Loop sequence steps */
+        .loop-steps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .loop-step {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--background);
+            font-size: 11px; transition: all 0.2s;
+        }
+        .loop-step.step-active {
+            border-color: var(--info); background: hsl(217 91% 60% / 0.07);
+            color: hsl(217 91% 80%);
+        }
+        .loop-step.step-done {
+            border-color: hsl(142 76% 36%); background: hsl(142 76% 36% / 0.07);
+            color: hsl(142 74% 56%);
+        }
+        .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+        .loop-step.step-active .step-dot { background: var(--info); box-shadow: 0 0 5px var(--info); }
+        .loop-step.step-done .step-dot { background: hsl(142 76% 46%); }
+
+        /* Indicators */
+        .indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
+        .indicator.connected    { background: hsl(142 76% 46%); box-shadow: 0 0 6px hsl(142 76% 46%); animation: blink 2s ease-in-out infinite; }
+        .indicator.disconnected { background: hsl(0 84% 60%); box-shadow: 0 0 6px hsl(0 84% 60%); }
+        .indicator.active       { background: var(--info); box-shadow: 0 0 6px var(--info); animation: blink 2s ease-in-out infinite; }
+        .indicator.warning      { background: var(--warning); box-shadow: 0 0 6px var(--warning); animation: blink 1s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes estopPulse { 0%,100%{box-shadow:0 0 16px 4px hsl(0 84% 40%/0.7)} 50%{box-shadow:0 0 32px 12px hsl(0 84% 55%/0.9)} }
+
+        /* Log */
+        .log { background: var(--background); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: 16px; max-height: 600px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.2s ease; }
+        .log-entry:last-child { border-bottom: none; }
+        .log-time { color: var(--muted-foreground); margin-right: 10px; }
+        .log-success { color: hsl(142,74%,46%); }
+        .log-error   { color: hsl(0 84% 60%); }
+        .log-warning { color: hsl(38 92% 55%); }
+        .log-info    { color: hsl(217 91% 70%); }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-2px)} to{opacity:1;transform:translateY(0)} }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* DB lookup */
+        .db-lookup-section { background: hsl(240,10%,5%); border: 1px solid hsl(217 91% 60% / 0.25); border-radius: calc(var(--radius) - 4px); padding: 14px; margin-bottom: 18px; }
+        .db-lookup-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(217 91% 70%); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .db-lookup-row { display: flex; gap: 8px; align-items: flex-end; }
+        .db-lookup-row .form-group { flex: 1; margin-bottom: 0; }
+        .db-blade-badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 99px; margin-top: 8px; }
+        .db-blade-badge.loaded { background: hsl(142 76% 36%/0.15); border: 1px solid hsl(142 76% 36%/0.4); color: hsl(142,74%,56%); }
+        .db-blade-badge.error  { background: hsl(0 62.8% 30.6%/0.15); border: 1px solid hsl(0 62.8% 30.6%/0.4); color: hsl(0 84% 60%); }
+        .db-extra-fields { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+        .db-extra-fields.visible { display: block; }
+        .db-field-readonly .form-input { opacity: 0.7; cursor: default; color: hsl(217 91% 75%); }
+
+        select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        input[type="number"] { -moz-appearance: textfield; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .number-input-wrapper { position: relative; display: flex; align-items: stretch; }
+        .number-input-wrapper .form-input { padding-right: 36px; }
+        .number-input-spinners { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 28px; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
+        .number-spin-btn { flex: 1; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--muted-foreground); transition: background-color 0.15s, color 0.15s; padding: 0; }
+        .number-spin-btn:hover { background: var(--accent); color: var(--accent-foreground); }
+        .number-spin-btn:first-child { border-top-right-radius: calc(var(--radius) - 3px); border-bottom: 1px solid var(--border); }
+        .number-spin-btn:last-child { border-bottom-right-radius: calc(var(--radius) - 3px); }
+        .number-spin-btn svg { width: 12px; height: 12px; pointer-events: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1><img src="mka-163w.webp" alt="MKA" style="height:60px;width:auto;"></h1>
+        <p>Automated Blade Sharpening System</p>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="status-label">Connection</div>
+            <div class="status-value" id="connectionStatus"><span class="indicator disconnected"></span>DISCONNECTED</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Loop State</div>
+            <div class="status-value" id="robotState">IDLE</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Grinder Ready</div>
+            <div class="status-value" id="grinderReadyStatus"><span class="indicator disconnected"></span>—</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Grind Start</div>
+            <div class="status-value" id="grindStartStatus"><span class="indicator disconnected"></span>—</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Camera</div>
+            <div class="status-value" id="cameraStatus">OFF</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Auto Detect</div>
+            <div class="status-value" id="autoUpdateStatus">OFF</div>
+        </div>
+        <div class="status-item" id="estopStatusItem" style="border-color: hsl(0 0% 14.9%);">
+            <div class="status-label">E-STOP</div>
+            <div class="status-value" id="estopStatus"><span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none;"></span>INACTIVE</div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="left-grid">
+
+            <!-- Connection Panel -->
+            <div class="panel">
+                <div class="panel-title">🔌 Connection Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Robot IP Address</label>
+                    <input type="text" id="robotIP" class="form-input" value="172.24.9.20">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Port</label>
+                        <input type="number" id="robotPort" class="form-input" value="502">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unit ID</label>
+                        <input type="number" id="unitID" class="form-input" value="1">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-connect" id="connectBtn" onclick="toggleConnection()">CONNECT TO ROBOT</button>
+
+                <!-- Register map reference -->
+                <div style="background:hsl(240,10%,5%);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-foreground);line-height:1.9;">
+                    <div style="color:var(--foreground);font-weight:600;margin-bottom:6px;font-size:11px;">Register Map</div>
+                    <div><span style="color:hsl(280 80% 70%)">128</span> BAY_ID &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">(PC→Robot)</span></div>
+                    <div><span style="color:hsl(280 80% 70%)">129</span> GRINDER_ID &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot)</span></div>
+                    <div><span style="color:hsl(280 80% 70%)">130</span> ANGLE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">×10</span></div>
+                    <div><span style="color:hsl(280 80% 70%)">131</span> DEPTH &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">×100</span></div>
+                    <div><span style="color:hsl(280 80% 70%)">132</span> LENGTH &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">mm</span></div>
+                    <div><span style="color:hsl(280 80% 70%)">133</span> CONFIG_VER &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot)</span></div>
+                    <div style="border-top:1px solid var(--border);margin:4px 0;"></div>
+                    <div><span style="color:hsl(217 91% 70%)">134</span> DETECTION_X &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot)</span></div>
+                    <div><span style="color:hsl(217 91% 70%)">135</span> DETECTION_Y &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot)</span></div>
+                    <div><span style="color:hsl(217 91% 70%)">136</span> STATUS &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">0=none 1=ok 2=err</span></div>
+                    <div><span style="color:hsl(38 92% 65%)">137</span> START &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">(PC→Robot)</span></div>
+                    <div><span style="color:hsl(142 74% 56%)">138</span> GRINDER_READY <span style="color:var(--muted-foreground)">(Robot→PC)</span></div>
+                    <div><span style="color:hsl(0 84% 65%)">139</span> GRIND_START &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot, robot resets)</span></div>
+                    <div><span style="color:hsl(0 100% 70%);font-weight:700;">140</span> <span style="color:hsl(0 100% 70%);font-weight:700;">E-STOP</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--muted-foreground)">(PC→Robot, 1=halt)</span></div>
+                </div>
+            </div>
+
+            <!-- Grinding Loop Control Panel -->
+            <div class="panel">
+                <div class="panel-title">⚙️ Grinding Loop Control</div>
+
+                <!-- Live register badges -->
+                <div class="loop-status-grid">
+                    <div class="reg-badge" id="badge-status">
+                        <div class="reg-badge-label">Status</div>
+                        <div class="reg-badge-val" id="reg-status">—</div>
+                        <div class="reg-badge-sub" id="reg-status-name">REG 136</div>
+                    </div>
+                    <div class="reg-badge" id="badge-start">
+                        <div class="reg-badge-label">Start</div>
+                        <div class="reg-badge-val" id="reg-start">—</div>
+                        <div class="reg-badge-sub">REG 137</div>
+                    </div>
+                    <div class="reg-badge" id="badge-grinder-ready">
+                        <div class="reg-badge-label">Grinder Ready</div>
+                        <div class="reg-badge-val" id="reg-grinder-ready">—</div>
+                        <div class="reg-badge-sub">REG 138</div>
+                    </div>
+                    <div class="reg-badge" id="badge-grind-start">
+                        <div class="reg-badge-label">Grind Start</div>
+                        <div class="reg-badge-val" id="reg-grind-start">—</div>
+                        <div class="reg-badge-sub">REG 139</div>
+                    </div>
+                    <div class="reg-badge" id="badge-x">
+                        <div class="reg-badge-label">X (mm)</div>
+                        <div class="reg-badge-val" id="reg-x">—</div>
+                        <div class="reg-badge-sub">REG 134</div>
+                    </div>
+                    <div class="reg-badge" id="badge-y">
+                        <div class="reg-badge-label">Y (mm)</div>
+                        <div class="reg-badge-val" id="reg-y">—</div>
+                        <div class="reg-badge-sub">REG 135</div>
+                    </div>
+                    <div class="reg-badge" id="badge-estop" style="grid-column: 1 / -1; border-color: hsl(0 0% 14.9%);">
+                        <div class="reg-badge-label">E-STOP — REG 140</div>
+                        <div class="reg-badge-val" id="reg-estop" style="font-size:14px;">—</div>
+                    </div>
+                </div>
+
+                <!-- Loop step visualiser -->
+                <div class="loop-steps" id="loopSteps">
+                    <div class="loop-step" id="step1"><span class="step-dot"></span>1 · Write detection X/Y + STATUS=1</div>
+                    <div class="loop-step" id="step2"><span class="step-dot"></span>2 · Send START=1  →  robot moves to tooth valley</div>
+                    <div class="loop-step" id="step3"><span class="step-dot"></span>3 · Wait for GRINDER_READY=1 (camera turns on)</div>
+                    <div class="loop-step" id="step4"><span class="step-dot"></span>4 · Re-detect, write new X/Y, send GRIND_START=1</div>
+                    <div class="loop-step" id="step5"><span class="step-dot"></span>5 · Robot grinds, resets GRIND_START=0 → next tooth</div>
+                </div>
+
+                <!-- Main loop buttons -->
+                <div class="control-panel">
+                    <button class="btn btn-success" onclick="startLoop()" disabled id="startBtn" style="font-size:12px;font-weight:700;">
+                        🚀 START LOOP
+                    </button>
+                    <button class="btn btn-info" onclick="sendGrindStart()" disabled id="grindStartBtn" style="font-size:12px;">
+                        ⚙ GRIND START
+                    </button>
+                    <button class="btn btn-danger" onclick="stopLoop()" disabled id="stopBtn" style="font-size:12px;">
+                        ■ STOP
+                    </button>
+                </div>
+
+                <!-- Emergency Stop -->
+                <button
+                    id="estopBtn"
+                    onclick="triggerEStop()"
+                    disabled
+                    style="
+                        width: 100%; margin-top: 14px;
+                        padding: 18px; font-size: 15px; font-weight: 800;
+                        letter-spacing: 0.08em; text-transform: uppercase;
+                        background: hsl(0 84% 38%);
+                        color: white; border: 2px solid hsl(0 84% 55%);
+                        border-radius: calc(var(--radius) - 2px);
+                        cursor: pointer; transition: all 0.15s;
+                        box-shadow: 0 0 0 0 hsl(0 84% 50% / 0.5);
+                        font-family: 'Inter', sans-serif;
+                    "
+                    onmouseover="this.style.background='hsl(0 84% 48%)';this.style.boxShadow='0 0 16px 4px hsl(0 84% 40% / 0.6)'"
+                    onmouseout="if(!window._estopActive){this.style.background='hsl(0 84% 38%)';this.style.boxShadow='0 0 0 0 hsl(0 84% 50% / 0.5)'}"
+                >
+                    🚨 EMERGENCY STOP
+                </button>
+                <button
+                    id="clearEstopBtn"
+                    onclick="clearEStop()"
+                    disabled
+                    style="
+                        display:none; width: 100%; margin-top: 8px;
+                        padding: 10px; font-size: 12px; font-weight: 600;
+                        background: var(--warning); color: hsl(0 0% 9%);
+                        border: none; border-radius: calc(var(--radius) - 2px);
+                        cursor: pointer; font-family: 'Inter', sans-serif;
+                        transition: opacity 0.2s;
+                    "
+                >
+                    ↺ CLEAR E-STOP (REG 140=0)
+                </button>
+
+                <div style="margin-top:10px;font-size:11px;color:var(--muted-foreground);text-align:center;" id="loopHint">
+                    Connect to robot to enable controls
+                </div>
+            </div>
+
+            <!-- Configuration Panel -->
+            <div class="panel">
+                <div class="panel-title">📋 Blade Configuration</div>
+                <div class="db-lookup-section">
+                    <div class="db-lookup-title">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+                        Load from Database
+                    </div>
+                    <div class="db-lookup-row">
+                        <div class="form-group">
+                            <label class="form-label">Blade ID</label>
+                            <input type="text" id="dbBladeID" class="form-input" placeholder="e.g. BLD-001" style="font-family:'JetBrains Mono',monospace;">
+                        </div>
+                        <button class="btn btn-primary" onclick="loadBladeFromDB()" id="dbLoadBtn" style="flex-shrink:0;margin-bottom:16px;">LOAD</button>
+                    </div>
+                    <div id="dbStatus" style="display:none;"></div>
+                    <div class="db-extra-fields" id="dbExtraFields">
+                        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted-foreground);margin-bottom:8px;">Additional Properties</div>
+                        <div class="form-row db-field-readonly">
+                            <div class="form-group"><label class="form-label">Depth 1 (mm)</label><input type="text" class="form-input" id="dbDepth1" readonly></div>
+                            <div class="form-group"><label class="form-label">Depth 2 (mm)</label><input type="text" class="form-input" id="dbDepth2" readonly></div>
+                        </div>
+                        <div class="form-row db-field-readonly">
+                            <div class="form-group"><label class="form-label">Thickness (mm)</label><input type="text" class="form-input" id="dbThickness" readonly></div>
+                            <div class="form-group"><label class="form-label">Tip Angle (°)</label><input type="text" class="form-input" id="dbTipAngle" readonly></div>
+                        </div>
+                        <div class="form-row db-field-readonly">
+                            <div class="form-group"><label class="form-label">Reach Angle (°)</label><input type="text" class="form-input" id="dbReachAngle" readonly></div>
+                            <div class="form-group"><label class="form-label">Depth of Cut (mm)</label><input type="text" class="form-input" id="dbDepthOfCut" readonly></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Bay ID</label><input type="number" id="bayID" class="form-input" value="5"></div>
+                    <div class="form-group"><label class="form-label">Grinder ID</label><input type="number" id="grinderID" class="form-input" value="2"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Angle (°)</label><input type="number" step="0.1" id="angle" class="form-input" value="45.5"></div>
+                    <div class="form-group"><label class="form-label">Depth (mm)</label><input type="number" step="0.01" id="depth" class="form-input" value="1.25"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Length (mm)</label><input type="number" id="length" class="form-input" value="150"></div>
+                    <div class="form-group"><label class="form-label">Config Ver.</label><input type="number" id="configVersion" class="form-input" value="1"></div>
+                </div>
+                <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="sendConfiguration()" disabled id="configBtn">
+                    SEND CONFIGURATION (REG 128–133)
+                </button>
+            </div>
+
+            <!-- Detection Panel -->
+            <div class="panel">
+                <div class="panel-title">📍 Detection Data</div>
+
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Manual Input</div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">X (mm) — REG 134</label><input type="number" step="0.1" id="detectionX" class="form-input" value="2.5"></div>
+                        <div class="form-group"><label class="form-label">Y (mm) — REG 135</label><input type="number" step="0.1" id="detectionY" class="form-input" value="1.8"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status — REG 136</label>
+                        <select id="detectionStatus" class="form-input">
+                            <option value="0">0 – No teeth detected</option>
+                            <option value="1" selected>1 – Teeth OK</option>
+                            <option value="2">2 – Error</option>
+                        </select>
+                    </div>
+                    <div class="control-panel" style="margin-top:8px;">
+                        <button class="btn btn-primary" onclick="sendDetection()" disabled id="detectionBtn">WRITE REGISTERS</button>
+                    </div>
+                </div>
+
+                <div style="border-top:1px solid var(--border);padding-top:14px;">
+                    <div style="font-size:11px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🤖 Auto-Detection</div>
+                    <div class="form-group"><label class="form-label">Calibration (px/mm)</label><input type="number" step="0.01" id="calibration" class="form-input" value="86.96"></div>
+                    <div class="form-group"><label class="form-label">Auto-detect interval (ms)</label><input type="number" step="100" id="updateInterval" class="form-input" value="1000" min="100"></div>
+                    <div class="control-panel">
+                        <button class="btn btn-primary"  onclick="runDetection()"        disabled id="analyzeBtn">DETECT</button>
+                        <button class="btn btn-success"  onclick="detectAndSend()"       disabled id="autoSendBtn">DETECT & WRITE</button>
+                    </div>
+                    <div class="control-panel" style="margin-top:8px;">
+                        <button class="btn btn-success" onclick="toggleContinuousUpdate()" disabled id="continuousBtn">AUTO-DETECT LOOP</button>
+                        <button class="btn btn-warning" onclick="updateGrinderPosition()"  disabled id="updateGrinderBtn">📍 SET GRINDER</button>
+                    </div>
+                    <div id="detectionResult" style="margin-top:10px;font-size:12px;color:var(--muted-foreground);text-align:center;min-height:20px;"></div>
+                    <div id="grinderInfo" style="margin-top:5px;font-size:11px;color:var(--muted-foreground);text-align:center;">Grinder: Not set</div>
+                </div>
+            </div>
+
+            <!-- Camera Panel -->
+            <div class="panel">
+                <div class="panel-title">📹 Camera Feed</div>
+                <div style="position:relative;background:var(--background);border-radius:8px;overflow:hidden;aspect-ratio:16/9;">
+                    <img id="cameraFeed" src="" alt="Camera Feed" style="width:100%;height:100%;object-fit:contain;display:none;">
+                    <!-- Canvas overlay for grinder + teeth point detection markers -->
+                    <canvas id="detectionCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none;"></canvas>
+                    <div id="cameraPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted-foreground);">
+                        <div style="text-align:center;"><div style="font-size:48px;margin-bottom:10px;">📷</div><div>Camera not active</div></div>
+                    </div>
+                    <div id="cameraOverlay" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);padding:6px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px;display:none;">
+                        <span style="color:hsl(142,74%,56%);">● LIVE</span>
+                    </div>
+                    <!-- GRINDER_READY alert overlay -->
+                    <div id="grinderReadyOverlay" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:hsl(142 76% 36%/0.9);padding:6px 16px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:white;animation:blink 1s ease-in-out infinite;">
+                        ✓ GRINDER READY
+                    </div>
+                </div>
+                <div class="control-panel" style="margin-top:12px;">
+                    <button class="btn btn-success" onclick="toggleCamera()" disabled id="cameraBtn">START CAMERA</button>
+                    <button class="btn btn-primary" onclick="captureFrame()" disabled id="captureBtn">CAPTURE</button>
+                </div>
+                <div style="margin-top:8px;font-size:12px;color:var(--muted-foreground);text-align:center;">
+                    FPS: <span id="fpsCounter">0</span> | Frames: <span id="frameCounter">0</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Log Panel -->
+        <div class="panel">
+            <div class="panel-title">📋 System Log</div>
+            <div class="log" id="systemLog">
+                <div class="log-entry"><span class="log-time">[00:00:00]</span><span>System initialized. Ready for connection.</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:5000/api';
+
+    let connected = false;
+    let loopRunning = false;
+    let continuousUpdateActive = false;
+    let updateIntervalId = null;
+    let updateCount = 0;
+    let cameraActive = false;
+    let cameraIntervalId = null;
+    let frameCount = 0, fpsStart = Date.now(), fpsFrameCount = 0;
+
+    // Register polling
+    let registerPollId = null;
+    let lastGrinderReady = false;
+    let lastGrindStart = false;
+    let currentStep = 0; // 0=idle,1=detection written,2=start sent,3=waiting grinder ready,4=grind start sent,5=grinding
+
+    function getCurrentTime() {
+        return new Date().toLocaleTimeString('en-US', { hour12: false });
+    }
+
+    function log(message, type = 'info') {
+        const logDiv = document.getElementById('systemLog');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const cls = { success:'log-success', error:'log-error', warning:'log-warning', info:'log-info' }[type] || '';
+        const icon = { success:'✓', error:'✗', warning:'⚠', info:'ℹ' }[type] || '';
+        entry.innerHTML = `<span class="log-time">[${getCurrentTime()}]</span><span class="${cls}">${icon} ${message}</span>`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+        const entries = logDiv.querySelectorAll('.log-entry');
+        if (entries.length > 150) entries[0].remove();
+    }
+
+    // ── Step visualiser ──
+    function setStep(step) {
+        currentStep = step;
+        for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById(`step${i}`);
+            el.classList.remove('step-active','step-done');
+            if (i < step) el.classList.add('step-done');
+            else if (i === step) el.classList.add('step-active');
+        }
+        const hints = {
+            0: 'Connect to robot to enable controls',
+            1: 'Step 1 done – now press START LOOP',
+            2: 'Loop started – waiting for robot to reach grinder position…',
+            3: 'Grinder ready! Run detection then press GRIND START',
+            4: 'Grinding – robot will reset GRIND_START when done',
+            5: 'Cut complete – ready for next tooth'
+        };
+        document.getElementById('loopHint').textContent = hints[step] || '';
+    }
+
+    // ── Register polling ──
+    function startRegisterPolling() {
+        if (registerPollId) return;
+        registerPollId = setInterval(pollRegisters, 400);
+    }
+    function stopRegisterPolling() {
+        if (registerPollId) { clearInterval(registerPollId); registerPollId = null; }
+    }
+
+    async function pollRegisters() {
+        if (!connected) return;
+        try {
+            const res = await fetch(`${API_BASE}/robot_registers`);
+            const data = await res.json();
+            if (!data.success) return;
+            const r = data.registers;
+
+            // Update badges
+            setRegBadge('reg-x', r.detection_x_mm.toFixed(1), 'badge-x', r.detection_x_mm !== 0 ? 'active-blue' : '');
+            setRegBadge('reg-y', r.detection_y_mm.toFixed(1), 'badge-y', r.detection_y_mm !== 0 ? 'active-blue' : '');
+
+            const statusNames = { 0:'NONE', 1:'OK', 2:'ERR' };
+            setRegBadge('reg-status', r.status, 'badge-status',
+                r.status === 1 ? 'active-green' : r.status === 2 ? 'active-orange' : '');
+            document.getElementById('reg-status-name').textContent = statusNames[r.status] || 'REG 136';
+
+            setRegBadge('reg-start', r.start, 'badge-start', r.start ? 'active-orange' : '');
+            setRegBadge('reg-grinder-ready', r.grinder_ready, 'badge-grinder-ready', r.grinder_ready ? 'active-green' : '');
+            setRegBadge('reg-grind-start', r.grind_start, 'badge-grind-start', r.grind_start ? 'active-orange' : '');
+
+            // Status bar
+            document.getElementById('grinderReadyStatus').innerHTML = r.grinder_ready
+                ? '<span class="indicator connected"></span>READY'
+                : '<span class="indicator disconnected"></span>WAITING';
+            document.getElementById('grindStartStatus').innerHTML = r.grind_start
+                ? '<span class="indicator warning"></span>ACTIVE'
+                : '<span class="indicator disconnected"></span>IDLE';
+
+            // GRINDER_READY rising edge → robot is at grinder position
+            if (r.grinder_ready && !lastGrinderReady) {
+                log('🟢 GRINDER_READY=1 — robot at grinder position, running detection…', 'success');
+                document.getElementById('grinderReadyOverlay').style.display = 'block';
+                document.getElementById('grindStartBtn').disabled = false;
+                setStep(3);
+                // Auto-start camera if not already on
+                if (!cameraActive) {
+                    log('Auto-starting camera (GRINDER_READY triggered)', 'info');
+                    await toggleCamera();
+                }
+                // Trigger detection only after camera has a real frame
+                if (continuousUpdateActive) {
+                    await waitForCameraReady();
+                    sendDetectionWithAnalysis();
+                }
+            }
+            if (!r.grinder_ready && lastGrinderReady) {
+                document.getElementById('grinderReadyOverlay').style.display = 'none';
+            }
+
+            // GRIND_START falling edge → robot completed cut, ready for next tooth
+            if (!r.grind_start && lastGrindStart) {
+                log('✓ Cut complete (robot reset GRIND_START=0)', 'success');
+                document.getElementById('grindStartBtn').disabled = false;
+                setStep(5);
+                // If auto-detect is on and grinder is still ready, run detection for next tooth
+                if (continuousUpdateActive && r.grinder_ready) {
+                    log('🔍 Running detection for next tooth…', 'info');
+                    setTimeout(() => sendDetectionWithAnalysis(), 200);
+                } else if (!continuousUpdateActive) {
+                    const currentStatus = parseInt(document.getElementById('detectionStatus').value);
+                    if (currentStatus === 1) {
+                        log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth', 'info');
+                        setTimeout(() => sendGrindStart(), 200);
+                    } else {
+                        setTimeout(() => setStep(loopRunning ? 3 : 0), 1500);
+                    }
+                }
+            }
+
+            lastGrinderReady = r.grinder_ready;
+            lastGrindStart = r.grind_start;
+
+            // Sync E-STOP state from register (in case set externally)
+            if (r.estop && !window._estopActive) {
+                window._estopActive = true;
+                activateEstopVisual();
+                log('⚠ E-STOP active (detected from register)', 'error');
+            } else if (!r.estop && window._estopActive) {
+                // Register was cleared externally
+                window._estopActive = false;
+                resetEstopVisual();
+                document.getElementById('clearEstopBtn').style.display = 'none';
+            }
+
+        } catch (e) { /* silent */ }
+    }
+
+    function setRegBadge(valId, value, badgeId, activeClass) {
+        document.getElementById(valId).textContent = value;
+        const badge = document.getElementById(badgeId);
+        badge.className = 'reg-badge';
+        if (activeClass) badge.classList.add(activeClass);
+    }
+
+    // ── Connection ──
+    async function toggleConnection() {
+        const btn = document.getElementById('connectBtn');
+        const ip = document.getElementById('robotIP').value;
+        const port = document.getElementById('robotPort').value;
+        const unit = document.getElementById('unitID').value;
+
+        if (!connected) {
+            log(`Connecting to ${ip}:${port}…`, 'info');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/connect`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ host: ip, port, unit })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    connected = true;
+                    btn.textContent = 'DISCONNECT'; btn.className = 'btn btn-danger btn-connect';
+                    document.getElementById('connectionStatus').innerHTML = '<span class="indicator connected"></span>CONNECTED';
+                    ['detectionBtn','continuousBtn','analyzeBtn','autoSendBtn','updateGrinderBtn',
+                     'startBtn','stopBtn','cameraBtn','configBtn','estopBtn'].forEach(id => document.getElementById(id).disabled = false);
+                    startRegisterPolling();
+                    setStep(1);
+                    log(data.message, 'success');
+                } else { log(data.message, 'error'); }
+            } catch (e) { log(`Connection failed: ${e.message}`, 'error'); }
+            finally { btn.disabled = false; }
+        } else {
+            if (continuousUpdateActive) toggleContinuousUpdate();
+            if (cameraActive) await toggleCamera();
+            stopRegisterPolling();
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/disconnect`, { method: 'POST' });
+                const data = await res.json();
+                connected = false; loopRunning = false;
+                btn.textContent = 'CONNECT TO ROBOT'; btn.className = 'btn btn-primary btn-connect';
+                document.getElementById('connectionStatus').innerHTML = '<span class="indicator disconnected"></span>DISCONNECTED';
+                document.getElementById('robotState').textContent = 'IDLE';
+                document.getElementById('grinderReadyStatus').innerHTML = '<span class="indicator disconnected"></span>—';
+                document.getElementById('grindStartStatus').innerHTML = '<span class="indicator disconnected"></span>—';
+                ['detectionBtn','continuousBtn','analyzeBtn','autoSendBtn','updateGrinderBtn',
+                 'startBtn','stopBtn','cameraBtn','captureBtn','grindStartBtn','configBtn','estopBtn','clearEstopBtn'].forEach(id => document.getElementById(id).disabled = true);
+                document.getElementById('clearEstopBtn').style.display = 'none';
+                window._estopActive = false;
+                resetEstopVisual();
+                setStep(0);
+                log(data.message, 'warning');
+            } catch (e) { log(`Disconnect error: ${e.message}`, 'error'); }
+            finally { btn.disabled = false; }
+        }
+    }
+
+    // ── Camera warmup guard ──
+    // Polls /api/camera/ready until the capture thread has a real frame,
+    // or times out after 3s. Prevents detection firing on null/blank frames.
+    async function waitForCameraReady(timeoutMs = 3000) {
+        if (!cameraActive) return;
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            try {
+                const res = await fetch(`${API_BASE}/camera/ready`);
+                const data = await res.json();
+                if (data.ready) return;
+            } catch (_) {}
+            await new Promise(r => setTimeout(r, 80));
+        }
+        log('⚠ Camera ready timeout — proceeding anyway', 'warning');
+    }
+
+    // ── E-STOP ──
+    window._estopActive = false;
+
+    function resetEstopVisual() {
+        const btn = document.getElementById('estopBtn');
+        if (btn) {
+            btn.style.background = 'hsl(0 84% 38%)';
+            btn.style.boxShadow = '0 0 0 0 hsl(0 84% 50% / 0.5)';
+            btn.style.animation = '';
+            btn.textContent = '🚨 EMERGENCY STOP';
+        }
+        document.getElementById('estopStatus').innerHTML =
+            '<span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none;"></span>INACTIVE';
+        document.getElementById('estopStatusItem').style.borderColor = 'hsl(0 0% 14.9%)';
+        const badge = document.getElementById('badge-estop');
+        badge.className = 'reg-badge';
+        badge.style.gridColumn = '1 / -1';
+        document.getElementById('reg-estop').textContent = '0';
+    }
+
+    function activateEstopVisual() {
+        const btn = document.getElementById('estopBtn');
+        if (btn) {
+            btn.style.background = 'hsl(0 84% 55%)';
+            btn.style.boxShadow = '0 0 24px 8px hsl(0 84% 40% / 0.8)';
+            btn.style.animation = 'estopPulse 0.8s ease-in-out infinite';
+            btn.textContent = '🚨 E-STOP ACTIVE';
+        }
+        document.getElementById('estopStatus').innerHTML =
+            '<span class="indicator" style="background:hsl(0 84% 60%);box-shadow:0 0 8px hsl(0 84% 60%);animation:blink 0.5s ease-in-out infinite;"></span>ACTIVE';
+        document.getElementById('estopStatusItem').style.borderColor = 'hsl(0 84% 60%)';
+        const badge = document.getElementById('badge-estop');
+        badge.className = 'reg-badge active-orange';
+        badge.style.borderColor = 'hsl(0 84% 60%)';
+        badge.style.boxShadow = '0 0 10px hsl(0 84% 40% / 0.6)';
+        badge.style.gridColumn = '1 / -1';
+        document.getElementById('reg-estop').textContent = '1';
+        document.getElementById('clearEstopBtn').style.display = 'block';
+        document.getElementById('clearEstopBtn').disabled = false;
+    }
+
+    async function triggerEStop() {
+        log('🚨 EMERGENCY STOP triggered!', 'error');
+        window._estopActive = true;
+        activateEstopVisual();
+        // Immediately kill loop state in UI
+        loopRunning = false;
+        document.getElementById('robotState').innerHTML = '<span class="indicator" style="background:hsl(0 84% 60%);box-shadow:0 0 6px hsl(0 84% 60%);animation:blink 0.5s ease-in-out infinite;"></span>E-STOP';
+        setStep(0);
+        try {
+            const res = await fetch(`${API_BASE}/estop`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                log(data.message, 'error');
+            } else {
+                log(`E-STOP write failed: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            log(`E-STOP request error: ${e.message}`, 'error');
+        }
+    }
+
+    async function clearEStop() {
+        log('Clearing E-STOP (REG 140=0)…', 'warning');
+        try {
+            const res = await fetch(`${API_BASE}/estop/clear`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                window._estopActive = false;
+                resetEstopVisual();
+                document.getElementById('clearEstopBtn').style.display = 'none';
+                document.getElementById('robotState').textContent = 'IDLE';
+                log(data.message, 'success');
+            } else {
+                log(`Clear E-STOP failed: ${data.message}`, 'error');
+            }
+        } catch (e) {
+            log(`Clear E-STOP error: ${e.message}`, 'error');
+        }
+    }
+
+    // ── Configuration ──
+    async function sendConfiguration() {
+        const bay_id = document.getElementById('bayID').value;
+        const grinder_id = document.getElementById('grinderID').value;
+        const angle = document.getElementById('angle').value;
+        const depth = document.getElementById('depth').value;
+        const length = document.getElementById('length').value;
+        const config_version = document.getElementById('configVersion').value;
+        log(`Sending config: Bay=${bay_id}, Grinder=${grinder_id}, Angle=${angle}°, Depth=${depth}mm, Length=${length}mm`, 'info');
+        try {
+            const res = await fetch(`${API_BASE}/configuration`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ bay_id, grinder_id, angle, depth, length, config_version })
+            });
+            const data = await res.json();
+            if (data.success) log(data.message, 'success');
+            else log(data.message, 'error');
+        } catch (e) { log(`Config error: ${e.message}`, 'error'); }
+    }
+
+    // ── Loop controls ──
+    async function startLoop() {
+        log('🚀 Sending START=1 — loop begins…', 'info');
+        try {
+            const res = await fetch(`${API_BASE}/start`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                loopRunning = true;
+                document.getElementById('robotState').innerHTML = '<span class="indicator active"></span>RUNNING';
+                setStep(2);
+                log(data.message, 'success');
+            } else { log(data.message, 'error'); }
+        } catch (e) { log(`Start failed: ${e.message}`, 'error'); }
+    }
+
+<!--    async function stopLoop() {-->
+<!--        log('■ Sending START=0 — stopping loop', 'warning');-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                loopRunning = false;-->
+<!--                document.getElementById('robotState').textContent = 'IDLE';-->
+<!--                document.getElementById('grindStartBtn').disabled = true;-->
+<!--                setStep(0);-->
+<!--                log(data.message, 'warning');-->
+<!--            } else { log(data.message, 'error'); }-->
+<!--        } catch (e) { log(`Stop failed: ${e.message}`, 'error'); }-->
+<!--    }-->
+    async function stopLoop() {
+        log('■ Sending START=0 — stopping loop', 'warning');
+
+        // Stop auto-detect loop if running
+        if (continuousUpdateActive) {
+            continuousUpdateActive = false;
+            document.getElementById('continuousBtn').textContent = 'AUTO-DETECT LOOP';
+            document.getElementById('continuousBtn').className = 'btn btn-success';
+            document.getElementById('autoUpdateStatus').textContent = 'OFF';
+            log('Auto-detect loop stopped', 'warning');
+
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/stop`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                loopRunning = false;
+                document.getElementById('robotState').textContent = 'IDLE';
+                document.getElementById('grindStartBtn').disabled = true;
+                setStep(0);
+                log(data.message, 'warning');
+
+                // Write STATUS=0 to REG 136
+                await fetch(`${API_BASE}/detection`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 0 })
+                });
+                setDetectionStatus(0);
+                log('REG 136 STATUS=0 written', 'warning');
+
+            } else { log(data.message, 'error'); }
+        } catch (e) { log(`Stop failed: ${e.message}`, 'error'); }
+    }
+
+    async function sendGrindStart() {
+        // Optionally write current detection values first
+        const x = parseFloat(document.getElementById('detectionX').value);
+        const y = parseFloat(document.getElementById('detectionY').value);
+        const status = parseInt(document.getElementById('detectionStatus').value);
+        log(`⚙️  Sending GRIND_START=1 (X=${x}mm Y=${y}mm)`, 'info');
+        document.getElementById('grindStartBtn').disabled = true;
+        try {
+            const res = await fetch(`${API_BASE}/grind_start`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ x_mm: x, y_mm: y, status })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setStep(4);
+                log(data.message, 'success');
+            } else {
+                document.getElementById('grindStartBtn').disabled = false;
+                log(data.message, 'error');
+            }
+        } catch (e) {
+            document.getElementById('grindStartBtn').disabled = false;
+            log(`GRIND_START failed: ${e.message}`, 'error');
+        }
+    }
+
+    // ── Detection ──
+    async function sendDetection() {
+        const x = document.getElementById('detectionX').value;
+        const y = document.getElementById('detectionY').value;
+        const status = document.getElementById('detectionStatus').value;
+        log(`Writing detection: X=${x}mm Y=${y}mm STATUS=${status}`, 'info');
+        try {
+            const res = await fetch(`${API_BASE}/detection`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ x_mm: x, y_mm: y, status })
+            });
+            const data = await res.json();
+            if (data.success) { log(data.message, 'success'); if (currentStep === 1) setStep(1); }
+            else log(data.message, 'error');
+        } catch (e) { log(`Write failed: ${e.message}`, 'error'); }
+    }
+
+    async function runDetection() {
+        log('Running blade detection…', 'info');
+        document.getElementById('detectionResult').innerHTML = '<span style="color:var(--warning)">⏳ Analysing…</span>';
+        try {
+            const res = await fetch(`${API_BASE}/detection/analyze`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success && data.detection) {
+                const d = data.detection;
+                document.getElementById('detectionX').value = d.x_mm;
+                document.getElementById('detectionY').value = d.y_mm;
+                setDetectionStatus(1);
+                document.getElementById('detectionResult').innerHTML =
+                    `<span style="color:var(--success)">✓ Valley ${d.valley_id||'N/A'}: (${d.x_mm}, ${d.y_mm})mm | ${d.num_teeth} teeth</span>`;
+                log(`Detected: Valley ${d.valley_id||'N/A'} at (${d.x_mm}, ${d.y_mm})mm`, 'success');
+            } else {
+                setDetectionStatus(0);
+                document.getElementById('detectionResult').innerHTML = '<span style="color:var(--danger)">✗ No teeth detected</span>';
+                log(data.message||'No teeth', 'warning');
+            }
+        } catch (e) {
+            setDetectionStatus(2);
+            document.getElementById('detectionResult').innerHTML = '<span style="color:var(--danger)">✗ Failed</span>';
+            log(`Detection failed: ${e.message}`, 'error');
+        }
+    }
+
+    async function detectAndSend() {
+        log('Detecting & writing to robot…', 'info');
+        document.getElementById('detectionResult').innerHTML = '<span style="color:var(--warning)">⏳ Detecting…</span>';
+        try {
+            const res = await fetch(`${API_BASE}/detection/send_auto`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success && data.detection) {
+                const d = data.detection;
+                document.getElementById('detectionX').value = d.x_mm;
+                document.getElementById('detectionY').value = d.y_mm;
+                setDetectionStatus(1);
+                document.getElementById('detectionResult').innerHTML =
+                    `<span style="color:var(--success)">✓ Written: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm</span>`;
+                log(`Detect & write: Valley ${d.valley_id||'N/A'} — ${d.num_teeth} teeth`, 'success');
+            } else {
+                setDetectionStatus(0);
+                document.getElementById('detectionResult').innerHTML = '<span style="color:var(--danger)">✗ Failed</span>';
+                log(data.message||'Failed', 'error');
+            }
+        } catch (e) {
+            setDetectionStatus(2);
+            log(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    // Sets the status dropdown + writes REG 136 immediately if connected
+    function setDetectionStatus(value) {
+        document.getElementById('detectionStatus').value = value;
+    }
+
+    let autoDetectFailCount = 0;
+    let detectionRunning = false; // guard against overlapping calls
+
+    function toggleContinuousUpdate() {
+        const btn = document.getElementById('continuousBtn');
+        if (!continuousUpdateActive) {
+            autoDetectFailCount = 0; continuousUpdateActive = true; updateCount = 0;
+            btn.textContent = 'STOP AUTO-DETECT'; btn.className = 'btn btn-danger';
+            document.getElementById('autoUpdateStatus').innerHTML = '<span class="indicator active"></span>ON (0)';
+            log('Auto-detect enabled — will fire when GRINDER_READY=1 and GRIND_START=0', 'success');
+        } else {
+            continuousUpdateActive = false;
+            btn.textContent = 'AUTO-DETECT LOOP'; btn.className = 'btn btn-success';
+            document.getElementById('autoUpdateStatus').textContent = 'OFF';
+            log(`Auto-detect disabled after ${updateCount} detections`, 'warning');
+        }
+    }
+
+    async function sendDetectionWithAnalysis() {
+        // Guard: don't overlap concurrent detection calls
+        if (detectionRunning) return;
+        detectionRunning = true;
+        try {
+            const res = await fetch(`${API_BASE}/detection/send_auto`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success && data.detection) {
+                const d = data.detection;
+                autoDetectFailCount = 0;
+                document.getElementById('detectionX').value = d.x_mm;
+                document.getElementById('detectionY').value = d.y_mm;
+                setDetectionStatus(1);
+                updateCount++;
+                document.getElementById('autoUpdateStatus').innerHTML = `<span class="indicator active"></span>ON (${updateCount})`;
+                log(`Auto-detect: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm — sending GRIND_START`, 'success');
+                // X/Y written + status=1 confirmed → trigger grind
+                sendGrindStart();
+            } else {
+                autoDetectFailCount++;
+                // Explicitly write status=0 to REG 136 so robot knows no teeth found
+                setDetectionStatus(0);
+                await fetch(`${API_BASE}/detection`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 0 })
+                });
+                log(`Auto-detect miss ×${autoDetectFailCount} — status=0 written to REG 136`, 'warning');
+            }
+        } catch (e) {
+            autoDetectFailCount++;
+            setDetectionStatus(2);
+            // Write error status to robot
+            try {
+                await fetch(`${API_BASE}/detection`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ x_mm: 0, y_mm: 0, status: 2 })
+                });
+            } catch (_) {}
+            log(`Auto-detect error: ${e.message}`, 'error');
+        } finally {
+            detectionRunning = false;
+        }
+    }
+
+    async function updateCalibration() {
+        const v = document.getElementById('calibration').value;
+        try {
+            const res = await fetch(`${API_BASE}/detection/calibrate`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ pixels_per_mm: parseFloat(v) })
+            });
+            const data = await res.json();
+            if (data.success) log(`Calibration: ${v} px/mm`, 'success');
+        } catch (e) { log(`Calibration error: ${e.message}`, 'error'); }
+    }
+
+    async function updateGrinderPosition() {
+        log('Detecting grinder position…', 'info');
+        document.getElementById('grinderInfo').innerHTML = '<span style="color:var(--warning)">⏳ Updating…</span>';
+        try {
+            const res = await fetch(`${API_BASE}/detection/update_grinder`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success && data.grinder_tip) {
+                document.getElementById('grinderInfo').innerHTML =
+                    `<span style="color:var(--success)">✓ Grinder: (${data.grinder_tip.x}, ${data.grinder_tip.y})</span>`;
+                log(`Grinder set: (${data.grinder_tip.x}, ${data.grinder_tip.y})`, 'success');
+            } else {
+                document.getElementById('grinderInfo').innerHTML = '<span style="color:var(--danger)">✗ Not found</span>';
+                log(data.message||'Could not detect grinder', 'error');
+            }
+        } catch (e) { log(`Grinder update failed: ${e.message}`, 'error'); }
+    }
+
+    // ── Camera ──
+    async function toggleCamera() {
+        const btn = document.getElementById('cameraBtn');
+        if (!cameraActive) {
+            log('Starting camera…', 'info');
+            try {
+                const res = await fetch(`${API_BASE}/camera/start`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    cameraActive = true; frameCount = 0; fpsStart = Date.now(); fpsFrameCount = 0;
+                    btn.textContent = 'STOP CAMERA'; btn.className = 'btn btn-danger';
+                    document.getElementById('cameraStatus').innerHTML = '<span class="indicator active"></span>LIVE';
+                    ['captureBtn','analyzeBtn','autoSendBtn','updateGrinderBtn'].forEach(id => document.getElementById(id).disabled = false);
+                    document.getElementById('cameraFeed').style.display = 'block';
+                    document.getElementById('cameraPlaceholder').style.display = 'none';
+                    document.getElementById('cameraOverlay').style.display = 'block';
+                    fetchCameraFrame();
+                    cameraIntervalId = setInterval(fetchCameraFrame, 100);
+                    log(data.message, 'success');
+                } else { log(data.message||'Camera failed', 'error'); }
+            } catch (e) { log(`Camera start: ${e.message}`, 'error'); }
+        } else {
+            cameraActive = false;
+            if (cameraIntervalId) { clearInterval(cameraIntervalId); cameraIntervalId = null; }
+            try {
+                await fetch(`${API_BASE}/camera/stop`, { method: 'POST' });
+                btn.textContent = 'START CAMERA'; btn.className = 'btn btn-success';
+                document.getElementById('cameraStatus').textContent = 'OFF';
+                ['captureBtn','analyzeBtn','autoSendBtn','updateGrinderBtn'].forEach(id => document.getElementById(id).disabled = true);
+                document.getElementById('cameraFeed').style.display = 'none';
+                document.getElementById('cameraPlaceholder').style.display = 'flex';
+                document.getElementById('cameraOverlay').style.display = 'none';
+                log(`Camera stopped (${frameCount} frames)`, 'warning');
+            } catch (e) { log(`Camera stop: ${e.message}`, 'error'); }
+        }
+    }
+
+    async function fetchCameraFrame() {
+        if (!cameraActive) return;
+        try {
+            const res = await fetch(`${API_BASE}/camera/frame?t=${Date.now()}`);
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const img = document.getElementById('cameraFeed');
+                if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+                img.src = url;
+                frameCount++; fpsFrameCount++;
+                document.getElementById('frameCounter').textContent = frameCount;
+                const now = Date.now();
+                if (now - fpsStart >= 1000) {
+                    document.getElementById('fpsCounter').textContent = (fpsFrameCount / ((now - fpsStart) / 1000)).toFixed(1);
+                    fpsStart = now; fpsFrameCount = 0;
+                }
+            }
+        } catch (e) { if (cameraActive) console.warn(e.message); }
+    }
+
+    async function captureFrame() {
+        log('Capturing frame…', 'info');
+        try {
+            const res = await fetch(`${API_BASE}/camera/capture`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) log(`Captured: ${data.filename}`, 'success');
+            else log(data.message||'Capture failed', 'error');
+        } catch (e) { log(`Capture: ${e.message}`, 'error'); }
+    }
+
+    // ── DB lookup ──
+    async function loadBladeFromDB() {
+        const bladeId = document.getElementById('dbBladeID').value.trim();
+        if (!bladeId) { showDbStatus('Please enter a Blade ID', 'error'); return; }
+        const btn = document.getElementById('dbLoadBtn');
+        btn.disabled = true; btn.textContent = '…';
+        showDbStatus('Loading…', 'loading');
+        try {
+            const res = await fetch(`${API_BASE}/blade/${encodeURIComponent(bladeId)}`);
+            const data = await res.json();
+            if (data.success && data.blade) {
+                const b = data.blade;
+                if (b.reach_angle != null) document.getElementById('angle').value = b.reach_angle;
+                if (b.depth1 != null) document.getElementById('depth').value = b.depth1;
+                if (b.length != null) document.getElementById('length').value = b.length;
+                const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v != null ? v : '—'; };
+                set('dbDepth1', b.depth1); set('dbDepth2', b.depth2); set('dbThickness', b.thickness);
+                set('dbTipAngle', b.tip_angle); set('dbReachAngle', b.reach_angle); set('dbDepthOfCut', b.depth_of_cut_from_angle);
+                document.getElementById('dbExtraFields').classList.add('visible');
+                showDbStatus(`✓ Loaded: ${bladeId}`, 'loaded');
+                log(`Blade "${bladeId}" loaded — angle=${b.reach_angle}° depth=${b.depth1}mm length=${b.length}mm`, 'success');
+            } else {
+                document.getElementById('dbExtraFields').classList.remove('visible');
+                showDbStatus(`✗ ${data.message||'Not found'}`, 'error');
+                log(`Blade lookup: ${data.message||'Not found'}`, 'error');
+            }
+        } catch (e) {
+            showDbStatus('✗ Request failed', 'error');
+            log(`DB request failed: ${e.message}`, 'error');
+        } finally { btn.disabled = false; btn.textContent = 'LOAD'; }
+    }
+
+    function showDbStatus(msg, type) {
+        const el = document.getElementById('dbStatus');
+        el.style.display = 'block';
+        el.innerHTML = `<span class="db-blade-badge ${type}">${msg}</span>`;
+    }
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('dbBladeID').addEventListener('keydown', e => { if (e.key === 'Enter') loadBladeFromDB(); });
+        document.getElementById('calibration').addEventListener('change', updateCalibration);
+
+        // Numeric spinners
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'number-input-wrapper';
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+            const spinners = document.createElement('div');
+            spinners.className = 'number-input-spinners';
+            ['up','down'].forEach(dir => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'number-spin-btn'; b.tabIndex = -1;
+                b.innerHTML = dir === 'up'
+                    ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>'
+                    : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+                b.addEventListener('click', () => { dir === 'up' ? input.stepUp() : input.stepDown(); input.dispatchEvent(new Event('change')); });
+                if (dir === 'up') spinners.appendChild(b);
+                else spinners.appendChild(b);
+            });
+            wrapper.appendChild(spinners);
+        });
+    });
+
+    // ── Canvas overlay: full tooth profile visualisation ─────────────────────
+    // Mirrors the two matplotlib panels from the analysis code:
+    //   Panel 1 – Tooth Points  : cyan tips, red valleys, yellow outlines, labels
+    //   Panel 2 – Grinding Path : arrows from every tip → grinder + orange crosshair
+    //
+    // Data source: GET /api/detection/teeth_profiles  (polled every 300 ms)
+    // A separate GET /api/detection/status poll keeps the "closest valley" box.
+    let overlayPollId      = null;
+    let lastOverlayResult  = null;   // from /detection/status  (closest-valley box)
+    let lastTeethData      = null;   // from /detection/teeth_profiles
+
+    // Which view is shown on the canvas
+    let overlayMode = 'teeth';       // 'teeth' | 'vectors' | 'both' | 'none'
+
+    // ── Toggle button (inserted after camera controls) ──────────────────────
+    function injectOverlayToggle() {
+        const cpanel = document.querySelector('#cameraBtn').closest('.control-panel');
+        if (!cpanel || document.getElementById('overlayToggleBtn')) return;
+
+        const row = document.createElement('div');
+        row.className = 'control-panel';
+        row.style.marginTop = '8px';
+
+        const modeBtn = document.createElement('button');
+        modeBtn.id        = 'overlayToggleBtn';
+        modeBtn.className = 'btn btn-info';
+        modeBtn.style.fontSize = '12px';
+        modeBtn.textContent = '🦷 OVERLAY: TEETH';
+        modeBtn.onclick = cycleOverlayMode;
+
+        row.appendChild(modeBtn);
+        cpanel.parentNode.insertBefore(row, cpanel.nextSibling);
+    }
+
+    const OVERLAY_MODES  = ['teeth', 'vectors', 'both', 'none'];
+    const OVERLAY_LABELS = {
+        teeth:   '🦷 OVERLAY: TEETH',
+        vectors: '➡ OVERLAY: VECTORS',
+        both:    '🦷➡ OVERLAY: BOTH',
+        none:    '⬜ OVERLAY: OFF',
+    };
+    function cycleOverlayMode() {
+        const idx = OVERLAY_MODES.indexOf(overlayMode);
+        overlayMode = OVERLAY_MODES[(idx + 1) % OVERLAY_MODES.length];
+        const btn = document.getElementById('overlayToggleBtn');
+        if (btn) btn.textContent = OVERLAY_LABELS[overlayMode];
+        drawOverlay(lastTeethData, lastOverlayResult);
+    }
+
+    // ── Polling ─────────────────────────────────────────────────────────────
+    function startOverlayPolling() {
+        if (overlayPollId) return;
+        const canvas = document.getElementById('detectionCanvas');
+        canvas.style.display = 'block';
+        overlayPollId = setInterval(async () => {
+            if (!cameraActive) return;
+            try {
+                // Fetch both endpoints in parallel
+                const [tRes, sRes] = await Promise.all([
+                    fetch(`${API_BASE}/detection/teeth_profiles`),
+                    fetch(`${API_BASE}/detection/status`),
+                ]);
+                const [tData, sData] = await Promise.all([tRes.json(), sRes.json()]);
+                if (tData.success) lastTeethData     = tData;
+                lastOverlayResult = sData.last_result || null;
+                drawOverlay(lastTeethData, lastOverlayResult);
+            } catch (_) {}
+        }, 300);
+    }
+
+    function stopOverlayPolling() {
+        if (overlayPollId) { clearInterval(overlayPollId); overlayPollId = null; }
+        const canvas = document.getElementById('detectionCanvas');
+        const ctx    = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+    }
+
+    // ── Main draw function ───────────────────────────────────────────────────
+    function drawOverlay(teethData, closestDet) {
+        const canvas = document.getElementById('detectionCanvas');
+        const img    = document.getElementById('cameraFeed');
+        if (!img || img.naturalWidth === 0) return;
+
+        const rect = img.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
+        canvas.width  = rect.width;
+        canvas.height = rect.height;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (overlayMode === 'none') return;
+
+        // Map from backend pixel coords → canvas display coords
+        const natW  = img.naturalWidth  || 640;
+        const natH  = img.naturalHeight || 480;
+        const scale = Math.min(rect.width / natW, rect.height / natH);
+        const offX  = (rect.width  - natW * scale) / 2;
+        const offY  = (rect.height - natH * scale) / 2;
+        function px(x, y) { return [offX + x * scale, offY + y * scale]; }
+
+        const lw = Math.max(1, 2 * scale);
+        ctx.font = `${Math.max(9, 11 * scale)}px "JetBrains Mono", monospace`;
+
+        const teeth      = (teethData && teethData.teeth)      || [];
+        const grinderTip = (teethData && teethData.grinder_tip) || null;
+
+        // ── PANEL 1 – TOOTH POINTS (cyan tips, red valleys, yellow lines) ──
+        if (overlayMode === 'teeth' || overlayMode === 'both') {
+            for (const tooth of teeth) {
+                const [tx, ty]   = px(tooth.tip.x,           tooth.tip.y);
+                const [tvx, tvy] = px(tooth.top_valley.x,    tooth.top_valley.y);
+                const [bvx, bvy] = px(tooth.bottom_valley.x, tooth.bottom_valley.y);
+
+                // Yellow tooth outline: top_valley → tip → bottom_valley
+                ctx.beginPath();
+                ctx.moveTo(tvx, tvy);
+                ctx.lineTo(tx,  ty);
+                ctx.lineTo(bvx, bvy);
+                ctx.strokeStyle = 'yellow';
+                ctx.lineWidth   = lw;
+                ctx.stroke();
+
+                // Red valleys (top)
+                filledCircle(ctx, tvx, tvy, Math.max(3, 5 * scale), 'red');
+                // Red valleys (bottom)
+                filledCircle(ctx, bvx, bvy, Math.max(3, 5 * scale), 'red');
+
+                // Cyan tooth tip (large)
+                filledCircle(ctx, tx, ty, Math.max(5, 8 * scale), 'cyan');
+                // White outline ring
+                strokedCircle(ctx, tx, ty, Math.max(6, 10 * scale), 'white', lw);
+
+                // Tooth label
+                ctx.fillStyle = 'white';
+                ctx.fillText(`#${tooth.tooth_id}`, tx + Math.max(8, 15 * scale), ty + 4 * scale);
+            }
+        }
+
+        // ── PANEL 2 – MOVEMENT VECTORS (arrows tip → grinder, orange crosshair) ──
+        if (overlayMode === 'vectors' || overlayMode === 'both') {
+            const gt = grinderTip
+                || (closestDet ? { x: closestDet.grinder_tip_x_px, y: closestDet.grinder_tip_y_px } : null);
+
+            for (const tooth of teeth) {
+                const [tx, ty] = px(tooth.tip.x, tooth.tip.y);
+
+                // Tooth tip marker (same style as panel 1 so it's visible)
+                filledCircle(ctx, tx, ty, Math.max(5, 8 * scale), 'cyan');
+                strokedCircle(ctx, tx, ty, Math.max(6, 10 * scale), 'white', lw);
+
+                // Arrow from tip to grinder
+                if (gt && gt.x > 0) {
+                    const [gx, gy] = px(gt.x, gt.y);
+                    drawArrow(ctx, tx, ty, gx, gy, 'cyan', lw * 1.5, scale);
+                }
+            }
+
+            // Grinder: orange circle + yellow crosshair marker
+            if (gt && gt.x > 0) {
+                const [gx, gy] = px(gt.x, gt.y);
+                strokedCircle(ctx, gx, gy, Math.max(8, 15 * scale), 'rgb(255,128,0)', Math.max(2, 4 * scale));
+                drawCross(ctx, gx, gy, Math.max(12, 30 * scale), 'yellow', Math.max(2, 4 * scale));
+            }
+        }
+
+        // ── Closest-valley info box (top-left) ──────────────────────────────
+        if (closestDet || (teethData && teethData.num_teeth > 0)) {
+            const numTeeth = (teethData && teethData.num_teeth) || (closestDet && closestDet.num_teeth) || 0;
+            const valleyId = (closestDet && closestDet.valley_id) || 'N/A';
+            const distMm   = closestDet ? (closestDet.distance_mm || 0).toFixed(1) : '—';
+            const xmm      = closestDet ? (closestDet.x_mm || 0).toFixed(1) : '—';
+            const ymm      = closestDet ? (closestDet.y_mm || 0).toFixed(1) : '—';
+
+            const fs  = Math.max(9, 11 * scale);
+            const bx  = offX + 8 * scale;
+            const by  = offY + 8 * scale;
+            const bw  = 220 * scale;
+            const bh  = 110 * scale;
+
+            ctx.font = `${fs}px "JetBrains Mono", monospace`;
+            ctx.fillStyle   = 'rgba(0,0,0,0.65)';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth   = lw;
+            roundRect(ctx, bx, by, bw, bh, 6 * scale);
+            ctx.fill(); ctx.stroke();
+
+            ctx.font = `bold ${fs * 1.1}px "JetBrains Mono", monospace`;
+            ctx.fillStyle = 'cyan';
+            ctx.fillText('DETECTION', bx + 8 * scale, by + fs * 1.4);
+
+            ctx.font = `${fs}px "JetBrains Mono", monospace`;
+            ctx.fillStyle = 'white';
+            ctx.fillText(`Teeth:  ${numTeeth}`,           bx + 8 * scale, by + fs * 2.9);
+            ctx.fillStyle = 'magenta';
+            ctx.fillText(`Valley: ${valleyId}`,           bx + 8 * scale, by + fs * 4.2);
+            ctx.fillStyle = 'limegreen';
+            ctx.fillText(`Dist:   ${distMm}mm`,           bx + 8 * scale, by + fs * 5.5);
+            ctx.fillStyle = 'hsl(217,91%,75%)';
+            ctx.fillText(`Move:   (${xmm}, ${ymm})mm`,   bx + 8 * scale, by + fs * 6.8);
+        }
+
+        // ── Highlight the current TARGET valley point (magenta) ─────────────
+        if (closestDet && closestDet.valley_x_px && closestDet.valley_y_px) {
+            const [vpx, vpy] = px(closestDet.valley_x_px, closestDet.valley_y_px);
+            filledCircle(ctx, vpx, vpy, Math.max(5, 9 * scale), 'magenta');
+            strokedCircle(ctx, vpx, vpy, Math.max(6, 12 * scale), 'white', lw);
+            // mm label
+            const sign = v => (v >= 0 ? '+' : '') + parseFloat(v).toFixed(1);
+            ctx.font = `${Math.max(9, 11 * scale)}px "JetBrains Mono", monospace`;
+            ctx.fillStyle = 'magenta';
+            ctx.fillText(
+                `(${sign(closestDet.x_mm)}, ${sign(closestDet.y_mm)})mm`,
+                vpx + Math.max(8, 14 * scale), vpy - 6 * scale
+            );
+        }
+    }
+
+    // ── Drawing helpers ──────────────────────────────────────────────────────
+    function filledCircle(ctx, x, y, r, color) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+    function strokedCircle(ctx, x, y, r, color, lw) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth   = lw;
+        ctx.stroke();
+    }
+    function drawArrow(ctx, x1, y1, x2, y2, color, lw, scale) {
+        const headLen = Math.max(8, 14 * scale);
+        const angle   = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 7),
+                   y2 - headLen * Math.sin(angle - Math.PI / 7));
+        ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 7),
+                   y2 - headLen * Math.sin(angle + Math.PI / 7));
+        ctx.closePath();
+        ctx.fillStyle = color; ctx.fill();
+    }
+    function drawCross(ctx, x, y, size, color, lw) {
+        const half = size / 2;
+        ctx.strokeStyle = color; ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(x - half, y); ctx.lineTo(x + half, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - half); ctx.lineTo(x, y + half); ctx.stroke();
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+
+    // Hook overlay start/stop into camera toggle
+    const _origToggleCamera = toggleCamera;
+    toggleCamera = async function() {
+        await _origToggleCamera();
+        if (cameraActive) {
+            injectOverlayToggle();
+            startOverlayPolling();
+        } else {
+            stopOverlayPolling();
+        }
+    };
+    // ── End canvas overlay ────────────────────────────────────────────────────
+
+    window.addEventListener('beforeunload', () => {
+        if (cameraActive) clearInterval(cameraIntervalId);
+        if (registerPollId) clearInterval(registerPollId);
+        if (overlayPollId) clearInterval(overlayPollId);
+    });
+
+    async function loadGrinderStatus() {
+        try {
+            const res = await fetch(`${API_BASE}/detection/grinder_status`);
+            const data = await res.json();
+            if (data.success && data.grinder_tip)
+                document.getElementById('grinderInfo').innerHTML =
+                    `<span style="color:var(--success)">Grinder: (${data.grinder_tip.x}, ${data.grinder_tip.y})</span>`;
+        } catch (e) { /* silent */ }
+    }
+
+    log('Dashboard loaded – waiting for connection', 'info');
+    loadGrinderStatus();
+</script>
+</body>
+</html>
