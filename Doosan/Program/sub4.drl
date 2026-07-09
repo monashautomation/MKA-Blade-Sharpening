@@ -1,0 +1,5 @@
+try:
+    with open("grind_diagnostics.csv", "a") as log_file:
+            log_file.write("HEEE")
+except:
+    tp_log("----")
