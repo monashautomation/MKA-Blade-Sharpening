@@ -1,0 +1,61 @@
+MKA Blade Inspection Log -- 2026-05-29T10:52:02.062219
+======================================================================
+
+EVENT LOG
+---------
+[10:51:18] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[10:51:18] OK    angle=70.00°  depth=2.0049mm  pitch=2.0700mm  sharp=65.86
+[10:51:21] OK    angle=65.00°  depth=2.0049mm  pitch=2.0700mm  sharp=68.98
+[10:51:24] OK    angle=60.00°  depth=2.0179mm  pitch=2.0570mm  sharp=69.63
+[10:51:27] OK    angle=55.00°  depth=2.0960mm  pitch=1.9919mm  sharp=71.34
+[10:51:30] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:30] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:30] OK    angle=50.00°  depth=2.1221mm  pitch=2.0570mm  sharp=87.53
+[10:51:33] OK    angle=45.00°  depth=2.0309mm  pitch=2.0830mm  sharp=96.17
+[10:51:36] OK    angle=40.00°  depth=1.8487mm  pitch=2.0830mm  sharp=101.61
+[10:51:40] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:40] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:40] OK    angle=35.00°  depth=1.6794mm  pitch=2.0830mm  sharp=113.24
+[10:51:43] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:43] OK    angle=30.00°  depth=1.4972mm  pitch=2.0179mm  sharp=118.85
+[10:51:46] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:46] OK    angle=25.00°  depth=1.3019mm  pitch=2.0179mm  sharp=131.85
+[10:51:49] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:49] OK    angle=20.00°  depth=1.1066mm  pitch=2.0049mm  sharp=136.85
+[10:51:52] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:52] OK    angle=15.00°  depth=0.9243mm  pitch=1.9919mm  sharp=131.45
+[10:51:55] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[10:51:56] OK    angle=10.00°  depth=0.8853mm  pitch=3.6322mm  sharp=65.39
+[10:52:02] DONE  peak_sharpness: angle=20.0°  depth=1.1066mm  pitch=2.0049mm  sharp=136.85  samples=13
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      2.0049      2.0700     65.86
+   2     65.00      2.0049      2.0700     68.98
+   3     60.00      2.0179      2.0570     69.63
+   4     55.00      2.0960      1.9919     71.34
+   5     50.00      2.1221      2.0570     87.53
+   6     45.00      2.0309      2.0830     96.17
+   7     40.00      1.8487      2.0830    101.61
+   8     35.00      1.6794      2.0830    113.24
+   9     30.00      1.4972      2.0179    118.85
+  10     25.00      1.3019      2.0179    131.85
+  11     20.00      1.1066      2.0049    136.85
+  12     15.00      0.9243      1.9919    131.45
+  13     10.00      0.8853      3.6322     65.39
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 13
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 70.0 deg
+Depth      : 2.0049 mm
+Pitch      : 2.07 mm
+Sharpness : 65.86

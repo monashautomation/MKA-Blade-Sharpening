@@ -1,0 +1,54 @@
+MKA Blade Inspection Log -- 2026-04-27T15:56:01.112561
+======================================================================
+
+EVENT LOG
+---------
+[15:55:24] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[15:55:24] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[15:55:25] OK    angle=70.00°  depth=2.3114mm  pitch=2.9669mm  sharp=25.29
+[15:55:27] OK    angle=65.00°  depth=2.2194mm  pitch=2.9899mm  sharp=26.37
+[15:55:30] OK    angle=60.00°  depth=2.1159mm  pitch=2.9784mm  sharp=27.48
+[15:55:33] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[15:55:33] OK    angle=55.00°  depth=2.0009mm  pitch=2.9669mm  sharp=28.9
+[15:55:36] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[15:55:36] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[15:55:36] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[15:55:36] OK    angle=50.00°  depth=1.8629mm  pitch=2.9554mm  sharp=30.51
+[15:55:39] OK    angle=45.00°  depth=1.7134mm  pitch=2.9669mm  sharp=34.43
+[15:55:42] OK    angle=40.00°  depth=1.5409mm  pitch=2.9899mm  sharp=36.95
+[15:55:46] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[15:55:46] OK    angle=35.00°  depth=1.3684mm  pitch=2.9554mm  sharp=39.89
+[15:55:49] OK    angle=30.00°  depth=1.1615mm  pitch=2.9784mm  sharp=44.67
+[15:55:52] OK    angle=25.00°  depth=0.9430mm  pitch=2.9669mm  sharp=46.14
+[15:55:55] OK    angle=20.00°  depth=0.6325mm  pitch=2.9439mm  sharp=51.98
+[15:56:01] DONE  peak_sharpness: angle=20.0°  depth=0.6325mm  pitch=2.9439mm  sharp=51.98  samples=11
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      2.3114      2.9669     25.29
+   2     65.00      2.2194      2.9899     26.37
+   3     60.00      2.1159      2.9784     27.48
+   4     55.00      2.0009      2.9669      28.9
+   5     50.00      1.8629      2.9554     30.51
+   6     45.00      1.7134      2.9669     34.43
+   7     40.00      1.5409      2.9899     36.95
+   8     35.00      1.3684      2.9554     39.89
+   9     30.00      1.1615      2.9784     44.67
+  10     25.00      0.9430      2.9669     46.14
+  11     20.00      0.6325      2.9439     51.98
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 11
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 70.0 deg
+Depth      : 2.3114 mm
+Pitch      : 2.9669 mm
+Sharpness : 25.29

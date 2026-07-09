@@ -1,0 +1,115 @@
+MKA Blade Inspection Log -- 2026-04-30T12:06:52.380430
+======================================================================
+
+EVENT LOG
+---------
+[12:05:56] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[12:05:56] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:05:56] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:05:56] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:56] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:56] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:57] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:57] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:57] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:57] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:05:57] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:57] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:57] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:05:58] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:58] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:58] SKIP  angle=70.00°  — no tooth pair detected
+[12:05:58] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:58] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:05:58] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:58] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:05:59] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:59] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:59] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:59] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:59] SKIP  angle=65.00°  — no tooth pair detected
+[12:05:59] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:00] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:00] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:00] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:00] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:00] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:00] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:00] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:01] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:01] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:01] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:01] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:01] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:01] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:02] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:02] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:02] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:02] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:02] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:02] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:02] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:03] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:03] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:03] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:03] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:03] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:03] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:03] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:04] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:04] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:04] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:04] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:04] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:04] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:05] SKIP  angle=65.00°  — no tooth pair detected
+[12:06:05] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:05] OK    angle=65.00°  depth=3.1624mm  pitch=4.1973mm  sharp=62.19
+[12:06:21] OK    angle=60.00°  depth=3.1509mm  pitch=4.2318mm  sharp=63.78
+[12:06:24] OK    angle=55.00°  depth=3.0819mm  pitch=4.3123mm  sharp=65.49
+[12:06:27] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:28] OK    angle=50.00°  depth=3.0129mm  pitch=4.3928mm  sharp=67.95
+[12:06:31] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:31] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:31] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:31] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:31] OK    angle=45.00°  depth=2.9209mm  pitch=4.4503mm  sharp=71.4
+[12:06:34] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:34] OK    angle=40.00°  depth=2.8174mm  pitch=4.4963mm  sharp=72.64
+[12:06:37] OK    angle=35.00°  depth=0.4370mm  pitch=10.9016mm  sharp=100.58
+[12:06:40] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:40] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:40] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:06:41] OK    angle=30.00°  depth=0.3335mm  pitch=10.7866mm  sharp=103.0
+[12:06:43] OK    angle=25.00°  depth=0.8625mm  pitch=3.4844mm  sharp=97.88
+[12:06:46] OK    angle=20.00°  depth=0.7015mm  pitch=3.3809mm  sharp=106.83
+[12:06:52] DONE  peak_sharpness: angle=20.0°  depth=0.7015mm  pitch=3.3809mm  sharp=106.83  samples=10
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     65.00      3.1624      4.1973     62.19
+   2     60.00      3.1509      4.2318     63.78
+   3     55.00      3.0819      4.3123     65.49
+   4     50.00      3.0129      4.3928     67.95
+   5     45.00      2.9209      4.4503      71.4
+   6     40.00      2.8174      4.4963     72.64
+   7     35.00      0.4370     10.9016    100.58
+   8     30.00      0.3335     10.7866     103.0
+   9     25.00      0.8625      3.4844     97.88
+  10     20.00      0.7015      3.3809    106.83
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 10
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 65.0 deg
+Depth      : 3.1624 mm
+Pitch      : 4.1973 mm
+Sharpness : 62.19

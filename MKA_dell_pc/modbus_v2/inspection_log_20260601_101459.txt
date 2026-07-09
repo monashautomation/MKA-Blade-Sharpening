@@ -1,0 +1,28 @@
+MKA Blade Inspection Log -- 2026-06-01T10:14:59.378837
+======================================================================
+
+EVENT LOG
+---------
+[10:13:42] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[10:13:42] OK    angle=70.00°  depth=0.0781mm  pitch=11.8341mm  sharp=34.21
+[10:14:59] DONE  peak_sharpness: angle=70.0°  depth=0.0781mm  pitch=11.8341mm  sharp=34.21  samples=1
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      0.0781     11.8341     34.21
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 1
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 70.0 deg
+Depth      : 0.0781 mm
+Pitch      : 11.8341 mm
+Sharpness : 34.21

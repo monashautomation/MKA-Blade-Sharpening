@@ -1,0 +1,48 @@
+MKA Blade Inspection Log -- 2026-04-29T13:15:42.916464
+======================================================================
+
+EVENT LOG
+---------
+[13:15:06] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[13:15:06] OK    angle=70.00°  depth=3.0589mm  pitch=4.9908mm  sharp=116.73
+[13:15:08] OK    angle=65.00°  depth=3.0359mm  pitch=4.9908mm  sharp=113.96
+[13:15:11] OK    angle=60.00°  depth=3.2314mm  pitch=4.9908mm  sharp=122.15
+[13:15:14] OK    angle=55.00°  depth=3.0244mm  pitch=4.9678mm  sharp=126.03
+[13:15:18] OK    angle=50.00°  depth=2.8059mm  pitch=4.9908mm  sharp=135.31
+[13:15:21] OK    angle=45.00°  depth=2.5644mm  pitch=4.9908mm  sharp=139.54
+[13:15:24] OK    angle=40.00°  depth=2.2999mm  pitch=5.0138mm  sharp=146.25
+[13:15:27] OK    angle=35.00°  depth=2.0124mm  pitch=4.9908mm  sharp=154.38
+[13:15:30] OK    angle=30.00°  depth=1.7249mm  pitch=4.9678mm  sharp=159.92
+[13:15:33] OK    angle=25.00°  depth=1.4029mm  pitch=5.0023mm  sharp=165.48
+[13:15:37] OK    angle=20.00°  depth=1.0810mm  pitch=4.9678mm  sharp=170.61
+[13:15:42] DONE  peak_sharpness: angle=20.0°  depth=1.081mm  pitch=4.9678mm  sharp=170.61  samples=11
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      3.0589      4.9908    116.73
+   2     65.00      3.0359      4.9908    113.96
+   3     60.00      3.2314      4.9908    122.15
+   4     55.00      3.0244      4.9678    126.03
+   5     50.00      2.8059      4.9908    135.31
+   6     45.00      2.5644      4.9908    139.54
+   7     40.00      2.2999      5.0138    146.25
+   8     35.00      2.0124      4.9908    154.38
+   9     30.00      1.7249      4.9678    159.92
+  10     25.00      1.4029      5.0023    165.48
+  11     20.00      1.0810      4.9678    170.61
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 11
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 70.0 deg
+Depth      : 3.0589 mm
+Pitch      : 4.9908 mm
+Sharpness : 116.73

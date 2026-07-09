@@ -1,0 +1,48 @@
+MKA Blade Inspection Log -- 2026-04-27T16:01:25.023989
+======================================================================
+
+EVENT LOG
+---------
+[16:00:48] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[16:00:48] OK    angle=70.00°  depth=2.4839mm  pitch=2.9899mm  sharp=26.57
+[16:00:51] OK    angle=65.00°  depth=2.3919mm  pitch=3.0129mm  sharp=26.92
+[16:00:54] OK    angle=60.00°  depth=2.3114mm  pitch=3.0014mm  sharp=27.61
+[16:00:57] OK    angle=55.00°  depth=2.1849mm  pitch=2.9899mm  sharp=28.49
+[16:01:00] OK    angle=50.00°  depth=2.0584mm  pitch=2.9899mm  sharp=29.11
+[16:01:03] OK    angle=45.00°  depth=1.8974mm  pitch=2.9784mm  sharp=32.44
+[16:01:06] OK    angle=40.00°  depth=1.7479mm  pitch=2.9899mm  sharp=34.41
+[16:01:10] OK    angle=35.00°  depth=1.5754mm  pitch=3.0129mm  sharp=38.0
+[16:01:13] OK    angle=30.00°  depth=1.4029mm  pitch=3.0014mm  sharp=41.4
+[16:01:16] OK    angle=25.00°  depth=1.1960mm  pitch=2.9899mm  sharp=39.25
+[16:01:19] OK    angle=20.00°  depth=0.9545mm  pitch=2.9324mm  sharp=38.39
+[16:01:25] DONE  peak_sharpness: angle=30.0°  depth=1.4029mm  pitch=3.0014mm  sharp=41.4  samples=11
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      2.4839      2.9899     26.57
+   2     65.00      2.3919      3.0129     26.92
+   3     60.00      2.3114      3.0014     27.61
+   4     55.00      2.1849      2.9899     28.49
+   5     50.00      2.0584      2.9899     29.11
+   6     45.00      1.8974      2.9784     32.44
+   7     40.00      1.7479      2.9899     34.41
+   8     35.00      1.5754      3.0129      38.0
+   9     30.00      1.4029      3.0014      41.4
+  10     25.00      1.1960      2.9899     39.25
+  11     20.00      0.9545      2.9324     38.39
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 11
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 70.0 deg
+Depth      : 2.4839 mm
+Pitch      : 2.9899 mm
+Sharpness : 26.57

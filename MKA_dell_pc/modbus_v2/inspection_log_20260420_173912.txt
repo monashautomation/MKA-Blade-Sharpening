@@ -1,0 +1,86 @@
+MKA Blade Inspection Log -- 2026-04-20T17:39:12.884337
+======================================================================
+
+EVENT LOG
+---------
+[17:37:43] START Calibration inspection recording started (angle-change + blur gated)
+[17:37:43] BLUR  angle=0.00°  depth=1.0350mm  pitch=2.9899mm  blur=76.48  threshold=90.0  — below threshold
+[17:37:45] BLUR  angle=65.00°  depth=0.9545mm  pitch=2.9669mm  blur=83.3  threshold=90.0  — below threshold
+[17:37:58] BLUR  angle=60.00°  depth=0.8165mm  pitch=2.9899mm  blur=87.89  threshold=90.0  — below threshold
+[17:38:01] OK    angle=55.00°  depth=0.6900mm  pitch=2.9669mm  blur=93.97
+[17:38:04] OK    angle=50.00°  depth=0.5520mm  pitch=2.9439mm  blur=101.01
+[17:38:07] OK    angle=45.00°  depth=0.4600mm  pitch=1.6099mm  blur=107.97
+[17:38:10] OK    angle=40.00°  depth=0.2530mm  pitch=2.9439mm  blur=124.68
+[17:38:13] OK    angle=35.00°  depth=0.0920mm  pitch=2.9209mm  blur=148.19
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:17] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:18] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:19] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=30.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:20] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:21] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:22] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:22] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:22] SKIP  angle=25.00°  — no tooth pair detected
+[17:38:22] BLUR  angle=25.00°  depth=0.1150mm  pitch=3.7374mm  blur=1.58  threshold=90.0  — below threshold
+[17:38:23] BLUR  angle=20.00°  depth=2.5184mm  pitch=4.2893mm  blur=16.59  threshold=90.0  — below threshold
+[17:39:12] DONE  first_blur_transition: angle=0.0°  depth=1.035mm  pitch=2.9899mm  blur=76.48  sharp_accepted=5  blurry=5
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     55.00      0.6900      2.9669     93.97
+   2     50.00      0.5520      2.9439    101.01
+   3     45.00      0.4600      1.6099    107.97
+   4     40.00      0.2530      2.9439    124.68
+   5     35.00      0.0920      2.9209    148.19
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1      0.00      1.0350      2.9899     76.48
+   2     65.00      0.9545      2.9669      83.3
+   3     60.00      0.8165      2.9899     87.89
+   4     25.00      0.1150      3.7374      1.58
+   5     20.00      2.5184      4.2893     16.59
+
+SUMMARY
+-------
+Sharp accepted : 5
+Blurry recorded: 5
+
+FIRST BLUR TRANSITION (result)
+Angle      : 0.0 deg
+Depth      : 1.035 mm
+Pitch      : 2.9899 mm
+Sharpness : 76.48

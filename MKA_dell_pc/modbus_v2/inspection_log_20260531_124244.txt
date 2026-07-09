@@ -1,0 +1,52 @@
+MKA Blade Inspection Log -- 2026-05-31T12:42:44.557485
+======================================================================
+
+EVENT LOG
+---------
+[12:41:57] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[12:41:57] OK    angle=70.00°  depth=1.9528mm  pitch=1.9268mm  sharp=109.11
+[12:41:59] OK    angle=65.00°  depth=1.9528mm  pitch=1.9268mm  sharp=110.2
+[12:42:02] OK    angle=60.00°  depth=1.9007mm  pitch=1.9398mm  sharp=115.61
+[12:42:06] OK    angle=55.00°  depth=1.8487mm  pitch=1.9658mm  sharp=120.79
+[12:42:09] OK    angle=50.00°  depth=1.7836mm  pitch=1.9658mm  sharp=123.46
+[12:42:12] OK    angle=45.00°  depth=1.7706mm  pitch=2.0049mm  sharp=129.81
+[12:42:15] OK    angle=40.00°  depth=1.6534mm  pitch=2.0309mm  sharp=133.65
+[12:42:18] OK    angle=35.00°  depth=1.4711mm  pitch=2.0179mm  sharp=134.86
+[12:42:21] OK    angle=30.00°  depth=1.1587mm  pitch=2.0309mm  sharp=138.85
+[12:42:25] OK    angle=25.00°  depth=1.2368mm  pitch=2.0179mm  sharp=119.47
+[12:42:28] OK    angle=20.00°  depth=0.7291mm  pitch=2.0179mm  sharp=110.0
+[12:42:31] OK    angle=15.00°  depth=0.2734mm  pitch=1.9658mm  sharp=148.86
+[12:42:34] OK    angle=10.00°  depth=0.1692mm  pitch=2.0960mm  sharp=146.1
+[12:42:44] DONE  peak_sharpness: angle=15.0°  depth=0.2734mm  pitch=1.9658mm  sharp=148.86  samples=13
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      1.9528      1.9268    109.11
+   2     65.00      1.9528      1.9268     110.2
+   3     60.00      1.9007      1.9398    115.61
+   4     55.00      1.8487      1.9658    120.79
+   5     50.00      1.7836      1.9658    123.46
+   6     45.00      1.7706      2.0049    129.81
+   7     40.00      1.6534      2.0309    133.65
+   8     35.00      1.4711      2.0179    134.86
+   9     30.00      1.1587      2.0309    138.85
+  10     25.00      1.2368      2.0179    119.47
+  11     20.00      0.7291      2.0179     110.0
+  12     15.00      0.2734      1.9658    148.86
+  13     10.00      0.1692      2.0960     146.1
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 13
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 70.0 deg
+Depth      : 1.9528 mm
+Pitch      : 1.9268 mm
+Sharpness : 109.11

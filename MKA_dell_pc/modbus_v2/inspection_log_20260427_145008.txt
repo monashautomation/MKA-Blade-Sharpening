@@ -1,0 +1,52 @@
+MKA Blade Inspection Log -- 2026-04-27T14:50:08.340731
+======================================================================
+
+EVENT LOG
+---------
+[14:49:24] START Calibration inspection recording started (angle-change + blur gated)
+[14:49:25] BLUR  angle=70.00°  depth=1.8514mm  pitch=2.5069mm  blur=51.32  threshold=90.0  — below threshold
+[14:49:27] BLUR  angle=65.00°  depth=1.7824mm  pitch=2.5069mm  blur=53.23  threshold=90.0  — below threshold
+[14:49:30] BLUR  angle=60.00°  depth=1.7249mm  pitch=2.5069mm  blur=57.17  threshold=90.0  — below threshold
+[14:49:33] BLUR  angle=55.00°  depth=1.6444mm  pitch=2.4954mm  blur=62.14  threshold=90.0  — below threshold
+[14:49:36] BLUR  angle=50.00°  depth=1.5409mm  pitch=2.5069mm  blur=66.2  threshold=90.0  — below threshold
+[14:49:39] BLUR  angle=45.00°  depth=1.3799mm  pitch=2.4954mm  blur=76.57  threshold=90.0  — below threshold
+[14:49:42] BLUR  angle=40.00°  depth=1.2420mm  pitch=2.5069mm  blur=85.74  threshold=90.0  — below threshold
+[14:49:46] OK    angle=35.00°  depth=1.1270mm  pitch=2.4839mm  blur=98.75
+[14:49:49] OK    angle=30.00°  depth=0.9775mm  pitch=2.4724mm  blur=125.2
+[14:49:52] OK    angle=25.00°  depth=0.8395mm  pitch=2.5184mm  blur=136.39
+[14:49:55] OK    angle=20.00°  depth=0.6900mm  pitch=2.5529mm  blur=91.14
+[14:49:58] OK    angle=15.00°  depth=0.2990mm  pitch=1.1270mm  blur=103.07
+[14:50:01] OK    angle=10.00°  depth=0.5175mm  pitch=2.2309mm  blur=199.6
+[14:50:08] DONE  first_blur_transition: angle=70.0°  depth=1.8514mm  pitch=2.5069mm  blur=51.32  sharp_accepted=6  blurry=7
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     35.00      1.1270      2.4839     98.75
+   2     30.00      0.9775      2.4724     125.2
+   3     25.00      0.8395      2.5184    136.39
+   4     20.00      0.6900      2.5529     91.14
+   5     15.00      0.2990      1.1270    103.07
+   6     10.00      0.5175      2.2309     199.6
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     70.00      1.8514      2.5069     51.32
+   2     65.00      1.7824      2.5069     53.23
+   3     60.00      1.7249      2.5069     57.17
+   4     55.00      1.6444      2.4954     62.14
+   5     50.00      1.5409      2.5069      66.2
+   6     45.00      1.3799      2.4954     76.57
+   7     40.00      1.2420      2.5069     85.74
+
+SUMMARY
+-------
+Sharp accepted : 6
+Blurry recorded: 7
+
+FIRST BLUR TRANSITION (result)
+Angle      : 70.0 deg
+Depth      : 1.8514 mm
+Pitch      : 2.5069 mm
+Sharpness : 51.32

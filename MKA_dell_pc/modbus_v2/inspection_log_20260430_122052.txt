@@ -1,0 +1,258 @@
+MKA Blade Inspection Log -- 2026-04-30T12:20:52.342189
+======================================================================
+
+EVENT LOG
+---------
+[12:19:34] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[12:19:34] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:34] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:35] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=70.00°  — no tooth pair detected
+[12:19:36] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:37] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:38] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:39] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:40] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:41] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:42] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:43] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:44] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:45] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:46] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:47] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:48] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:49] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:50] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:51] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:52] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:53] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:54] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:55] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:55] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:55] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:55] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:55] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:55] SKIP  angle=65.00°  — sharpness unavailable
+[12:19:55] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] SKIP  angle=65.00°  — no tooth pair detected
+[12:19:56] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:57] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:19:57] OK    angle=65.00°  depth=1.2190mm  pitch=3.2774mm  sharp=115.3
+[12:20:14] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:14] OK    angle=60.00°  depth=3.1509mm  pitch=4.1858mm  sharp=130.73
+[12:20:17] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:18] OK    angle=55.00°  depth=3.0934mm  pitch=4.3123mm  sharp=134.89
+[12:20:20] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:21] OK    angle=50.00°  depth=3.0244mm  pitch=4.3008mm  sharp=138.6
+[12:20:24] OK    angle=45.00°  depth=2.9324mm  pitch=4.3583mm  sharp=142.97
+[12:20:27] OK    angle=40.00°  depth=2.8174mm  pitch=4.4388mm  sharp=150.99
+[12:20:30] OK    angle=35.00°  depth=2.6909mm  pitch=4.6458mm  sharp=156.34
+[12:20:33] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:33] OK    angle=30.00°  depth=2.5644mm  pitch=4.8298mm  sharp=160.02
+[12:20:36] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:36] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:37] OK    angle=25.00°  depth=2.4264mm  pitch=4.9218mm  sharp=164.52
+[12:20:40] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:40] SKIP  angle=20.00°  — no tooth pair detected
+[12:20:40] SKIP  angle=20.00°  — no tooth pair detected
+[12:20:40] SKIP  angle=20.00°  — no tooth pair detected
+[12:20:40] SKIP  angle=20.00°  — no tooth pair detected
+[12:20:40] OK    angle=20.00°  depth=2.2654mm  pitch=4.9333mm  sharp=166.5
+[12:20:43] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:43] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:43] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:43] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:43] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:43] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:44] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:44] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:44] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:44] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:44] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:45] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:45] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:45] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:45] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:45] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:45] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:45] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:45] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:46] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:46] SKIP  angle=15.00°  — no tooth pair detected
+[12:20:46] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:46] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:46] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:47] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:47] ERR   sample error: not enough values to unpack (expected 6, got 3)
+[12:20:47] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:47] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:47] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:47] SKIP  angle=10.00°  — no tooth pair detected
+[12:20:48] OK    angle=10.00°  depth=1.9664mm  pitch=7.4862mm  sharp=136.87
+[12:20:52] DONE  peak_sharpness: angle=20.0°  depth=2.2654mm  pitch=4.9333mm  sharp=166.5  samples=11
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1     65.00      1.2190      3.2774     115.3
+   2     60.00      3.1509      4.1858    130.73
+   3     55.00      3.0934      4.3123    134.89
+   4     50.00      3.0244      4.3008     138.6
+   5     45.00      2.9324      4.3583    142.97
+   6     40.00      2.8174      4.4388    150.99
+   7     35.00      2.6909      4.6458    156.34
+   8     30.00      2.5644      4.8298    160.02
+   9     25.00      2.4264      4.9218    164.52
+  10     20.00      2.2654      4.9333     166.5
+  11     10.00      1.9664      7.4862    136.87
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 11
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 65.0 deg
+Depth      : 1.219 mm
+Pitch      : 3.2774 mm
+Sharpness : 115.3
