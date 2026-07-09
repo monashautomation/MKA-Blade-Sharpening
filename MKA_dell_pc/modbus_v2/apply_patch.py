@@ -12,7 +12,7 @@ Verify it runs, then rename/replace as needed.
 
 import re, sys, os
 
-SRC = 'app.py'
+SRC = 'robot_control_backend.py'
 DST = 'app_sinefit.py'
 
 if not os.path.exists(SRC):
