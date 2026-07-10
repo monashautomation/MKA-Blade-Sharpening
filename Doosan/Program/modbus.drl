@@ -485,6 +485,7 @@ def grind_v2():
                             # --- DIAGNOSTIC: commanded vs actual depth each pass (dX=along, dY=depth from ref) ---
                             diag_now, diag_sol = get_current_posx(ref=grind_coord)
                             diag_string = "DIAG sweep: dir=" + str(direction) + " cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1])
+                           
                             tp_log(diag_string)
                             
                             direction *= -1
@@ -497,10 +498,12 @@ def grind_v2():
                         # ===== FINISHING SPARK-OUT PASS (no forward/depth advance) - remove block to disable =====
                         # Sweep up & down at the final depth (depth/Y step = 0) to settle to a consistent
                         # depth and reduce cutting force on the last cut. Tune fin_vel if needed.
-                        fin_vel = 20
-                        fin_acc = 50
-                        fin_up   = [0, 0,  direction * move_range, 0, 0, 0]
-                        fin_down = [0, 0, -direction * move_range, 0, 0, 0]
+                        pre_spark, diag_sol = get_current_posx(ref=grind_coord)
+                        final_depth = pre_spark[1]-diag_ref[1]-val_y
+                        fin_vel = 10
+                        fin_acc = 20
+                        fin_up   = [0, current_depth,  move_range, 0, 0, 0]
+                        fin_down = [0, 2*current_depth - final_depth , 0, 0, 0, 0]
                         safe_movel(posx(fin_up),   vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
                         wait(0.1)
                         diag_now, diag_sol = get_current_posx(ref=grind_coord)
