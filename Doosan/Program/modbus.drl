@@ -253,7 +253,8 @@ def approach_grinder():
     grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
     tp_log("Blade right: " + str(blade_right[0]))
     # Manually calibrated 18 - current cut
-    movel(posx(-(blade_right[0]-60-20+18 - 120), 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
+    left_move = -(blade_right[0]-60-20+18 - 120)
+    movel(posx(left_move, 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     tp_log("Grind Ready 1")
     wait(5)
@@ -485,7 +486,7 @@ def grind_v2():
                             # --- DIAGNOSTIC: commanded vs actual depth each pass (dX=along, dY=depth from ref) ---
                             diag_now, diag_sol = get_current_posx(ref=grind_coord)
                             diag_string = "DIAG sweep: dir=" + str(direction) + " cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1])
-                           
+                
                             tp_log(diag_string)
                             
                             direction *= -1
@@ -495,26 +496,33 @@ def grind_v2():
                             #except Exception as e:
                                 #tp_log("----")
                             
-                        # ===== FINISHING SPARK-OUT PASS (no forward/depth advance) - remove block to disable =====
+                        # ===== FINISHING SPARK-OUT PASS =====
                         # Sweep up & down at the final depth (depth/Y step = 0) to settle to a consistent
                         # depth and reduce cutting force on the last cut. Tune fin_vel if needed.
                         pre_spark, diag_sol = get_current_posx(ref=grind_coord)
-                        final_depth = pre_spark[1]-diag_ref[1]-val_y
+                        final_depth = round(pre_spark[1]-diag_ref[1]-val_y, 3)
                         fin_vel = 10
-                        fin_acc = 20
-                        fin_up   = [0, current_depth,  move_range, 0, 0, 0]
-                        fin_down = [0, 2*current_depth - final_depth , 0, 0, 0, 0]
-                        safe_movel(posx(fin_up),   vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        fin_acc = 10
+
+                        fin_up   = add_pose(approach_frame_y,[0, final_depth - 0.05,  move_range, 0, 0, 0])
+                        fin_offset_depth = add_pose(approach_frame_y,[0, 2*current_depth - final_depth, move_range, 0, 0, 0])
+                        fin_down = add_pose(approach_frame_y,[0, min(2*current_depth - final_depth, current_depth*1.1), 0, 0, 0, 0])
+
+                        safe_movel(posx(fin_up),   vel=fin_vel, acc=fin_acc, ref=grind_coord)
                         wait(0.1)
                         diag_now, diag_sol = get_current_posx(ref=grind_coord)
-                        tp_log("DIAG SPARK UP: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
-                        safe_movel(posx(fin_down), vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        tp_log("DIAG LIFT UP: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
+
+                        safe_movel(posx(fin_offset_depth), vel=fin_vel, acc=fin_acc, ref=grind_coord)
                         wait(0.1)
                         diag_now, diag_sol = get_current_posx(ref=grind_coord)
-                        tp_log("DIAG SPARK DOWN: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
-                        # ===== END FINISHING SPARK-OUT PASS =====
-                        rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
-                        safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        tp_log("DIAG SPARK OFFSET DEPTH: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
+
+                        safe_movel(posx(fin_down), vel=fin_vel, acc=fin_acc, ref=grind_coord)
+                        wait(0.1)
+                        diag_now, diag_sol = get_current_posx(ref=grind_coord)
+                        tp_log("DIAG SPARK DOWN: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
+
                     else:
                         tp_log("0 depth cut")
                     safe_movel(posx(delta_neg_y), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
@@ -523,7 +531,8 @@ def grind_v2():
                     set_modbus_slave(REG_GRIND, 0)
                     wait(0.5)
     except ProcessAborted:
-        #movel(posx(0,-30,0,0,0,0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
+        movel(posx(0,-30,0,0,0,0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
+        movel(posx(-left_move, 0, 0, 0, 0, 0), 20, 20, ref=grind_coord, mod=DR_MV_MOD_REL)
         movel(grinder_app, 50, 20)
 
 def run_grind():
