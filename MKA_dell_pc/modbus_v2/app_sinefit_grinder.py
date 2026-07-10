@@ -1372,9 +1372,11 @@ class BladeDataModbusClient:
 @app.route('/')
 def index():
     try:
-        with open('robot_control_dashboard.html','r') as f: return f.read()
+        with open('robot_control_dashboard.html', 'r', encoding='utf-8') as f:
+            return f.read()
     except FileNotFoundError:
-        import os; return f"<h1>robot_control_dashboard.html not found</h1><p>cwd:{os.getcwd()}</p>",404
+        import os
+        return f"<h1>robot_control_dashboard.html not found</h1><p>cwd:{os.getcwd()}</p>", 404
 
 @app.route('/api/blade/<blade_id>',methods=['GET'])
 def get_blade(blade_id):
