@@ -372,7 +372,7 @@ def grind_v1():
 def grind_v2():
     #Diagonal depth cuts, frame move
     # --- tuning (grind_v2) ---
-    move_range = 30
+    move_range = 20
     offset = 8
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.1
@@ -423,7 +423,7 @@ def grind_v2():
                     cut_num += 1
                     delta_x = [val_x, 0, 0, 0, 0, 0]
                     delta_y = [0, val_y, 0, 0, 0, 0]
-                    delta_detection = [0, detection_depth - 0.3, 0, 0, 0]
+                    delta_detection = [0, detection_depth - 0.3, 0, 0, 0, 0]
                     delta_neg_y = [0, -(val_y+depth), 0, 0, 0, 0]
                     delta_down = [0, 0, -(move_range/2) + offset, 0, 0, 0]
                     # --- DIAGNOSTIC: capture arm reference position before cutting (actual vs commanded travel) ---
@@ -457,21 +457,37 @@ def grind_v2():
                         tp_log("Calc cut: " +str(cut_depth) + " Passes: " + str(passes))
                         while (current_depth < depth):
                             step = min(cut_depth, depth - current_depth)
-                            current_depth += step
+                            current_depth = round(current_depth + step,3)
                             #current_pos = get_current_posx(ref=grind_coord)[0]
-                            rel_move = [0, current_depth, max(0,direction) * move_range, 0, 0, 0]
-                            next_pos = add_pose(approach_frame_y, rel_move)
+                            rel_depth = [0, current_depth, 0, 0, 0, 0]
+                            rel_dir = [0, 0, max(0,direction) * move_range, 0, 0, 0]
+                            depth_pos = add_pose(approach_frame_y, rel_depth)
+                            next_pos = add_pose(depth_pos, rel_dir)
                             scaled_vel = 250 * (1.5 - cut_depth)
                             scaled_acc = 0.7 * scaled_vel
-                            safe_movel(posx(next_pos), vel=scaled_vel, acc=scaled_acc, ref=grind_coord)
+                            safe_movel(posx(depth_pos), vel=5, acc=10, ref=grind_coord)
+                            wait(0.1)
+                            diag_now, diag_sol = get_current_posx(ref=grind_coord)
+                            diag_string = "DIAG plunge: dir=" + str(direction) + " cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1])
+                            tp_log(diag_string)
                             
-                            direction *= -1
+                            if (direction == -1):
+                                safe_movel(posx(next_pos), vel=20, acc=20, ref=grind_coord)
+                            elif (direction == 1):
+                                safe_movel(posx(next_pos), vel=3, acc=3, ref=grind_coord)
+                            else:
+                                tp_log("Invalid direction " + str(direction))
+
+                            wait(0.2)
+                            
+                            
                             #tp_log("Current_depth: " + str(current_depth))
                             # --- DIAGNOSTIC: commanded vs actual depth each pass (dX=along, dY=depth from ref) ---
                             diag_now, diag_sol = get_current_posx(ref=grind_coord)
-                            diag_string = "DIAG pass: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1])
-                            tp_log("DIAG pass: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
+                            diag_string = "DIAG sweep: dir=" + str(direction) + " cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1])
+                            tp_log(diag_string)
                             
+                            direction *= -1
                             #try:
                                 #with open("grind_diagnostics.csv", "a") as log_file:
                                     #log_file.write(diag_string)
@@ -481,12 +497,18 @@ def grind_v2():
                         # ===== FINISHING SPARK-OUT PASS (no forward/depth advance) - remove block to disable =====
                         # Sweep up & down at the final depth (depth/Y step = 0) to settle to a consistent
                         # depth and reduce cutting force on the last cut. Tune fin_vel if needed.
-                        fin_vel = 150
-                        fin_acc = 100
+                        fin_vel = 20
+                        fin_acc = 50
                         fin_up   = [0, 0,  direction * move_range, 0, 0, 0]
                         fin_down = [0, 0, -direction * move_range, 0, 0, 0]
                         safe_movel(posx(fin_up),   vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        wait(0.1)
+                        diag_now, diag_sol = get_current_posx(ref=grind_coord)
+                        tp_log("DIAG SPARK UP: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
                         safe_movel(posx(fin_down), vel=fin_vel, acc=fin_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
+                        wait(0.1)
+                        diag_now, diag_sol = get_current_posx(ref=grind_coord)
+                        tp_log("DIAG SPARK DOWN: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y) + " dX=" + str(diag_now[0]-diag_ref[0]) + " dY=" + str(diag_now[1]-diag_ref[1]))
                         # ===== END FINISHING SPARK-OUT PASS =====
                         rel_move = [0, -1*step, direction * move_range, 0, 0, 0]
                         safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
@@ -523,17 +545,17 @@ def finish_return():
     #if (v_grinder_id == 1):
         #movel(System_init, 150, 80)
     movel(System_blades_top, 150, 80)
-    movel(System_blade_drop, 150, 80)
-    amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
-    force_z = get_tool_force(DR_TOOL)[2]
-    fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
-    while (fcon_z and (check_motion() != 0)):
-        fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
-    stop(DR_SSTOP)
-    set_analog_output(ch=1, val=0)
-    movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
-    movel(System_blade_drop, 100, 50)
-    movel(System_blades_top, 150, 80)
+    #movel(System_blade_drop, 150, 80)
+    #amovel(posx(0,0,-500,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+    #force_z = get_tool_force(DR_TOOL)[2]
+    #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+    #while (fcon_z and (check_motion() != 0)):
+        #fcon_z = check_force_condition(DR_AXIS_Z, min=force_z - 10, max=force_z + 10, ref=DR_TOOL)
+    #stop(DR_SSTOP)
+    #set_analog_output(ch=1, val=0)
+    #movel(posx(0,50,0,0,0,0), 50, 30, mod=DR_MV_MOD_REL)
+    #movel(System_blade_drop, 100, 50)
+    #movel(System_blades_top, 150, 80)
     
     
 # ===================== CONFIG (generated by flowchart) =====================

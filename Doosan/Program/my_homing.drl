@@ -1,5 +1,5 @@
-#move_home(DR_HOME_TARGET_MECHANIC)
-#movej(System_init_j, time=5)
+move_home(DR_HOME_TARGET_MECHANIC)
+movej(System_init_j, time=5)
 set_tcp("Rot_flange")
 movel(posx(229.81, -229.81, 600, 135, -135, -45), 20, 20)
 wait(2)
