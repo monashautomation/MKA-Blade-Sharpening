@@ -14,6 +14,13 @@ Blade grinder system – updated Modbus loop structure:
   REG 142 changes by ≥ 0.1° — no duplicate samples at the same angle.
   On falling edge (1→0) results are finalised; dashboard shows the
   angle and pitch at the maximum-depth point.
+
+PERFORMANCE NOTES (Windows):
+  * The PySpin System + CameraList are now initialised ONCE and kept alive for
+    the whole process. Camera switches only DeInit/Init the camera itself —
+    no more 40 s Spinnaker re-discovery on every switch.
+  * debug_valid_mask.png write is disabled (DEBUG_SAVE_MASK flag).
+  * werkzeug per-request logging silenced, debug=False, threaded=True.
 """
 
 from flask import Flask, request, jsonify, Response
@@ -25,6 +32,7 @@ import numpy as np
 from scipy import ndimage
 from threading import Lock, Thread
 import time
+import atexit
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -33,13 +41,179 @@ from sine_fit_core import apply_sine_correction, draw_sine_overlay
 app = Flask(__name__)
 CORS(app)
 
+# ══════════════════════════════════════════════════════════════════════════════
+# ONE CONTROLLER, MANY VIEWERS
+# ------------------------------------------------------------------------------
+# Exactly one browser ("the controller") may perform actions that change the
+# machine (connect, config, start/stop, grind, camera, calibration, etc.).
+# Everyone else is a read-only VIEWER: they see the live camera + status but
+# their control actions are rejected with HTTP 423.
+#
+# EXCEPTION: EMERGENCY STOP (/api/estop) is allowed from ANY device, always.
+#
+# Enforcement is a single before_request hook keyed on the URL path, so no
+# individual route needs to change. The controller proves identity with an
+# opaque token (X-Control-Token header). A heartbeat keeps the lock alive;
+# if the controller's tab closes or freezes, the lock auto-frees after
+# CONTROL_TIMEOUT so the machine can't get stuck view-only forever.
+# ══════════════════════════════════════════════════════════════════════════════
+import uuid as _uuid
+import hmac as _hmac
+import os as _os
+control_lock  = Lock()
+control_state = {'token': None, 'name': None, 'last_heartbeat': 0.0}
+CONTROL_TIMEOUT = 15.0   # seconds without a heartbeat before control auto-releases
+
+# Control PIN — required to TAKE control (and to force a takeover). The current
+# holder refreshing its own lock does NOT need it. Set it by creating a file
+# named control_pin.txt next to this script; otherwise the default below is used.
+CONTROL_PIN = '2468'
+_pin_file = 'control_pin.txt'
+if _os.path.exists(_pin_file):
+    try:
+        _p = open(_pin_file).read().strip()
+        if _p:
+            CONTROL_PIN = _p
+            print(f"🔐 Control PIN loaded from {_pin_file}")
+    except Exception as _e:
+        print(f"⚠ Could not read {_pin_file}: {_e} — using default PIN")
+else:
+    print(f"🔐 Using DEFAULT control PIN. Create {_pin_file} with your own PIN to change it.")
+
+def _check_pin(pin):
+    # constant-time compare so the PIN can't be guessed by timing
+    return _hmac.compare_digest(str(pin), str(CONTROL_PIN))
+
+# POST paths that a viewer IS allowed to hit (everything else POST is gated)
+CONTROL_EXEMPT_PATHS = {
+    '/api/estop',              # EMERGENCY STOP — always allowed, any device
+    '/api/control/acquire',
+    '/api/control/release',
+    '/api/control/heartbeat',
+    '/api/control/status',
+}
+
+def _controller_active():
+    """True if someone currently holds control and their heartbeat is fresh."""
+    return (control_state['token'] is not None
+            and (time.time() - control_state['last_heartbeat']) < CONTROL_TIMEOUT)
+
+def _path_needs_control(path, method):
+    # Only mutating actions are gated. GET/HEAD/OPTIONS (status, camera frame,
+    # register reads, etc.) are always open so viewers can watch everything.
+    if method != 'POST':
+        return False
+    if not path.startswith('/api/'):
+        return False
+    if path in CONTROL_EXEMPT_PATHS:
+        return False
+    return True
+
+@app.before_request
+def _enforce_single_controller():
+    from flask import request
+    if not _path_needs_control(request.path, request.method):
+        return  # not a gated action → let it through
+    token = request.headers.get('X-Control-Token', '')
+    with control_lock:
+        if not _controller_active():
+            return jsonify({'success': False, 'control_error': True,
+                            'message': 'No device has taken control yet. '
+                                       'Click “Take Control” first.'}), 423
+        if token != control_state['token']:
+            return jsonify({'success': False, 'control_error': True,
+                            'message': f"View-only mode — {control_state['name']} "
+                                       f"currently has control."}), 423
+    # token matches active controller → allowed to proceed
+
+@app.route('/api/control/status', methods=['GET'])
+def control_status():
+    from flask import request
+    token = request.headers.get('X-Control-Token', '') or request.args.get('token', '')
+    with control_lock:
+        active = _controller_active()
+        return jsonify({
+            'success': True,
+            'has_controller': active,
+            'controller_name': control_state['name'] if active else None,
+            'you_are_controller': bool(active and token and token == control_state['token']),
+            'timeout_s': CONTROL_TIMEOUT,
+        })
+
+@app.route('/api/control/acquire', methods=['POST'])
+def control_acquire():
+    from flask import request
+    data  = request.json or {}
+    name  = (str(data.get('name') or 'Operator')).strip()[:40] or 'Operator'
+    force = bool(data.get('force', False))
+    pin   = data.get('pin', '')
+    hdr_token = request.headers.get('X-Control-Token', '')
+    with control_lock:
+        active = _controller_active()
+        # Current holder refreshing its own lock (heartbeat / rename) → no PIN.
+        if active and hdr_token and hdr_token == control_state['token']:
+            control_state['last_heartbeat'] = time.time()
+            if name:
+                control_state['name'] = name
+            return jsonify({'success': True, 'token': hdr_token,
+                            'name': control_state['name'], 'reacquired': True})
+        # Any real take-over of control requires the PIN.
+        if not _check_pin(pin):
+            return jsonify({'success': False, 'pin_error': True,
+                            'message': 'Incorrect control PIN.'}), 403
+        if active and not force:
+            return jsonify({'success': False, 'control_error': True,
+                            'held_by': control_state['name'],
+                            'message': f"{control_state['name']} currently has control."}), 409
+        # PIN OK and (free, expired, or forced) → grant a fresh token.
+        new_token = _uuid.uuid4().hex
+        control_state['token'] = new_token
+        control_state['name']  = name
+        control_state['last_heartbeat'] = time.time()
+        print(f"🕹  Control acquired by '{name}'"
+              f"{' (FORCED takeover)' if (active and force) else ''}")
+        return jsonify({'success': True, 'token': new_token, 'name': name,
+                        'forced': bool(active and force)})
+
+@app.route('/api/control/heartbeat', methods=['POST'])
+def control_heartbeat():
+    from flask import request
+    token = request.headers.get('X-Control-Token', '') or (request.json or {}).get('token', '')
+    with control_lock:
+        if _controller_active() and token == control_state['token']:
+            control_state['last_heartbeat'] = time.time()
+            return jsonify({'success': True, 'you_are_controller': True})
+        active = _controller_active()
+        return jsonify({'success': True, 'you_are_controller': False,
+                        'has_controller': active,
+                        'controller_name': control_state['name'] if active else None})
+
+@app.route('/api/control/release', methods=['POST'])
+def control_release():
+    from flask import request
+    # Accept token via header, ?token= (for navigator.sendBeacon), or JSON body.
+    token = (request.headers.get('X-Control-Token', '')
+             or request.args.get('token', '')
+             or (request.get_json(silent=True) or {}).get('token', ''))
+    with control_lock:
+        if control_state['token'] is not None and token == control_state['token']:
+            print(f"🕹  Control released by '{control_state['name']}'")
+            control_state['token'] = None
+            control_state['name']  = None
+            control_state['last_heartbeat'] = 0.0
+            return jsonify({'success': True, 'released': True})
+        return jsonify({'success': True, 'released': False})
+
+# ── Debug flags ───────────────────────────────────────────────────────────────
+DEBUG_SAVE_MASK = False   # True → write debug_valid_mask.png on every analysis (SLOW on Windows)
+
 # ── Global state ──────────────────────────────────────────────────────────────
 modbus_client    = None
 client_connected = False
 
-pyspin_system   = None
+pyspin_system   = None   # kept alive for the whole process (see _get_pyspin_system)
 pyspin_cam      = None
-pyspin_cam_list = None
+pyspin_cam_list = None   # kept alive for the whole process
 camera_lock     = Lock()
 camera_active   = False
 camera_thread   = None
@@ -271,27 +445,6 @@ class SerratedBladeAnalyzer:
 
         return self.binary
 
-    # def detect_blade_and_grinder(self, sampling_step=1):
-    #     blade_edge = []; grinder_points = []
-    #     for y in range(0, self.height, sampling_step):
-    #         row = self.binary[y, :]
-    #         white_pixels = np.where(row > 180)[0]
-    #         if len(white_pixels) > 5:
-    #             rightmost = white_pixels[white_pixels > self.width // 3 * 2]
-    #             if len(rightmost) > 0:
-    #                 grinder_points.append((rightmost[0], y))
-    #             leftmost_blade = white_pixels[white_pixels < self.width // 2]
-    #             if len(leftmost_blade) > 0:
-    #                 blade_edge.append((leftmost_blade[0], y))
-    #     self.blade_edge_points   = np.array(blade_edge)     if blade_edge     else None
-    #     self.grinder_edge_points = np.array(grinder_points) if grinder_points else None
-    #     if self.grinder_edge_points is not None and len(self.grinder_edge_points) > 0:
-    #         min_x_idx  = np.argmin(self.grinder_edge_points[:, 0])
-    #         self.grinder_tip = tuple(self.grinder_edge_points[min_x_idx])
-    #         min_x      = self.grinder_edge_points[min_x_idx, 0]
-    #         tip_points = self.grinder_edge_points[np.abs(self.grinder_edge_points[:, 0] - min_x) < 10]
-    #         self.grinder_edge_center = (int(np.mean(tip_points[:, 0])), int(np.mean(tip_points[:, 1])))
-    #     return self.blade_edge_points, self.grinder_tip
     def detect_blade_and_grinder(self, sampling_step=1):
         """
         Detect blade edge (left) and grinder tip (right) for grey-background images.
@@ -622,7 +775,10 @@ class SerratedBladeAnalyzer:
         peaks   = self._filter_close_points(peaks,   window_size)
         valleys = self._filter_close_points(valleys, window_size)
 
-        if self.image is not None:
+        # Debug visualisation — DISABLED by default. Writing a PNG on every
+        # analysis call (overlay poll = every 300 ms) is a major slowdown,
+        # especially on Windows where Defender scans each file write.
+        if DEBUG_SAVE_MASK and self.image is not None:
             mask_img = img_array.copy()
             for i, y in enumerate(y_coords.astype(int)):
                 if 0 <= y < mask_img.shape[0]:
@@ -969,7 +1125,6 @@ class SerratedBladeAnalyzer:
         if not closest_valley:
             return None
 
-        print(closest_valley)
         return {
             'valley_id': closest_valley['between_teeth'],
             'x_mm':      round(float(closest_valley['move_y_mm']), 2),
@@ -1226,8 +1381,8 @@ class BladeDataModbusClient:
     REG_ESTOP          = 140
     REG_TEETH_INSPECT  = 141
     REG_ROBOT_ANGLE    = 142
-    REG_DETECTION_DEPTH = 143  # ← NEW: PC→Robot, X-depth of valley between teeth (×100, signed)
-    REG_POST_CUT_DEPTH  = 150  # ← NEW: PC→Robot, measured groove depth after cut (×100 signed)
+    REG_DETECTION_DEPTH = 143  # PC→Robot, X-depth of valley between teeth (×100, signed)
+    REG_POST_CUT_DEPTH  = 150  # PC→Robot, measured groove depth after cut (×100 signed)
 
     STATUS_NO_TEETH = 0; STATUS_TEETH_OK = 1; STATUS_ERROR = 2
 
@@ -1242,21 +1397,13 @@ class BladeDataModbusClient:
             self.connected=True; print(f"✓ Connected to robot at {self.host}:{self.port}"); return True
         self.connected=False; print(f"✗ Could not connect to {self.host}:{self.port}"); return False
 
-    def write_configuration(self, bay_id, grinder_id, angle, depth, length, config_version):
+    def write_configuration(self, bay_id, grinder_id, angle, depth, length):
         if not self.connected: return None
-        values=[int(bay_id),int(grinder_id),int(angle*10),int(depth*100),int(length),int(config_version)]
+        values=[int(bay_id),int(grinder_id),int(angle*10),int(depth*100),int(length)]
         result=self.client.write_registers(address=self.REG_BAY_ID,values=values)
         if not result.isError(): print(f"✓ Config written")
         return result
 
-    # def write_detection(self, x_mm, y_mm, status):
-    #     if not self.connected: return None
-    #     x_val=int(x_mm*100); y_val=int(y_mm*100)
-    #     x_u16=x_val if x_val>=0 else 65536+x_val
-    #     y_u16=y_val if y_val>=0 else 65536+y_val
-    #     result=self.client.write_registers(address=self.REG_DETECTION_X,values=[x_u16,y_u16,int(status)])
-    #     if not result.isError(): print(f"✓ Detection written: X={x_mm:.2f}mm Y={y_mm:.2f}mm status={status}")
-    #     return result
     def write_detection(self, x_mm, y_mm, status, depth_mm=0.0):
         if not self.connected: return None
 
@@ -1328,23 +1475,6 @@ class BladeDataModbusClient:
         if r.isError(): return None
         return self._s16(r.registers[0]) / 10.0
 
-    # def read_all_status(self):
-    #     """Read REG 134–142 (9 registers) in one shot."""
-    #     if not self.connected: return None
-    #     r=self.client.read_holding_registers(address=self.REG_DETECTION_X,count=9)
-    #     if r.isError(): return None
-    #     reg=r.registers
-    #     return {
-    #         'detection_x_mm': self._s16(reg[0])/100.0,
-    #         'detection_y_mm': self._s16(reg[1])/100.0,
-    #         'status':         reg[2],
-    #         'start':          reg[3],
-    #         'grinder_ready':  reg[4],
-    #         'grind_start':    reg[5],
-    #         'estop':          reg[6],
-    #         'teeth_inspect':  bool(reg[7]),
-    #         'robot_angle':    self._s16(reg[8])/10.0,
-    #     }
     def read_all_status(self):
         """Read REG 134–143 (10 registers) in one shot."""
         if not self.connected: return None
@@ -1361,7 +1491,7 @@ class BladeDataModbusClient:
             'estop': reg[6],
             'teeth_inspect': bool(reg[7]),
             'robot_angle': self._s16(reg[8]) / 10.0,
-            'detection_depth_mm': self._s16(reg[9]) / 100.0,  # ← NEW
+            'detection_depth_mm': self._s16(reg[9]) / 100.0,
         }
 
     def close(self):
@@ -1431,7 +1561,7 @@ def send_configuration():
         result = modbus_client.write_configuration(
             bay_id=int(data.get('bay_id')), grinder_id=new_gid,
             angle=float(data.get('angle')), depth=float(data.get('depth')),
-            length=int(data.get('length')), config_version=int(data.get('config_version')))
+            length=int(data.get('length')))
         if not (result and not result.isError()):
             return jsonify({'success': False, 'message': 'Failed to send configuration'}), 500
 
@@ -1516,14 +1646,12 @@ def grind_start():
         return jsonify({'success':False,'message':'Not connected'}),400
     data=request.json or {}
     try:
-        # if 'x_mm' in data and 'y_mm' in data:
-        #     modbus_client.write_detection(x_mm=float(data['x_mm']),y_mm=float(data['y_mm']),status=int(data.get('status',1)))
         if 'x_mm' in data and 'y_mm' in data:
             modbus_client.write_detection(
                 x_mm=float(data['x_mm']),
                 y_mm=float(data['y_mm']),
                 status=int(data.get('status', 1)),
-                depth_mm=float(data.get('depth_mm', 0.0)),  # ← NEW
+                depth_mm=float(data.get('depth_mm', 0.0)),
             )
             global last_grind_depth_mm
             last_grind_depth_mm = float(data.get('depth_mm', 0.0))
@@ -1571,10 +1699,74 @@ def stop_inspection():
 def inspection_status_route():
     return jsonify({'active':inspection_active,'result':last_inspection_summary,'current_angle':last_robot_angle})
 
+
+# ── PySpin system management (KEEP ALIVE for the whole process) ───────────────
+# System.GetInstance() + GetCameras() triggers a full Spinnaker device
+# discovery, which on Windows can take 30-40+ seconds (it probes every
+# network interface). We therefore do it ONCE and keep both the System and
+# the CameraList alive. Camera switches only DeInit/Init the camera object.
+
+def _get_pyspin_system(refresh=False):
+    """
+    Initialise Spinnaker once and keep it alive for the whole process.
+    refresh=True re-enumerates the camera list (only safe while no camera
+    is acquiring) — used if cameras were plugged in after startup.
+    """
+    global pyspin_system, pyspin_cam_list
+    if pyspin_system is None:
+        print("🎥 Initialising Spinnaker system (one-time discovery — may take a while)…")
+        t0 = time.perf_counter()
+        pyspin_system = PySpin.System.GetInstance()
+        pyspin_cam_list = pyspin_system.GetCameras()
+        print(f"✓ Spinnaker ready in {time.perf_counter()-t0:.1f}s "
+              f"({pyspin_cam_list.GetSize()} camera(s) found)")
+    elif refresh and not camera_active:
+        try:
+            pyspin_cam_list.Clear()
+        except Exception:
+            pass
+        pyspin_cam_list = pyspin_system.GetCameras()
+        print(f"✓ Camera list refreshed ({pyspin_cam_list.GetSize()} camera(s))")
+    return pyspin_system, pyspin_cam_list
+
+
+@atexit.register
+def _release_pyspin():
+    """Release Spinnaker cleanly when the process exits."""
+    global pyspin_cam, pyspin_cam_list, pyspin_system
+    try:
+        if pyspin_cam:
+            try:
+                pyspin_cam.EndAcquisition()
+            except Exception:
+                pass
+            try:
+                pyspin_cam.DeInit()
+            except Exception:
+                pass
+            pyspin_cam = None
+        if pyspin_cam_list is not None:
+            try:
+                pyspin_cam_list.Clear()
+            except Exception:
+                pass
+            pyspin_cam_list = None
+        if pyspin_system is not None:
+            try:
+                pyspin_system.ReleaseInstance()
+            except Exception:
+                pass
+            pyspin_system = None
+        print("✓ Spinnaker released")
+    except Exception:
+        pass
+
+
 # ── Camera ────────────────────────────────────────────────────────────────────
 def _stop_camera_internal():
-    """Stop capture, release PySpin. Safe to call when already stopped."""
-    global pyspin_system, pyspin_cam, pyspin_cam_list, camera_active, camera_thread, last_frame
+    """Stop capture and DeInit the camera. The PySpin System and CameraList
+    are intentionally KEPT ALIVE so the next start/switch is fast."""
+    global pyspin_cam, camera_active, camera_thread, last_frame
     camera_active = False
     th = camera_thread
     camera_thread = None
@@ -1582,37 +1774,43 @@ def _stop_camera_internal():
         th.join(timeout=2.0)
     with camera_lock:
         if pyspin_cam:
-            try: pyspin_cam.EndAcquisition(); pyspin_cam.DeInit()
-            except Exception: pass
+            try:
+                pyspin_cam.EndAcquisition()
+            except Exception:
+                pass
+            try:
+                pyspin_cam.DeInit()
+            except Exception:
+                pass
             pyspin_cam = None
-        if pyspin_cam_list:
-            pyspin_cam_list.Clear(); pyspin_cam_list = None
-        if pyspin_system:
-            pyspin_system.ReleaseInstance(); pyspin_system = None
         last_frame = None
+        # NOTE: system + cam_list intentionally kept alive (see _get_pyspin_system)
 
 
 def _start_camera_internal(grinder_id):
-    """Initialise and start PySpin camera for the given grinder id. Returns (ok, msg)."""
-    global pyspin_system, pyspin_cam, pyspin_cam_list, camera_active, camera_thread, last_frame
+    """Initialise and start PySpin camera for the given grinder id. Returns (ok, msg).
+    Uses the persistent system/camera list — no Spinnaker re-discovery."""
+    global pyspin_cam, camera_active, camera_thread
     if camera_active:
         return False, 'Camera already running (stop first)'
     serial = CAMERA_SERIALS.get(grinder_id, '')
-    print(f"🎥 Initializing FLIR camera for grinder {grinder_id} "
+    print(f"🎥 Starting FLIR camera for grinder {grinder_id} "
           f"(serial='{serial or 'auto-index ' + str(grinder_id - 1)}')")
-    pyspin_system = PySpin.System.GetInstance()
-    pyspin_cam_list = pyspin_system.GetCameras()
-    n = pyspin_cam_list.GetSize()
+
+    system, cam_list = _get_pyspin_system()
+    n = cam_list.GetSize()
     if n == 0:
-        pyspin_cam_list.Clear(); pyspin_system.ReleaseInstance()
-        pyspin_system = pyspin_cam_list = None
-        return False, 'No FLIR cameras detected'
+        # Maybe cameras were plugged in after startup — refresh the list once
+        system, cam_list = _get_pyspin_system(refresh=True)
+        n = cam_list.GetSize()
+        if n == 0:
+            return False, 'No FLIR cameras detected'
 
     selected = None
     selected_idx = None
     if serial:
         for i in range(n):
-            cam = pyspin_cam_list[i]
+            cam = cam_list[i]
             cam_sn = ''
             try:
                 tldev = cam.GetTLDeviceNodeMap()
@@ -1628,23 +1826,29 @@ def _start_camera_internal(grinder_id):
                 break
             del cam
         if selected_idx is None:
-            pyspin_cam_list.Clear();
-            pyspin_system.ReleaseInstance()
-            pyspin_system = pyspin_cam_list = None
             return False, f"Camera with serial '{serial}' not found for grinder {grinder_id}"
-        selected = pyspin_cam_list[selected_idx]
+        selected = cam_list[selected_idx]
     else:
         idx = grinder_id - 1
         if not (0 <= idx < n):
-            pyspin_cam_list.Clear(); pyspin_system.ReleaseInstance()
-            pyspin_system = pyspin_cam_list = None
             return False, f'Camera index {idx} out of range (have {n})'
-        selected = pyspin_cam_list[idx]
+        selected = cam_list[idx]
 
-    pyspin_cam = selected
-    pyspin_cam.Init()
-    _configure_pyspin_camera()
-    pyspin_cam.BeginAcquisition()
+    try:
+        pyspin_cam = selected
+        pyspin_cam.Init()
+        _configure_pyspin_camera()
+        pyspin_cam.BeginAcquisition()
+    except PySpin.SpinnakerException as ex:
+        # Clean up the half-initialised camera so a retry is possible
+        try:
+            if pyspin_cam:
+                pyspin_cam.DeInit()
+        except Exception:
+            pass
+        pyspin_cam = None
+        return False, f'Camera init failed: {ex}'
+
     camera_active = True
     camera_thread = Thread(target=_camera_capture_thread, daemon=True)
     camera_thread.start()
@@ -1696,16 +1900,15 @@ def switch_camera():
 
 @app.route('/api/camera/list', methods=['GET'])
 def list_cameras():
-    """Enumerate detected FLIR cameras. Camera must be stopped to enumerate."""
+    """Enumerate detected FLIR cameras. Camera must be stopped to (re)enumerate.
+    Uses the persistent Spinnaker system — no full re-discovery."""
     if camera_active:
         return jsonify({'success': False, 'message': 'Stop camera first to list devices',
                         'mapping': CAMERA_SERIALS,
                         'current_grinder_id': current_grinder_id}), 400
-    system = None
-    cl = None
     try:
-        system = PySpin.System.GetInstance()
-        cl = system.GetCameras()
+        # Refresh the persistent list (safe: camera is not active)
+        system, cl = _get_pyspin_system(refresh=True)
         cams = []
         n = cl.GetSize()
         for i in range(n):
@@ -1731,14 +1934,6 @@ def list_cameras():
                         'current_grinder_id': current_grinder_id})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-    finally:
-        # Always release in the correct order, even on the success path.
-        if cl is not None:
-            try: cl.Clear()
-            except Exception as e: print(f"⚠ cl.Clear() failed: {e}")
-        if system is not None:
-            try: system.ReleaseInstance()
-            except Exception as e: print(f"⚠ system.ReleaseInstance() failed: {e}")
 
 @app.route('/api/camera/mapping', methods=['POST'])
 def set_camera_mapping():
@@ -1780,6 +1975,166 @@ def _configure_pyspin_camera():
         # node_gain=PySpin.CFloatPtr(nodemap.GetNode('Gain'))
         # if PySpin.IsWritable(node_gain): node_gain.SetValue(min(node_gain.GetMax(),camera_config['gain']))
     except PySpin.SpinnakerException as ex: print(f"⚠ Camera config warning: {ex}")
+
+
+# ── Camera settings (live tuning: exposure / gain / white balance / fps …) ────
+# These read and write Spinnaker feature nodes on the running camera. Reads are
+# open to viewers; writes go through the control lock (POST is gated) so only the
+# controller can change the shared camera. Node names follow the GenICam SFNC
+# standard used by FLIR/Teledyne cameras.
+
+def _cam_read_enum(nm, name):
+    try:
+        node = PySpin.CEnumerationPtr(nm.GetNode(name))
+        if not PySpin.IsReadable(node):
+            return None
+        entries = []
+        for i in range(node.GetNumEntries()):
+            e = PySpin.CEnumEntryPtr(node.GetEntryByIndex(i))
+            if PySpin.IsAvailable(e) and PySpin.IsReadable(e):
+                entries.append(e.GetSymbolic())
+        cur = PySpin.CEnumEntryPtr(node.GetCurrentEntry())
+        return {'value': cur.GetSymbolic() if PySpin.IsReadable(cur) else None,
+                'entries': entries,
+                'writable': bool(PySpin.IsWritable(node))}
+    except Exception:
+        return None
+
+def _cam_read_float(nm, name):
+    try:
+        node = PySpin.CFloatPtr(nm.GetNode(name))
+        if not PySpin.IsReadable(node):
+            return None
+        return {'value': round(float(node.GetValue()), 3),
+                'min': round(float(node.GetMin()), 3),
+                'max': round(float(node.GetMax()), 3),
+                'writable': bool(PySpin.IsWritable(node))}
+    except Exception:
+        return None
+
+def _cam_read_bool(nm, name):
+    try:
+        node = PySpin.CBooleanPtr(nm.GetNode(name))
+        if not PySpin.IsReadable(node):
+            return None
+        return {'value': bool(node.GetValue()),
+                'writable': bool(PySpin.IsWritable(node))}
+    except Exception:
+        return None
+
+def _cam_set_enum(nm, name, symbolic):
+    node = PySpin.CEnumerationPtr(nm.GetNode(name))
+    if not PySpin.IsWritable(node):
+        raise RuntimeError(f'{name} not writable')
+    entry = PySpin.CEnumEntryPtr(node.GetEntryByName(str(symbolic)))
+    if not PySpin.IsReadable(entry):
+        raise RuntimeError(f'{name}={symbolic} not available')
+    node.SetIntValue(entry.GetValue())
+
+def _cam_set_float(nm, name, value):
+    node = PySpin.CFloatPtr(nm.GetNode(name))
+    if not PySpin.IsWritable(node):
+        raise RuntimeError(f'{name} not writable (is its Auto mode still on?)')
+    v = max(node.GetMin(), min(node.GetMax(), float(value)))
+    node.SetValue(v)
+
+def _cam_set_bool(nm, name, value):
+    node = PySpin.CBooleanPtr(nm.GetNode(name))
+    if not PySpin.IsWritable(node):
+        raise RuntimeError(f'{name} not writable')
+    node.SetValue(bool(value))
+
+def _get_camera_settings():
+    global pyspin_cam
+    if not (camera_active and pyspin_cam):
+        return {'success': False, 'message': 'Camera not active'}
+    with camera_lock:
+        try:
+            nm = pyspin_cam.GetNodeMap()
+            return {
+                'success': True,
+                'exposure_auto':      _cam_read_enum(nm, 'ExposureAuto'),
+                'exposure_time':      _cam_read_float(nm, 'ExposureTime'),   # microseconds
+                'gain_auto':          _cam_read_enum(nm, 'GainAuto'),
+                'gain':               _cam_read_float(nm, 'Gain'),           # dB
+                'white_balance_auto': _cam_read_enum(nm, 'BalanceWhiteAuto'),# color cams only
+                'frame_rate_enable':  _cam_read_bool(nm, 'AcquisitionFrameRateEnable'),
+                'frame_rate':         _cam_read_float(nm, 'AcquisitionFrameRate'),
+                'gamma_enable':       _cam_read_bool(nm, 'GammaEnable'),
+                'gamma':              _cam_read_float(nm, 'Gamma'),
+                'black_level':        _cam_read_float(nm, 'BlackLevel'),
+                'grinder_id':         current_grinder_id,
+            }
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+
+@app.route('/api/camera/settings', methods=['GET'])
+def camera_settings_get():
+    return jsonify(_get_camera_settings())
+
+@app.route('/api/camera/settings', methods=['POST'])
+def camera_settings_set():
+    from flask import request
+    global pyspin_cam, camera_config
+    if not (camera_active and pyspin_cam):
+        return jsonify({'success': False, 'message': 'Camera not active'}), 400
+    data = request.json or {}
+    applied, errors = [], []
+
+    def _try(label, fn):
+        try:
+            fn(); applied.append(label)
+        except Exception as e:
+            errors.append(f'{label}: {e}')
+
+    def _is_auto(v):
+        return str(v) in ('Continuous', 'Once')
+
+    with camera_lock:
+        try:
+            nm = pyspin_cam.GetNodeMap()
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'nodemap error: {e}'}), 500
+
+        # Order matters: set Auto modes BEFORE their manual values, because
+        # ExposureTime/Gain are only writable once their Auto is Off.
+        if 'exposure_auto' in data:
+            _try('exposure_auto', lambda: _cam_set_enum(nm, 'ExposureAuto', data['exposure_auto']))
+        if data.get('exposure_time') is not None and not _is_auto(data.get('exposure_auto')):
+            _try('exposure_time', lambda: _cam_set_float(nm, 'ExposureTime', data['exposure_time']))
+
+        if 'gain_auto' in data:
+            _try('gain_auto', lambda: _cam_set_enum(nm, 'GainAuto', data['gain_auto']))
+        if data.get('gain') is not None and not _is_auto(data.get('gain_auto')):
+            _try('gain', lambda: _cam_set_float(nm, 'Gain', data['gain']))
+
+        if 'white_balance_auto' in data:
+            _try('white_balance_auto', lambda: _cam_set_enum(nm, 'BalanceWhiteAuto', data['white_balance_auto']))
+
+        # Frame rate: must enable manual frame-rate control before setting it.
+        if 'frame_rate_enable' in data:
+            _try('frame_rate_enable', lambda: _cam_set_bool(nm, 'AcquisitionFrameRateEnable', data['frame_rate_enable']))
+        if data.get('frame_rate') is not None and data.get('frame_rate_enable', True):
+            _try('frame_rate', lambda: _cam_set_float(nm, 'AcquisitionFrameRate', data['frame_rate']))
+
+        if 'gamma_enable' in data:
+            _try('gamma_enable', lambda: _cam_set_bool(nm, 'GammaEnable', data['gamma_enable']))
+        if data.get('gamma') is not None:
+            _try('gamma', lambda: _cam_set_float(nm, 'Gamma', data['gamma']))
+
+        if data.get('black_level') is not None:
+            _try('black_level', lambda: _cam_set_float(nm, 'BlackLevel', data['black_level']))
+
+    # Persist frame rate so a camera restart keeps it.
+    if data.get('frame_rate') is not None:
+        try: camera_config['frame_rate'] = float(data['frame_rate'])
+        except Exception: pass
+
+    fresh = _get_camera_settings()
+    print(f"🎛  Camera settings applied={applied}" + (f" errors={errors}" if errors else ""))
+    return jsonify({'success': len(errors) == 0, 'applied': applied,
+                    'errors': errors, 'settings': fresh})
+
 
 def _camera_capture_thread():
     global pyspin_cam,camera_active,last_frame
@@ -1859,7 +2214,8 @@ def capture_frame():
         return jsonify({'success':False,'message':'Camera not active'}),400
     try:
         with camera_lock: frame=last_frame.copy()
-        filename=f'capture_{time.strftime("%Y%m%d_%H%M%S")}.jpg'; cv2.imwrite(filename,frame)
+        filename=f'capture_{time.strftime("%Y%m%d_%H%M%S")}.jpg'
+        cv2.imwrite(filename,frame)   # explicit user action — keep the actual save
         return jsonify({'success':True,'message':'Captured','filename':filename})
     except Exception as e: return jsonify({'success':False,'message':str(e)}),500
 
@@ -1939,12 +2295,11 @@ def send_auto_detection():
         with camera_lock: frame_to_process=last_frame.copy()
         analyzer=SerratedBladeAnalyzer(frame_to_process); result=analyzer.analyze_frame()
         if not result: return jsonify({'success':False,'message':'No teeth detected'}),404
-        # modbus_result=modbus_client.write_detection(x_mm=result['x_mm'],y_mm=result['y_mm'],status=result['status'])
         modbus_result = modbus_client.write_detection(
             x_mm=result['x_mm'],
             y_mm=result['y_mm'],
             status=result['status'],
-            depth_mm=result.get('depth_x_mm', 0.0),  # ← NEW
+            depth_mm=result.get('depth_x_mm', 0.0),
         )
         if modbus_result and not modbus_result.isError():
             return jsonify({'success':True,'detection':result,'message':f"Valley {result.get('valley_id','N/A')} sent"})
@@ -2148,6 +2503,9 @@ def get_grinder_status():
 
 
 if __name__=='__main__':
+    import logging
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)   # stop logging every request
+
     print("="*70)
     print("🤖 BLADE GRINDER CONTROL SYSTEM")
     print("   REG 134-136: Detection X/Y/Status")
@@ -2155,4 +2513,12 @@ if __name__=='__main__':
     print("   REG 141:     TEETH_INSPECT  (Robot→PC, 1=record ON, 0=record OFF)")
     print("   REG 142:     ROBOT_ANGLE    (Robot→PC, ×10 signed degrees)")
     print("="*70)
-    app.run(debug=True,host='0.0.0.0',port=5000)
+
+    # Warm up Spinnaker at startup so the slow one-time discovery happens
+    # BEFORE the operator starts working — camera start/switch is then fast.
+    try:
+        _get_pyspin_system()
+    except Exception as e:
+        print(f"⚠ Spinnaker warm-up failed (camera will retry on first start): {e}")
+
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)

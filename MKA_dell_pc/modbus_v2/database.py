@@ -83,3 +83,10 @@ if __name__ == "__main__":
         elif (inp=="5"):
             print("Exiting...")
             break
+
+# >>> import sqlite3
+# >>> 
+# >>> conn = sqlite3.connect("blade_database.sqlite")
+# >>> cur = conn.cursor()
+# >>> cur.execute("""INSERT INTO blades (bade_id, length, reach_angle, depth_of_cut_from_angle) VALUES (?, ?, ?, ?) """, ("A129", 360, 30.17, 1.76)) 
+# >>> conn.commit()
