@@ -1,3 +1,1297 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<link rel="icon" type="image/webp" sizes="32x32" href="mka-163w.webp">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>MKA - Automated Blade Sharpening System</title>-->
+<!--    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">-->
+<!--    <style>-->
+<!--        *{margin:0;padding:0;box-sizing:border-box}-->
+<!--        :root{-->
+<!--            &#45;&#45;background:hsl(240,33%,1%);&#45;&#45;foreground:hsl(0 0% 98%);-->
+<!--            &#45;&#45;card:hsl(240,8%,7%);&#45;&#45;card-foreground:hsl(0 0% 98%);-->
+<!--            &#45;&#45;primary:hsl(0 0% 98%);&#45;&#45;primary-foreground:hsl(0 0% 9%);-->
+<!--            &#45;&#45;muted:hsl(0 0% 14.9%);&#45;&#45;muted-foreground:hsl(0 0% 63.9%);-->
+<!--            &#45;&#45;accent:hsl(0 0% 14.9%);&#45;&#45;accent-foreground:hsl(0 0% 98%);-->
+<!--            &#45;&#45;border:hsl(0 0% 14.9%);&#45;&#45;ring:hsl(0 0% 83.1%);-->
+<!--            &#45;&#45;radius:1.5rem;-->
+<!--            &#45;&#45;success:hsl(142 76% 36%);&#45;&#45;warning:hsl(38 92% 50%);-->
+<!--            &#45;&#45;danger:hsl(0 62.8% 30.6%);&#45;&#45;info:hsl(217 91% 60%);-->
+<!--        }-->
+<!--        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(&#45;&#45;background);color:var(&#45;&#45;foreground);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}-->
+<!--        .container{height:100vh;display:flex;flex-direction:column;padding:24px}-->
+<!--        .header{text-align:center;margin-bottom:10px}-->
+<!--        .header p{font-size:12px;color:var(&#45;&#45;muted-foreground);letter-spacing:.1em;text-transform:uppercase}-->
+<!--        .header h1{display:flex;justify-content:center;align-items:center}-->
+<!--        .status-bar{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap}-->
+<!--        .status-item{flex:1;min-width:120px;background:var(&#45;&#45;card);border:1px solid var(&#45;&#45;border);border-radius:var(&#45;&#45;radius);padding:14px 18px;transition:border-color .2s,box-shadow .2s,transform .2s;box-shadow:0 1px 0 0 hsl(0 0% 20%) inset,0 4px 6px -1px hsl(0 0% 0%/.4)}-->
+<!--        .status-item:hover{border-color:var(&#45;&#45;ring);transform:translateY(-1px)}-->
+<!--        .status-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(&#45;&#45;muted-foreground);margin-bottom:6px}-->
+<!--        .status-value{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;display:flex;align-items:center}-->
+<!--        .main-grid{flex:1;display:grid;grid-template-columns:4fr 1fr;gap:24px;min-height:0}-->
+<!--        .left-grid{display:grid;grid-template-columns:2fr 2fr;gap:24px;overflow-y:auto;padding-right:10px;min-height:0}-->
+<!--        @media(max-width:1100px){.main-grid{grid-template-columns:1fr}}-->
+<!--        @media(max-width:700px){.left-grid{grid-template-columns:1fr}}-->
+<!--        .panel{background:var(&#45;&#45;card);border:1px solid var(&#45;&#45;border);border-radius:var(&#45;&#45;radius);padding:24px;position:relative;box-shadow:0 1px 0 0 hsl(0 0% 20%) inset,0 4px 6px -1px hsl(0 0% 0%/.4)}-->
+<!--        .panel-title{font-size:14px;font-weight:800;letter-spacing:-.01em;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(&#45;&#45;border)}-->
+<!--        .form-group{margin-bottom:16px}-->
+<!--        .form-label{display:block;font-size:12px;font-weight:500;color:var(&#45;&#45;foreground);margin-bottom:6px}-->
+<!--        .form-input{width:100%;background:var(&#45;&#45;background);border:1px solid var(&#45;&#45;border);border-radius:calc(var(&#45;&#45;radius) - 2px);padding:10px 12px;font-family:'Inter',sans-serif;font-size:12px;color:var(&#45;&#45;foreground);transition:border-color .2s,box-shadow .2s}-->
+<!--        .form-input:focus{outline:none;border-color:var(&#45;&#45;ring);box-shadow:0 0 0 2px hsla(0,0%,83%,.15)}-->
+<!--        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}-->
+<!--        .btn{font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:10px 20px;border:none;border-radius:calc(var(&#45;&#45;radius) - 2px);cursor:pointer;transition:opacity .2s,background-color .2s}-->
+<!--        .btn:hover{opacity:.9}.btn:active{opacity:.8}-->
+<!--        .btn-primary{background:var(&#45;&#45;primary);color:var(&#45;&#45;primary-foreground)}-->
+<!--        .btn-primary:disabled,.btn:disabled{background:var(&#45;&#45;muted);color:var(&#45;&#45;muted-foreground);cursor:not-allowed;opacity:.5}-->
+<!--        .btn-danger{background:hsl(0 84% 60%);color:hsl(0 0% 98%)}-->
+<!--        .btn-warning{background:var(&#45;&#45;warning);color:hsl(0 0% 9%)}-->
+<!--        .btn-success{background:var(&#45;&#45;success);color:hsl(0 0% 98%)}-->
+<!--        .btn-info{background:var(&#45;&#45;info);color:hsl(0 0% 98%)}-->
+<!--        .btn-purple{background:hsl(280 70% 55%);color:hsl(0 0% 98%)}-->
+<!--        .btn-connect{width:100%;margin-bottom:16px}-->
+<!--        .control-panel{display:flex;gap:12px;margin-top:16px}-->
+<!--        .control-panel .btn{flex:1}-->
+<!--        .loop-status-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}-->
+<!--        .reg-badge{background:var(&#45;&#45;background);border:1px solid var(&#45;&#45;border);border-radius:10px;padding:10px 12px;text-align:center;transition:border-color .3s,box-shadow .3s}-->
+<!--        .reg-badge.active-green{border-color:hsl(142 76% 46%);box-shadow:0 0 8px hsl(142 76% 46%/.4)}-->
+<!--        .reg-badge.active-blue{border-color:var(&#45;&#45;info);box-shadow:0 0 8px hsl(217 91% 60%/.4)}-->
+<!--        .reg-badge.active-orange{border-color:var(&#45;&#45;warning);box-shadow:0 0 8px hsl(38 92% 50%/.4)}-->
+<!--        .reg-badge.active-purple{border-color:hsl(280 70% 55%);box-shadow:0 0 8px hsl(280 70% 55%/.4)}-->
+<!--        .reg-badge-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(&#45;&#45;muted-foreground);margin-bottom:4px}-->
+<!--        .reg-badge-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700}-->
+<!--        .reg-badge-sub{font-size:9px;color:var(&#45;&#45;muted-foreground);margin-top:2px}-->
+<!--        .loop-steps{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}-->
+<!--        .loop-step{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(&#45;&#45;border);background:var(&#45;&#45;background);font-size:11px;transition:all .2s}-->
+<!--        .loop-step.step-active{border-color:var(&#45;&#45;info);background:hsl(217 91% 60%/.07);color:hsl(217 91% 80%)}-->
+<!--        .loop-step.step-done{border-color:hsl(142 76% 36%);background:hsl(142 76% 36%/.07);color:hsl(142 74% 56%)}-->
+<!--        .step-dot{width:8px;height:8px;border-radius:50%;background:var(&#45;&#45;border);flex-shrink:0}-->
+<!--        .loop-step.step-active .step-dot{background:var(&#45;&#45;info);box-shadow:0 0 5px var(&#45;&#45;info)}-->
+<!--        .loop-step.step-done .step-dot{background:hsl(142 76% 46%)}-->
+<!--        .indicator{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;flex-shrink:0}-->
+<!--        .indicator.connected{background:hsl(142 76% 46%);box-shadow:0 0 6px hsl(142 76% 46%);animation:blink 2s ease-in-out infinite}-->
+<!--        .indicator.disconnected{background:hsl(0 84% 60%);box-shadow:0 0 6px hsl(0 84% 60%)}-->
+<!--        .indicator.active{background:var(&#45;&#45;info);box-shadow:0 0 6px var(&#45;&#45;info);animation:blink 2s ease-in-out infinite}-->
+<!--        .indicator.warning{background:var(&#45;&#45;warning);box-shadow:0 0 6px var(&#45;&#45;warning);animation:blink 1s ease-in-out infinite}-->
+<!--        @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}-->
+<!--        @keyframes estopPulse{0%,100%{box-shadow:0 0 16px 4px hsl(0 84% 40%/.7)}50%{box-shadow:0 0 32px 12px hsl(0 84% 55%/.9)}}-->
+<!--        @keyframes inspPulse{0%,100%{box-shadow:0 0 10px 2px hsl(280 70% 40%/.7)}50%{box-shadow:0 0 22px 8px hsl(280 70% 55%/.9)}}-->
+<!--        .log{background:var(&#45;&#45;background);border:1px solid var(&#45;&#45;border);border-radius:calc(var(&#45;&#45;radius) - 2px);padding:16px;max-height:600px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7}-->
+<!--        .log-entry{padding:4px 0;border-bottom:1px solid var(&#45;&#45;border);animation:fadeIn .2s ease}-->
+<!--        .log-entry:last-child{border-bottom:none}-->
+<!--        .log-time{color:var(&#45;&#45;muted-foreground);margin-right:10px}-->
+<!--        .log-success{color:hsl(142,74%,46%)}.log-error{color:hsl(0 84% 60%)}.log-warning{color:hsl(38 92% 55%)}.log-info{color:hsl(217 91% 70%)}-->
+<!--        @keyframes fadeIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}-->
+<!--        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(&#45;&#45;border);border-radius:3px}-->
+<!--        .db-lookup-section{background:hsl(240,10%,5%);border:1px solid hsl(217 91% 60%/.25);border-radius:calc(var(&#45;&#45;radius) - 4px);padding:14px;margin-bottom:18px}-->
+<!--        .db-lookup-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:hsl(217 91% 70%);margin-bottom:10px;display:flex;align-items:center;gap:6px}-->
+<!--        .db-lookup-row{display:flex;gap:8px;align-items:flex-end}-->
+<!--        .db-lookup-row .form-group{flex:1;margin-bottom:0}-->
+<!--        .db-blade-badge{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:99px;margin-top:8px}-->
+<!--        .db-blade-badge.loaded{background:hsl(142 76% 36%/.15);border:1px solid hsl(142 76% 36%/.4);color:hsl(142,74%,56%)}-->
+<!--        .db-blade-badge.error{background:hsl(0 62.8% 30.6%/.15);border:1px solid hsl(0 62.8% 30.6%/.4);color:hsl(0 84% 60%)}-->
+<!--        .db-extra-fields{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(&#45;&#45;border)}-->
+<!--        .db-extra-fields.visible{display:block}-->
+<!--        .db-field-readonly .form-input{opacity:.7;cursor:default;color:hsl(217 91% 75%)}-->
+<!--        select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}-->
+<!--        input[type="number"]{-moz-appearance:textfield}-->
+<!--        input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none}-->
+<!--        .number-input-wrapper{position:relative;display:flex;align-items:stretch}-->
+<!--        .number-input-wrapper .form-input{padding-right:36px}-->
+<!--        .number-input-spinners{position:absolute;right:1px;top:1px;bottom:1px;width:28px;display:flex;flex-direction:column;border-left:1px solid var(&#45;&#45;border)}-->
+<!--        .number-spin-btn{flex:1;display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(&#45;&#45;muted-foreground);transition:background-color .15s,color .15s;padding:0}-->
+<!--        .number-spin-btn:hover{background:var(&#45;&#45;accent);color:var(&#45;&#45;accent-foreground)}-->
+<!--        .number-spin-btn:first-child{border-top-right-radius:calc(var(&#45;&#45;radius) - 3px);border-bottom:1px solid var(&#45;&#45;border)}-->
+<!--        .number-spin-btn:last-child{border-bottom-right-radius:calc(var(&#45;&#45;radius) - 3px)}-->
+<!--        .number-spin-btn svg{width:12px;height:12px;pointer-events:none}-->
+
+<!--        /* ── Inspection panel ── */-->
+<!--        .inspection-panel{margin-top:14px;padding:14px;border-radius:12px;background:hsl(280,20%,5%);border:1px solid hsl(280 70% 55%/.3)}-->
+<!--        .inspection-panel-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:hsl(280 70% 75%);margin-bottom:10px;display:flex;align-items:center;gap:6px}-->
+<!--        /* Live readout strip */-->
+<!--        .insp-live{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}-->
+<!--        .insp-live-cell{background:var(&#45;&#45;background);border:1px solid var(&#45;&#45;border);border-radius:8px;padding:6px 8px;text-align:center}-->
+<!--        .insp-live-label{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(&#45;&#45;muted-foreground);margin-bottom:2px}-->
+<!--        .insp-live-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}-->
+<!--        /* Result cards */-->
+<!--        .insp-result-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}-->
+<!--        .insp-stat{background:var(&#45;&#45;background);border:1px solid var(&#45;&#45;border);border-radius:8px;padding:10px 10px}-->
+<!--        .insp-stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(&#45;&#45;muted-foreground);margin-bottom:4px}-->
+<!--        .insp-stat-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700}-->
+<!--        .insp-stat-unit{font-size:9px;color:var(&#45;&#45;muted-foreground);margin-top:2px}-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <div class="header">-->
+<!--        <h1><img src="mka-163w.webp" alt="MKA" style="height:60px;width:auto;"></h1>-->
+<!--        <p>Automated Blade Sharpening System</p>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Status Bar &ndash;&gt;-->
+<!--    <div class="status-bar">-->
+<!--        <div class="status-item"><div class="status-label">Connection</div><div class="status-value" id="connectionStatus"><span class="indicator disconnected"></span>DISCONNECTED</div></div>-->
+<!--        <div class="status-item"><div class="status-label">Loop State</div><div class="status-value" id="robotState">IDLE</div></div>-->
+<!--        <div class="status-item"><div class="status-label">Grinder Ready</div><div class="status-value" id="grinderReadyStatus"><span class="indicator disconnected"></span>—</div></div>-->
+<!--        <div class="status-item"><div class="status-label">Grind Start</div><div class="status-value" id="grindStartStatus"><span class="indicator disconnected"></span>—</div></div>-->
+<!--        <div class="status-item">-->
+<!--          <div class="status-label">Camera (G<span id="cameraGrinderId">1</span>)</div>-->
+<!--          <div class="status-value" id="cameraStatus">OFF</div>-->
+<!--        </div>-->
+<!--        <div class="status-item"><div class="status-label">Auto Detect</div><div class="status-value" id="autoUpdateStatus">OFF</div></div>-->
+<!--        <div class="status-item" id="estopStatusItem" style="border-color:hsl(0 0% 14.9%)"><div class="status-label">E-STOP</div><div class="status-value" id="estopStatus"><span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none"></span>INACTIVE</div></div>-->
+<!--        <div class="status-item" id="inspectStatusItem"><div class="status-label">Calibration</div><div class="status-value" id="inspectStatusBar"><span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none"></span>IDLE</div></div>-->
+<!--        <div class="status-item" id="angleStatusItem"><div class="status-label">Blade Angle (REG 142)</div><div class="status-value" id="angleStatusBar" style="color:hsl(280 70% 75%)">—°</div></div>-->
+<!--    </div>-->
+
+<!--    <div class="main-grid">-->
+<!--        <div class="left-grid">-->
+
+<!--            &lt;!&ndash; Connection Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">🔌 Connection Settings</div>-->
+<!--                <div class="form-group"><label class="form-label">Robot IP Address</label><input type="text" id="robotIP" class="form-input" value="172.24.9.20"></div>-->
+<!--                <div class="form-row">-->
+<!--                    <div class="form-group"><label class="form-label">Port</label><input type="number" id="robotPort" class="form-input" value="502"></div>-->
+<!--                    <div class="form-group"><label class="form-label">Unit ID</label><input type="number" id="unitID" class="form-input" value="1"></div>-->
+<!--                </div>-->
+<!--                <button class="btn btn-primary btn-connect" id="connectBtn" onclick="toggleConnection()">CONNECT TO ROBOT</button>-->
+<!--                <div style="background:hsl(240,10%,5%);border:1px solid var(&#45;&#45;border);border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(&#45;&#45;muted-foreground);line-height:1.9">-->
+<!--                    <div style="color:var(&#45;&#45;foreground);font-weight:600;margin-bottom:6px;font-size:11px">Register Map</div>-->
+<!--                    <div><span style="color:hsl(280 80% 70%)">128-133</span> Config (Bay/Grinder/Angle/Depth/Len/Ver)</div>-->
+<!--                    <div style="border-top:1px solid var(&#45;&#45;border);margin:4px 0"></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%)">134</span> DETECTION_X &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot ×10)</span></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%)">135</span> DETECTION_Y &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot ×10)</span></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%)">136</span> STATUS &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">0=none 1=ok 2=err</span></div>-->
+<!--                    <div><span style="color:hsl(38 92% 65%)">137</span>  START &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(142 74% 56%)">138</span> GRINDER_READY <span style="color:var(&#45;&#45;muted-foreground)">(Robot→PC)</span></div>-->
+<!--                    <div><span style="color:hsl(0 84% 65%)">139</span>  GRIND_START &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(0 100% 70%);font-weight:700">140</span> <span style="color:hsl(0 100% 70%);font-weight:700">E-STOP</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot)</span></div>-->
+<!--                    <div><span style="color:hsl(280 70% 75%);font-weight:700">141</span> <span style="color:hsl(280 70% 75%)">TEETH_INSPECT</span> <span style="color:var(&#45;&#45;muted-foreground)">(Robot→PC 1=rec 0=stop)</span></div>-->
+<!--                    <div><span style="color:hsl(280 70% 75%);font-weight:700">142</span> <span style="color:hsl(280 70% 75%)">ROBOT_ANGLE</span> &nbsp;<span style="color:var(&#45;&#45;muted-foreground)">(Robot→PC ×10 signed °)</span></div>-->
+<!--                    <div><span style="color:hsl(217 91% 70%);font-weight:700">143</span> <span style="color:hsl(217 91% 70%)">DETECTION_DEPTH</span> <span style="color:var(&#45;&#45;muted-foreground)">(PC→Robot ×100 mm)</span></div>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Grinding Loop Control Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">⚙️ Grinding Loop Control</div>-->
+<!--                <div class="loop-status-grid">-->
+<!--                    <div class="reg-badge" id="badge-status"><div class="reg-badge-label">Status</div><div class="reg-badge-val" id="reg-status">—</div><div class="reg-badge-sub" id="reg-status-name">REG 136</div></div>-->
+<!--                    <div class="reg-badge" id="badge-start"><div class="reg-badge-label">Start</div><div class="reg-badge-val" id="reg-start">—</div><div class="reg-badge-sub">REG 137</div></div>-->
+<!--                    <div class="reg-badge" id="badge-grinder-ready"><div class="reg-badge-label">Grinder Ready</div><div class="reg-badge-val" id="reg-grinder-ready">—</div><div class="reg-badge-sub">REG 138</div></div>-->
+<!--                    <div class="reg-badge" id="badge-grind-start"><div class="reg-badge-label">Grind Start</div><div class="reg-badge-val" id="reg-grind-start">—</div><div class="reg-badge-sub">REG 139</div></div>-->
+<!--                    <div class="reg-badge" id="badge-x"><div class="reg-badge-label">X (mm)</div><div class="reg-badge-val" id="reg-x">—</div><div class="reg-badge-sub">REG 134</div></div>-->
+<!--                    <div class="reg-badge" id="badge-y"><div class="reg-badge-label">Y (mm)</div><div class="reg-badge-val" id="reg-y">—</div><div class="reg-badge-sub">REG 135</div></div>-->
+<!--                    <div class="reg-badge" id="badge-depth">-->
+<!--                      <div class="reg-badge-label">Valley Depth (mm)</div>-->
+<!--                      <div class="reg-badge-val" id="reg-depth">—</div>-->
+<!--                      <div class="reg-badge-sub">REG 143</div>-->
+<!--                    </div>-->
+<!--                    <div class="reg-badge" id="badge-estop" style="grid-column:1/-1;border-color:hsl(0 0% 14.9%)"><div class="reg-badge-label">E-STOP — REG 140</div><div class="reg-badge-val" id="reg-estop" style="font-size:14px">—</div></div>-->
+<!--                    &lt;!&ndash; REG 141 + 142 side by side &ndash;&gt;-->
+<!--                    <div class="reg-badge" id="badge-inspect" style="grid-column:span 2"><div class="reg-badge-label">Teeth Inspect — REG 141</div><div class="reg-badge-val" id="reg-inspect" style="font-size:14px">—</div><div class="reg-badge-sub" id="reg-inspect-sub">IDLE</div></div>-->
+<!--                    <div class="reg-badge" id="badge-angle"><div class="reg-badge-label">Blade Angle — REG 142</div><div class="reg-badge-val" id="reg-angle" style="font-size:16px;color:hsl(280 70% 75%)">—</div><div class="reg-badge-sub">°</div></div>-->
+<!--                </div>-->
+<!--                <div class="loop-steps" id="loopSteps">-->
+<!--                    <div class="loop-step" id="step1"><span class="step-dot"></span>1 · Write detection X/Y + STATUS=1</div>-->
+<!--                    <div class="loop-step" id="step2"><span class="step-dot"></span>2 · Send START=1 → robot moves to tooth valley</div>-->
+<!--                    <div class="loop-step" id="step3"><span class="step-dot"></span>3 · Wait for GRINDER_READY=1 (camera turns on)</div>-->
+<!--                    <div class="loop-step" id="step4"><span class="step-dot"></span>4 · Re-detect, write new X/Y, send GRIND_START=1</div>-->
+<!--                    <div class="loop-step" id="step5"><span class="step-dot"></span>5 · Robot grinds, resets GRIND_START=0 → next tooth</div>-->
+<!--                </div>-->
+<!--                <div class="control-panel">-->
+<!--                    <button class="btn btn-success" onclick="startLoop()" disabled id="startBtn" style="font-size:12px;font-weight:700">🚀 START LOOP</button>-->
+<!--                    <button class="btn btn-info"    onclick="sendGrindStart()" disabled id="grindStartBtn" style="font-size:12px">⚙ GRIND START</button>-->
+<!--                    <button class="btn btn-danger"  onclick="stopLoop()"  disabled id="stopBtn" style="font-size:12px">■ STOP</button>-->
+<!--                </div>-->
+<!--                <button id="estopBtn" onclick="triggerEStop()" disabled-->
+<!--                    style="width:100%;margin-top:14px;padding:18px;font-size:15px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:hsl(0 84% 38%);color:white;border:2px solid hsl(0 84% 55%);border-radius:calc(var(&#45;&#45;radius) - 2px);cursor:pointer;transition:all .15s;box-shadow:0 0 0 0 hsl(0 84% 50%/.5);font-family:'Inter',sans-serif"-->
+<!--                    onmouseover="this.style.background='hsl(0 84% 48%)';this.style.boxShadow='0 0 16px 4px hsl(0 84% 40%/.6)'"-->
+<!--                    onmouseout="if(!window._estopActive){this.style.background='hsl(0 84% 38%)';this.style.boxShadow='0 0 0 0 hsl(0 84% 50%/.5)'}">-->
+<!--                    🚨 EMERGENCY STOP-->
+<!--                </button>-->
+<!--                <button id="clearEstopBtn" onclick="clearEStop()" disabled style="display:none;width:100%;margin-top:8px;padding:10px;font-size:12px;font-weight:600;background:var(&#45;&#45;warning);color:hsl(0 0% 9%);border:none;border-radius:calc(var(&#45;&#45;radius) - 2px);cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .2s">↺ CLEAR E-STOP (REG 140=0)</button>-->
+<!--                <div style="margin-top:10px;font-size:11px;color:var(&#45;&#45;muted-foreground);text-align:center" id="loopHint">Connect to robot to enable controls</div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Configuration Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">📋 Blade Configuration</div>-->
+<!--                <div class="db-lookup-section">-->
+<!--                    <div class="db-lookup-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>Load from Database</div>-->
+<!--                    <div class="db-lookup-row">-->
+<!--                        <div class="form-group"><label class="form-label">Blade ID</label><input type="text" id="dbBladeID" class="form-input" placeholder="e.g. BLD-001" style="font-family:'JetBrains Mono',monospace"></div>-->
+<!--                        <button class="btn btn-primary" onclick="loadBladeFromDB()" id="dbLoadBtn" style="flex-shrink:0;margin-bottom:16px">LOAD</button>-->
+<!--                    </div>-->
+<!--                    <div id="dbStatus" style="display:none"></div>-->
+<!--                    <div class="db-extra-fields" id="dbExtraFields">-->
+<!--                        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(&#45;&#45;muted-foreground);margin-bottom:8px">Additional Properties</div>-->
+<!--                        <div class="form-row db-field-readonly"><div class="form-group"><label class="form-label">Depth 1 (mm)</label><input type="text" class="form-input" id="dbDepth1" readonly></div><div class="form-group"><label class="form-label">Depth 2 (mm)</label><input type="text" class="form-input" id="dbDepth2" readonly></div></div>-->
+<!--                        <div class="form-row db-field-readonly"><div class="form-group"><label class="form-label">Thickness (mm)</label><input type="text" class="form-input" id="dbThickness" readonly></div><div class="form-group"><label class="form-label">Tip Angle (°)</label><input type="text" class="form-input" id="dbTipAngle" readonly></div></div>-->
+<!--                        <div class="form-row db-field-readonly"><div class="form-group"><label class="form-label">Reach Angle (°)</label><input type="text" class="form-input" id="dbReachAngle" readonly></div><div class="form-group"><label class="form-label">Depth of Cut (mm)</label><input type="text" class="form-input" id="dbDepthOfCut" readonly></div></div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="form-row"><div class="form-group"><label class="form-label">Bay ID</label><input type="number" id="bayID" class="form-input" value="5"></div><div class="form-group"><label class="form-label">Grinder ID</label><input type="number" id="grinderID" class="form-input" value="2"></div></div>-->
+<!--                <div class="form-row"><div class="form-group"><label class="form-label">Angle (°)</label><input type="number" step="0.1" id="angle" class="form-input" value="45.5"></div><div class="form-group"><label class="form-label">Depth (mm)</label><input type="number" step="0.01" id="depth" class="form-input" value="1.25"></div></div>-->
+<!--                <div class="form-row"><div class="form-group"><label class="form-label">Length (mm)</label><input type="number" id="length" class="form-input" value="150"></div><div class="form-group"><label class="form-label">Config Ver.</label><input type="number" id="configVersion" class="form-input" value="1"></div></div>-->
+<!--                <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="sendConfiguration()" disabled id="configBtn">SEND CONFIGURATION (REG 128–133)</button>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Detection Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">📍 Detection Data</div>-->
+<!--                <div style="margin-bottom:14px">-->
+<!--                    <div style="font-size:11px;color:var(&#45;&#45;muted-foreground);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Manual Input</div>-->
+<!--                    <div class="form-row">-->
+<!--                        <div class="form-group"><label class="form-label">X (mm) — REG 134</label><input type="number" step="0.1" id="detectionX" class="form-input" value="2.5"></div>-->
+<!--                        <div class="form-group"><label class="form-label">Y (mm) — REG 135</label><input type="number" step="0.1" id="detectionY" class="form-input" value="1.8"></div>-->
+<!--                    </div>-->
+<!--                    <div class="form-group"><label class="form-label">Status — REG 136</label>-->
+<!--                        <select id="detectionStatus" class="form-input">-->
+<!--                            <option value="0">0 – No teeth detected</option>-->
+<!--                            <option value="1" selected>1 – Teeth OK</option>-->
+<!--                            <option value="2">2 – Error</option>-->
+<!--                        </select>-->
+<!--                    </div>-->
+<!--                    <div class="control-panel" style="margin-top:8px"><button class="btn btn-primary" onclick="sendDetection()" disabled id="detectionBtn">WRITE REGISTERS</button></div>-->
+<!--                </div>-->
+<!--                <div style="border-top:1px solid var(&#45;&#45;border);padding-top:14px">-->
+<!--                    <div style="font-size:11px;color:var(&#45;&#45;muted-foreground);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🤖 Auto-Detection</div>-->
+<!--                    <div class="form-group"><label class="form-label">Calibration (px/mm)</label><input type="number" step="0.01" id="calibration" class="form-input" value="76.812"></div>-->
+<!--                    <div class="form-group" style="margin-top:4px">-->
+<!--                        <label class="form-label">-->
+<!--                            Tooth Pitch (mm)-->
+<!--                            <span style="font-size:9px;font-weight:400;color:var(&#45;&#45;muted-foreground);margin-left:6px">-->
+<!--                                from datasheet · 0 = disabled (raw mode)-->
+<!--                            </span>-->
+<!--                        </label>-->
+<!--                        <div style="display:flex;gap:8px;align-items:center">-->
+<!--                            <input type="number" step="0.01" id="pitchMm" class="form-input" value="0" min="0"-->
+<!--                                   placeholder="0 = raw detection"-->
+<!--                                   style="font-family:'JetBrains Mono',monospace">-->
+<!--                            <button class="btn btn-primary" onclick="updatePitch()"-->
+<!--                                    style="flex-shrink:0;white-space:nowrap;padding:10px 14px">SET</button>-->
+<!--                        </div>-->
+<!--                        <div id="pitchStatus"-->
+<!--                             style="font-size:10px;color:var(&#45;&#45;muted-foreground);margin-top:5px;-->
+<!--                                    font-family:'JetBrains Mono',monospace">-->
+<!--                            Sine-fit: DISABLED-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                    <div class="form-group"><label class="form-label">Auto-detect interval (ms)</label><input type="number" step="100" id="updateInterval" class="form-input" value="1000" min="100"></div>-->
+<!--                    <div class="control-panel">-->
+<!--                        <button class="btn btn-primary" onclick="runDetection()"  disabled id="analyzeBtn">DETECT</button>-->
+<!--                        <button class="btn btn-success" onclick="detectAndSend()" disabled id="autoSendBtn">DETECT & WRITE</button>-->
+<!--                    </div>-->
+<!--                    <div class="control-panel" style="margin-top:8px">-->
+<!--                        <button class="btn btn-success" onclick="toggleContinuousUpdate()" disabled id="continuousBtn">AUTO-DETECT LOOP</button>-->
+<!--                        <button class="btn btn-warning" onclick="updateGrinderPosition()"  disabled id="updateGrinderBtn">📍 SET GRINDER</button>-->
+<!--                    </div>-->
+<!--                    <div id="detectionResult" style="margin-top:10px;font-size:12px;color:var(&#45;&#45;muted-foreground);text-align:center;min-height:20px"></div>-->
+<!--                    <div id="grinderInfo"    style="margin-top:5px;font-size:11px;color:var(&#45;&#45;muted-foreground);text-align:center">Grinder: Not set</div>-->
+<!--                </div>-->
+<!--                -->
+
+<!--                &lt;!&ndash; ── Calibration Inspection Panel (REG 141/142) ── &ndash;&gt;-->
+<!--                <div class="inspection-panel" id="inspectionPanel" style="display:none">-->
+<!--                    <div class="inspection-panel-title">🔬 Calibration Inspection — REG 141 / 142</div>-->
+
+<!--                    &lt;!&ndash; Live readout (visible while recording) &ndash;&gt;-->
+<!--                    <div class="insp-live" id="inspLive" style="display:none;grid-template-columns:1fr 1fr 1fr 1fr">-->
+<!--                        <div class="insp-live-cell">-->
+<!--                            <div class="insp-live-label">Angle</div>-->
+<!--                            <div class="insp-live-val" id="live-angle" style="color:hsl(280 70% 75%)">—°</div>-->
+<!--                        </div>-->
+<!--                        <div class="insp-live-cell">-->
+<!--                            <div class="insp-live-label">Depth</div>-->
+<!--                            <div class="insp-live-val" id="live-depth" style="color:hsl(38 92% 65%)">—</div>-->
+<!--                        </div>-->
+<!--                        <div class="insp-live-cell">-->
+<!--                            <div class="insp-live-label">Pitch</div>-->
+<!--                            <div class="insp-live-val" id="live-pitch" style="color:limegreen">—</div>-->
+<!--                        </div>-->
+<!--                        <div class="insp-live-cell">-->
+<!--                            <div class="insp-live-label">sharpness</div>-->
+<!--                            <div class="insp-live-val" id="live-blur" style="color:hsl(217 91% 70%)">—</div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                    <div id="inspectionStatus" style="font-size:12px;color:var(&#45;&#45;muted-foreground);margin-bottom:10px">-->
+<!--                        Waiting for REG 141 = 1, or use button below…-->
+<!--                    </div>-->
+
+<!--                    &lt;!&ndash; Result cards (shown after recording stops) &ndash;&gt;-->
+<!--                    <div id="inspectionResults" style="display:none">-->
+<!--                        <div style="font-size:10px;color:var(&#45;&#45;muted-foreground);margin-bottom:6px">-->
+<!--                            Samples: <span id="insp-samples" style="font-family:'JetBrains Mono',monospace;color:var(&#45;&#45;muted-foreground)"></span>-->
+<!--                            &nbsp;|&nbsp; <span style="color:hsl(280 70% 75%)">↓ Results at maximum depth point</span>-->
+<!--                        </div>-->
+<!--                        <div class="insp-result-grid">-->
+<!--                            <div class="insp-stat">-->
+<!--                                <div class="insp-stat-label">Angle @ sharpness Transition</div>-->
+<!--                                <div class="insp-stat-val" id="insp-angle" style="color:hsl(280 70% 75%)">—</div>-->
+<!--                                <div class="insp-stat-unit">degrees</div>-->
+<!--                            </div>-->
+<!--                            <div class="insp-stat">-->
+<!--                                <div class="insp-stat-label">Depth @ Transition</div>-->
+<!--                                <div class="insp-stat-val" id="insp-depth" style="color:hsl(38 92% 65%)">—</div>-->
+<!--                                <div class="insp-stat-unit">mm</div>-->
+<!--                            </div>-->
+<!--                            <div class="insp-stat">-->
+<!--                                <div class="insp-stat-label">Pitch @ Transition</div>-->
+<!--                                <div class="insp-stat-val" id="insp-pitch" style="color:limegreen">—</div>-->
+<!--                                <div class="insp-stat-unit">mm</div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                    &lt;!&ndash; Toggle button — replaces the old timer &ndash;&gt;-->
+<!--                    <button class="btn btn-purple" onclick="toggleInspection()" id="inspToggleBtn"-->
+<!--                            disabled style="width:100%;margin-top:10px;font-size:12px;font-weight:600">-->
+<!--                        🔬 START INSPECTION-->
+<!--                    </button>-->
+<!--                    <div id="inspSampleCount" style="margin-top:6px;font-size:10px;color:var(&#45;&#45;muted-foreground);text-align:center;display:none">-->
+<!--                        Samples recorded: <span id="inspLiveSamples">0</span>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Camera Panel &ndash;&gt;-->
+<!--            <div class="panel">-->
+<!--                <div class="panel-title">📹 Camera Feed</div>-->
+<!--                <div style="position:relative;background:var(&#45;&#45;background);border-radius:8px;overflow:hidden;aspect-ratio:16/9">-->
+<!--                    <img id="cameraFeed" src="" alt="Camera Feed" style="width:100%;height:100%;object-fit:contain;display:none">-->
+<!--                    <canvas id="detectionCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none"></canvas>-->
+<!--                    <div id="cameraPlaceholder" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(&#45;&#45;muted-foreground)"><div style="text-align:center"><div style="font-size:48px;margin-bottom:10px">📷</div><div>Camera not active</div></div></div>-->
+<!--                    <div id="cameraOverlay" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.7);padding:6px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px;display:none"><span style="color:hsl(142,74%,56%)">● LIVE</span></div>-->
+<!--                    <div id="grinderReadyOverlay" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:hsl(142 76% 36%/.9);padding:6px 16px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:white;animation:blink 1s ease-in-out infinite">✓ GRINDER READY</div>-->
+<!--                    &lt;!&ndash; Inspection active overlay on camera &ndash;&gt;-->
+<!--                    <div id="inspectionOverlay" style="display:none;position:absolute;top:10px;right:10px;background:hsl(280 70% 30%/.9);padding:6px 14px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:hsl(280 70% 90%);animation:inspPulse 1s ease-in-out infinite">🔬 REC</div>-->
+<!--                </div>-->
+<!--                <div class="control-panel" style="margin-top:12px">-->
+<!--                    <button class="btn btn-primary" id="gridSelG1" onclick="selectGrinderCamera(1)">📹 G1 / CAM 1</button>-->
+<!--                    <button class="btn btn-primary" id="gridSelG2" onclick="selectGrinderCamera(2)">📹 G2 / CAM 2</button>-->
+<!--                    <button class="btn btn-info"    onclick="refreshCameraMapping()" title="List detected FLIR cameras">🔍 LIST</button>-->
+<!--                </div>-->
+<!--                <div id="cameraMappingInfo" style="margin-top:6px;font-size:10px;color:var(&#45;&#45;muted-foreground);text-align:center;font-family:'JetBrains Mono',monospace">-->
+<!--                    Mapping: <span id="mapG1">G1→?</span> | <span id="mapG2">G2→?</span>-->
+<!--                </div>-->
+<!--                <div style="margin-top:8px;font-size:12px;color:var(&#45;&#45;muted-foreground);text-align:center">FPS: <span id="fpsCounter">0</span> | Frames: <span id="frameCounter">0</span></div>-->
+<!--            </div>-->
+
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Log Panel &ndash;&gt;-->
+<!--        <div class="panel">-->
+<!--            <div class="panel-title">📋 System Log</div>-->
+<!--            <div class="log" id="systemLog">-->
+<!--                <div class="log-entry"><span class="log-time">[00:00:00]</span><span>System initialized. Ready for connection.</span></div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--    const API_BASE='http://localhost:5000/api';-->
+<!--    let connected=false,loopRunning=false,continuousUpdateActive=false;-->
+<!--    let updateIntervalId=null,updateCount=0;-->
+<!--    let cameraActive=false,cameraIntervalId=null;-->
+<!--    let frameCount=0,fpsStart=Date.now(),fpsFrameCount=0;-->
+<!--    let registerPollId=null,lastGrinderReady=false,lastGrindStart=false,currentStep=0;-->
+
+<!--    // ── Inspection state ──────────────────────────────────────────────────────-->
+<!--    let inspectionPollId  = null;-->
+<!--    let _inspRunning      = false;  // true while backend is actively recording-->
+<!--    let _inspResultLogged = false;  // prevents repeated log() after completion-->
+<!--    let _inspLoggedLines  = 0;      // how many event_log lines already written to dashboard-->
+<!--    let lastDetectedDepthMm = 0;-->
+<!--    function getCurrentTime(){return new Date().toLocaleTimeString('en-US',{hour12:false})}-->
+<!--    function log(message,type='info'){-->
+<!--        const logDiv=document.getElementById('systemLog');-->
+<!--        const entry=document.createElement('div'); entry.className='log-entry';-->
+<!--        const cls={success:'log-success',error:'log-error',warning:'log-warning',info:'log-info'}[type]||'';-->
+<!--        const icon={success:'✓',error:'✗',warning:'⚠',info:'ℹ'}[type]||'';-->
+<!--        entry.innerHTML=`<span class="log-time">[${getCurrentTime()}]</span><span class="${cls}">${icon} ${message}</span>`;-->
+<!--        logDiv.appendChild(entry); logDiv.scrollTop=logDiv.scrollHeight;-->
+<!--        const entries=logDiv.querySelectorAll('.log-entry');-->
+<!--        if(entries.length>150) entries[0].remove();-->
+<!--    }-->
+<!--    // ── Per-grinder camera switching ──────────────────────────────────────────-->
+<!--    let currentGrinderId = 1;-->
+
+<!--    function updateGrinderButtonStyles(){-->
+<!--        const g1=document.getElementById('gridSelG1'), g2=document.getElementById('gridSelG2');-->
+<!--        [g1,g2].forEach(b=>{if(b)b.className='btn btn-primary'});-->
+<!--        const active=currentGrinderId===1?g1:g2;-->
+<!--        if(active){active.className='btn btn-success'; active.style.fontWeight='700';}-->
+<!--        document.getElementById('cameraGrinderId').textContent=currentGrinderId;-->
+<!--    }-->
+
+<!--    async function selectGrinderCamera(gid){-->
+<!--        // If camera is off, this is a START with the chosen grinder.-->
+<!--        // If on, it's a SWITCH (which restarts on the new camera).-->
+<!--        const verb = cameraActive ? 'Switch to' : 'Start';-->
+<!--        if(!confirm(`${verb} Grinder ${gid} camera?${cameraActive?' (camera will restart)':''}`))return;-->
+<!--        log(`${verb} grinder ${gid}…`,'info');-->
+<!--        try{-->
+<!--            if(!cameraActive){-->
+<!--                // Cold start path-->
+<!--                currentGrinderId=gid;-->
+<!--                updateGrinderButtonStyles();-->
+<!--                const gidInput=document.getElementById('grinderID');-->
+<!--                if(gidInput)gidInput.value=currentGrinderId;-->
+<!--                await toggleCamera();           // toggleCamera reads currentGrinderId-->
+<!--                loadGrinderStatus();-->
+<!--                return;-->
+<!--            }-->
+<!--            // Hot-switch path-->
+<!--            const res=await fetch(`${API_BASE}/camera/switch`,{-->
+<!--                method:'POST',headers:{'Content-Type':'application/json'},-->
+<!--                body:JSON.stringify({grinder_id:gid})});-->
+<!--            const data=await res.json();-->
+<!--            if(data.success){-->
+<!--                currentGrinderId=data.grinder_id;-->
+<!--                updateGrinderButtonStyles();-->
+<!--                const gidInput=document.getElementById('grinderID');-->
+<!--                if(gidInput)gidInput.value=currentGrinderId;-->
+<!--                log(data.message,'success');-->
+<!--                loadGrinderStatus();-->
+<!--            }else{-->
+<!--                log(data.message||'Switch failed','error');-->
+<!--            }-->
+<!--        }catch(e){log(`Switch error: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function refreshCameraMapping(){-->
+<!--        try{-->
+<!--            const res=await fetch(`${API_BASE}/camera/list`);-->
+<!--            const data=await res.json();-->
+<!--            const m=data.mapping||{};-->
+<!--            document.getElementById('mapG1').textContent=`G1→${m[1]||m['1']||'auto-idx0'}`;-->
+<!--            document.getElementById('mapG2').textContent=`G2→${m[2]||m['2']||'auto-idx1'}`;-->
+<!--            if(data.success&&data.cameras){-->
+<!--                const summary=data.cameras.map(c=>`#${c.index} ${c.model} SN=${c.serial}`).join(' | ');-->
+<!--                log(`Detected cameras: ${summary||'(none)'}`,'info');-->
+<!--            }else if(data.message){-->
+<!--                log(data.message,'warning');-->
+<!--            }-->
+<!--        }catch(e){log(`List cameras error: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    function setStep(step){-->
+<!--        currentStep=step;-->
+<!--        for(let i=1;i<=5;i++){-->
+<!--            const el=document.getElementById(`step${i}`);-->
+<!--            el.classList.remove('step-active','step-done');-->
+<!--            if(i<step)el.classList.add('step-done'); else if(i===step)el.classList.add('step-active');-->
+<!--        }-->
+<!--        const hints={0:'Connect to robot to enable controls',1:'Step 1 done – now press START LOOP',-->
+<!--            2:'Loop started – waiting for robot to reach grinder position…',-->
+<!--            3:'Grinder ready! Run detection then press GRIND START',-->
+<!--            4:'Grinding – robot will reset GRIND_START when done',5:'Cut complete – ready for next tooth'};-->
+<!--        document.getElementById('loopHint').textContent=hints[step]||'';-->
+<!--    }-->
+
+<!--    function startRegisterPolling(){if(registerPollId)return;registerPollId=setInterval(pollRegisters,400)}-->
+<!--    function stopRegisterPolling(){if(registerPollId){clearInterval(registerPollId);registerPollId=null}}-->
+<!--    async function pollRegisters(){-->
+<!--        if(!connected)return;-->
+<!--        try{-->
+<!--            const res=await fetch(`${API_BASE}/robot_registers`);-->
+<!--            const data=await res.json(); if(!data.success)return;-->
+<!--            const r=data.registers;-->
+<!--            setRegBadge('reg-x',r.detection_x_mm.toFixed(1),'badge-x',r.detection_x_mm!==0?'active-blue':'');-->
+<!--            setRegBadge('reg-y',r.detection_y_mm.toFixed(1),'badge-y',r.detection_y_mm!==0?'active-blue':'');-->
+<!--            setRegBadge('reg-depth',(r.detection_depth_mm !== undefined ? r.detection_depth_mm.toFixed(2) : '—'), 'badge-depth', r.detection_depth_mm > 0 ? 'active-blue' : '');-->
+<!--            const statusNames={0:'NONE',1:'OK',2:'ERR'};-->
+<!--            setRegBadge('reg-status',r.status,'badge-status',r.status===1?'active-green':r.status===2?'active-orange':'');-->
+<!--            document.getElementById('reg-status-name').textContent=statusNames[r.status]||'REG 136';-->
+<!--            setRegBadge('reg-start',r.start,'badge-start',r.start?'active-orange':'');-->
+<!--            setRegBadge('reg-grinder-ready',r.grinder_ready,'badge-grinder-ready',r.grinder_ready?'active-green':'');-->
+<!--            setRegBadge('reg-grind-start',r.grind_start,'badge-grind-start',r.grind_start?'active-orange':'');-->
+<!--            // REG 141-->
+<!--            const inspVal=r.teeth_inspect;-->
+<!--            document.getElementById('reg-inspect').textContent=inspVal?'1':'0';-->
+<!--            const inspBadge=document.getElementById('badge-inspect');-->
+<!--            inspBadge.className='reg-badge'+(inspVal?' active-purple':'');-->
+<!--            inspBadge.style.gridColumn='span 2';-->
+<!--            // REG 142-->
+<!--            const ang=r.robot_angle;-->
+<!--            document.getElementById('reg-angle').textContent=ang!==undefined?ang.toFixed(1):'—';-->
+<!--            document.getElementById('badge-angle').className='reg-badge'+(inspVal?' active-purple':'');-->
+<!--            document.getElementById('angleStatusBar').textContent=(ang!==undefined?ang.toFixed(1):'—')+'°';-->
+<!--            document.getElementById('grinderReadyStatus').innerHTML=r.grinder_ready-->
+<!--                ?'<span class="indicator connected"></span>READY'-->
+<!--                :'<span class="indicator disconnected"></span>WAITING';-->
+<!--            document.getElementById('grindStartStatus').innerHTML=r.grind_start-->
+<!--                ?'<span class="indicator warning"></span>ACTIVE'-->
+<!--                :'<span class="indicator disconnected"></span>IDLE';-->
+
+<!--            // ── GRINDER_READY rising edge ─────────────────────────────────-->
+<!--            if(r.grinder_ready&&!lastGrinderReady){-->
+<!--                lastGrinderReady=true;                       // ← latch FIRST-->
+<!--                log('🟢 GRINDER_READY=1 — robot at grinder position, running detection…','success');-->
+<!--                document.getElementById('grinderReadyOverlay').style.display='block';-->
+<!--                document.getElementById('grindStartBtn').disabled=false; setStep(3);-->
+<!--                if(!cameraActive){log('Auto-starting camera (GRINDER_READY triggered)','info');await toggleCamera();}-->
+<!--                if(continuousUpdateActive){-->
+<!--                    await waitForCameraReady();-->
+<!--                    await new Promise(r=>setTimeout(r,600)); // let robot settle + camera stabilize-->
+<!--                    sendDetectionWithAnalysis();-->
+<!--                }-->
+<!--            }-->
+<!--            // ── GRINDER_READY falling edge ────────────────────────────────-->
+<!--            if(!r.grinder_ready&&lastGrinderReady){-->
+<!--                lastGrinderReady=false;                      // ← latch FIRST-->
+<!--                document.getElementById('grinderReadyOverlay').style.display='none';-->
+<!--            }-->
+
+<!--            // ── GRIND_START rising edge (track state only) ────────────────-->
+<!--            if(r.grind_start&&!lastGrindStart){-->
+<!--                lastGrindStart=true;-->
+<!--            }-->
+<!--            // ── GRIND_START falling edge ──────────────────────────────────-->
+<!--            if(!r.grind_start&&lastGrindStart){-->
+<!--                lastGrindStart=false;                        // ← latch FIRST-->
+<!--                log('✓ Cut complete (robot reset GRIND_START=0)','success');-->
+<!--                document.getElementById('grindStartBtn').disabled=false; setStep(5);-->
+<!--                if(continuousUpdateActive&&r.grinder_ready){log('🔍 Running detection for next tooth…','info');setTimeout(()=>sendDetectionWithAnalysis(),200);}-->
+<!--                else if(!continuousUpdateActive){-->
+<!--                    const st=parseInt(document.getElementById('detectionStatus').value);-->
+<!--                    if(st===1){log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth','info');setTimeout(()=>sendGrindStart(),200);}-->
+<!--                    else setTimeout(()=>setStep(loopRunning?3:0),1500);-->
+<!--                }-->
+<!--            }-->
+
+<!--            if(r.estop&&!window._estopActive){window._estopActive=true;activateEstopVisual();log('⚠ E-STOP active (detected from register)','error');}-->
+<!--            else if(!r.estop&&window._estopActive){window._estopActive=false;resetEstopVisual();document.getElementById('clearEstopBtn').style.display='none';}-->
+<!--        }catch(e){}-->
+<!--    }-->
+<!--    // async function pollRegisters(){-->
+<!--    //     if(!connected)return;-->
+<!--    //     try{-->
+<!--    //         const res=await fetch(`${API_BASE}/robot_registers`);-->
+<!--    //         const data=await res.json(); if(!data.success)return;-->
+<!--    //         const r=data.registers;-->
+<!--    //         setRegBadge('reg-x',r.detection_x_mm.toFixed(1),'badge-x',r.detection_x_mm!==0?'active-blue':'');-->
+<!--    //         setRegBadge('reg-y',r.detection_y_mm.toFixed(1),'badge-y',r.detection_y_mm!==0?'active-blue':'');-->
+<!--    //         const statusNames={0:'NONE',1:'OK',2:'ERR'};-->
+<!--    //         setRegBadge('reg-status',r.status,'badge-status',r.status===1?'active-green':r.status===2?'active-orange':'');-->
+<!--    //         document.getElementById('reg-status-name').textContent=statusNames[r.status]||'REG 136';-->
+<!--    //         setRegBadge('reg-start',r.start,'badge-start',r.start?'active-orange':'');-->
+<!--    //         setRegBadge('reg-grinder-ready',r.grinder_ready,'badge-grinder-ready',r.grinder_ready?'active-green':'');-->
+<!--    //         setRegBadge('reg-grind-start',r.grind_start,'badge-grind-start',r.grind_start?'active-orange':'');-->
+<!--    //         // REG 141-->
+<!--    //         const inspVal=r.teeth_inspect;-->
+<!--    //         document.getElementById('reg-inspect').textContent=inspVal?'1':'0';-->
+<!--    //         const inspBadge=document.getElementById('badge-inspect');-->
+<!--    //         inspBadge.className='reg-badge'+(inspVal?' active-purple':'');-->
+<!--    //         inspBadge.style.gridColumn='span 2';-->
+<!--    //         // REG 142-->
+<!--    //         const ang=r.robot_angle;-->
+<!--    //         document.getElementById('reg-angle').textContent=ang!==undefined?ang.toFixed(1):'—';-->
+<!--    //         document.getElementById('badge-angle').className='reg-badge'+(inspVal?' active-purple':'');-->
+<!--    //         document.getElementById('angleStatusBar').textContent=(ang!==undefined?ang.toFixed(1):'—')+'°';-->
+<!--    //-->
+<!--    //         document.getElementById('grinderReadyStatus').innerHTML=r.grinder_ready-->
+<!--    //             ?'<span class="indicator connected"></span>READY'-->
+<!--    //             :'<span class="indicator disconnected"></span>WAITING';-->
+<!--    //         document.getElementById('grindStartStatus').innerHTML=r.grind_start-->
+<!--    //             ?'<span class="indicator warning"></span>ACTIVE'-->
+<!--    //             :'<span class="indicator disconnected"></span>IDLE';-->
+<!--    //-->
+<!--    //         if(r.grinder_ready&&!lastGrinderReady){-->
+<!--    //             log('🟢 GRINDER_READY=1 — robot at grinder position, running detection…','success');-->
+<!--    //             document.getElementById('grinderReadyOverlay').style.display='block';-->
+<!--    //             document.getElementById('grindStartBtn').disabled=false; setStep(3);-->
+<!--    //             if(!cameraActive){log('Auto-starting camera (GRINDER_READY triggered)','info');await toggleCamera();}-->
+<!--    //             if(continuousUpdateActive){await waitForCameraReady();sendDetectionWithAnalysis();}-->
+<!--    //         }-->
+<!--    //         if(!r.grinder_ready&&lastGrinderReady) document.getElementById('grinderReadyOverlay').style.display='none';-->
+<!--    //         if(!r.grind_start&&lastGrindStart){-->
+<!--    //             log('✓ Cut complete (robot reset GRIND_START=0)','success');-->
+<!--    //             document.getElementById('grindStartBtn').disabled=false; setStep(5);-->
+<!--    //             if(continuousUpdateActive&&r.grinder_ready){log('🔍 Running detection for next tooth…','info');setTimeout(()=>sendDetectionWithAnalysis(),200);}-->
+<!--    //             else if(!continuousUpdateActive){-->
+<!--    //                 const st=parseInt(document.getElementById('detectionStatus').value);-->
+<!--    //                 if(st===1){log('⚙️  Status=1 — auto-sending GRIND_START=1 for next tooth','info');setTimeout(()=>sendGrindStart(),200);}-->
+<!--    //                 else setTimeout(()=>setStep(loopRunning?3:0),1500);-->
+<!--    //             }-->
+<!--    //         }-->
+<!--    //         lastGrinderReady=r.grinder_ready; lastGrindStart=r.grind_start;-->
+<!--    //         if(r.estop&&!window._estopActive){window._estopActive=true;activateEstopVisual();log('⚠ E-STOP active (detected from register)','error');}-->
+<!--    //         else if(!r.estop&&window._estopActive){window._estopActive=false;resetEstopVisual();document.getElementById('clearEstopBtn').style.display='none';}-->
+<!--    //     }catch(e){}-->
+<!--    // }-->
+
+<!--    function setRegBadge(valId,value,badgeId,activeClass){-->
+<!--        document.getElementById(valId).textContent=value;-->
+<!--        const badge=document.getElementById(badgeId);-->
+<!--        badge.className='reg-badge'; if(activeClass)badge.classList.add(activeClass);-->
+<!--    }-->
+
+<!--    async function toggleConnection(){-->
+<!--        const btn=document.getElementById('connectBtn');-->
+<!--        const ip=document.getElementById('robotIP').value,port=document.getElementById('robotPort').value,unit=document.getElementById('unitID').value;-->
+<!--        if(!connected){-->
+<!--            log(`Connecting to ${ip}:${port}…`,'info'); btn.disabled=true;-->
+<!--            try{-->
+<!--                const res=await fetch(`${API_BASE}/connect`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({host:ip,port,unit})});-->
+<!--                const data=await res.json();-->
+<!--                if(data.success){-->
+<!--                    connected=true; btn.textContent='DISCONNECT'; btn.className='btn btn-danger btn-connect';-->
+<!--                    document.getElementById('connectionStatus').innerHTML='<span class="indicator connected"></span>CONNECTED';-->
+<!--                    ['detectionBtn','continuousBtn','analyzeBtn','autoSendBtn','updateGrinderBtn','startBtn','stopBtn','configBtn','estopBtn','inspToggleBtn']-->
+<!--                        .forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});-->
+<!--                    document.getElementById('inspectionPanel').style.display='block';-->
+<!--                    startRegisterPolling(); startInspectionPolling(); setStep(1); log(data.message,'success');-->
+<!--                }else log(data.message,'error');-->
+<!--            }catch(e){log(`Connection failed: ${e.message}`,'error')}-->
+<!--            finally{btn.disabled=false}-->
+<!--        }else{-->
+<!--            if(continuousUpdateActive)toggleContinuousUpdate();-->
+<!--            if(cameraActive)await toggleCamera();-->
+<!--            stopRegisterPolling(); stopInspectionPolling(); btn.disabled=true;-->
+<!--            try{-->
+<!--                const res=await fetch(`${API_BASE}/disconnect`,{method:'POST'});-->
+<!--                const data=await res.json();-->
+<!--                connected=false; loopRunning=false;-->
+<!--                btn.textContent='CONNECT TO ROBOT'; btn.className='btn btn-primary btn-connect';-->
+<!--                document.getElementById('connectionStatus').innerHTML='<span class="indicator disconnected"></span>DISCONNECTED';-->
+<!--                document.getElementById('robotState').textContent='IDLE';-->
+<!--                document.getElementById('grinderReadyStatus').innerHTML='<span class="indicator disconnected"></span>—';-->
+<!--                document.getElementById('grindStartStatus').innerHTML='<span class="indicator disconnected"></span>—';-->
+<!--                ['detectionBtn','continuousBtn','analyzeBtn','autoSendBtn','updateGrinderBtn','startBtn','stopBtn','grindStartBtn','configBtn','estopBtn','clearEstopBtn','inspToggleBtn']-->
+<!--                    .forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});-->
+<!--                document.getElementById('clearEstopBtn').style.display='none';-->
+<!--                document.getElementById('inspectionPanel').style.display='none';-->
+<!--                window._estopActive=false; resetEstopVisual(); setStep(0); log(data.message,'warning');-->
+<!--            }catch(e){log(`Disconnect error: ${e.message}`,'error')}-->
+<!--            finally{btn.disabled=false}-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function waitForCameraReady(timeoutMs=8000){-->
+<!--        if(!cameraActive)return;-->
+<!--        const deadline=Date.now()+timeoutMs;-->
+<!--        while(Date.now()<deadline){-->
+<!--            try{const res=await fetch(`${API_BASE}/camera/ready`);const data=await res.json();if(data.ready)return;}catch(_){}-->
+<!--            await new Promise(r=>setTimeout(r,80));-->
+<!--        }-->
+<!--        log('⚠ Camera ready timeout — proceeding anyway','warning');-->
+<!--    }-->
+
+<!--    window._estopActive=false;-->
+<!--    function resetEstopVisual(){-->
+<!--        const btn=document.getElementById('estopBtn');-->
+<!--        if(btn){btn.style.background='hsl(0 84% 38%)';btn.style.boxShadow='0 0 0 0 hsl(0 84% 50%/.5)';btn.style.animation='';btn.textContent='🚨 EMERGENCY STOP';}-->
+<!--        document.getElementById('estopStatus').innerHTML='<span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none"></span>INACTIVE';-->
+<!--        document.getElementById('estopStatusItem').style.borderColor='hsl(0 0% 14.9%)';-->
+<!--        const badge=document.getElementById('badge-estop');badge.className='reg-badge';badge.style.gridColumn='1 / -1';-->
+<!--        document.getElementById('reg-estop').textContent='0';-->
+<!--    }-->
+<!--    function activateEstopVisual(){-->
+<!--        const btn=document.getElementById('estopBtn');-->
+<!--        if(btn){btn.style.background='hsl(0 84% 55%)';btn.style.boxShadow='0 0 24px 8px hsl(0 84% 40%/.8)';btn.style.animation='estopPulse .8s ease-in-out infinite';btn.textContent='🚨 E-STOP ACTIVE';}-->
+<!--        document.getElementById('estopStatus').innerHTML='<span class="indicator" style="background:hsl(0 84% 60%);box-shadow:0 0 8px hsl(0 84% 60%);animation:blink .5s ease-in-out infinite"></span>ACTIVE';-->
+<!--        document.getElementById('estopStatusItem').style.borderColor='hsl(0 84% 60%)';-->
+<!--        const badge=document.getElementById('badge-estop');badge.className='reg-badge active-orange';badge.style.borderColor='hsl(0 84% 60%)';badge.style.boxShadow='0 0 10px hsl(0 84% 40%/.6)';badge.style.gridColumn='1 / -1';-->
+<!--        document.getElementById('reg-estop').textContent='1';-->
+<!--        document.getElementById('clearEstopBtn').style.display='block';document.getElementById('clearEstopBtn').disabled=false;-->
+<!--    }-->
+<!--    async function triggerEStop(){-->
+<!--        log('🚨 EMERGENCY STOP triggered!','error'); window._estopActive=true; activateEstopVisual();-->
+<!--        loopRunning=false; document.getElementById('robotState').innerHTML='<span class="indicator" style="background:hsl(0 84% 60%);box-shadow:0 0 6px hsl(0 84% 60%);animation:blink .5s ease-in-out infinite"></span>E-STOP'; setStep(0);-->
+<!--        try{const res=await fetch(`${API_BASE}/estop`,{method:'POST'});const data=await res.json();if(data.success)log(data.message,'error');else log(`E-STOP write failed: ${data.message}`,'error');}-->
+<!--        catch(e){log(`E-STOP request error: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function clearEStop(){-->
+<!--        log('Clearing E-STOP (REG 140=0)…','warning');-->
+<!--        try{const res=await fetch(`${API_BASE}/estop/clear`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success){window._estopActive=false;resetEstopVisual();document.getElementById('clearEstopBtn').style.display='none';document.getElementById('robotState').textContent='IDLE';log(data.message,'success');}-->
+<!--            else log(`Clear E-STOP failed: ${data.message}`,'error');}-->
+<!--        catch(e){log(`Clear E-STOP error: ${e.message}`,'error')}-->
+<!--    }-->
+
+<!--    async function sendConfiguration(){-->
+<!--        const bay_id=document.getElementById('bayID').value, grinder_id=document.getElementById('grinderID').value;-->
+<!--        const angle=document.getElementById('angle').value, depth=document.getElementById('depth').value;-->
+<!--        const length=document.getElementById('length').value, config_version=document.getElementById('configVersion').value;-->
+<!--        log(`Sending config: Bay=${bay_id}, Grinder=${grinder_id}, Angle=${angle}°, Depth=${depth}mm, Length=${length}mm`,'info');-->
+<!--        try{-->
+<!--            const res=await fetch(`${API_BASE}/configuration`,{method:'POST',-->
+<!--                headers:{'Content-Type':'application/json'},-->
+<!--                body:JSON.stringify({bay_id,grinder_id,angle,depth,length,config_version})});-->
+<!--            const data=await res.json();-->
+<!--            if(data.success){-->
+<!--                log(data.message,'success');-->
+<!--                if(data.camera_switched){-->
+<!--                    currentGrinderId=data.grinder_id;-->
+<!--                    updateGrinderButtonStyles();-->
+<!--                    log(`🔄 Camera auto-switched to grinder ${data.grinder_id}`,'success');-->
+<!--                    loadGrinderStatus();  // refresh stored tip for new station-->
+<!--                }-->
+<!--            }else{-->
+<!--                log(data.message,'error');-->
+<!--            }-->
+<!--        }catch(e){log(`Config error: ${e.message}`,'error')}-->
+<!--    }-->
+
+<!--    async function startLoop(){-->
+<!--        log('🚀 Sending START=1 — loop begins…','info');-->
+<!--        try{const res=await fetch(`${API_BASE}/start`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success){loopRunning=true;document.getElementById('robotState').innerHTML='<span class="indicator active"></span>RUNNING';setStep(2);log(data.message,'success');}-->
+<!--            else log(data.message,'error');}-->
+<!--        catch(e){log(`Start failed: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function stopLoop(){-->
+<!--        log('■ Sending START=0 — stopping loop','warning');-->
+<!--        if(continuousUpdateActive){continuousUpdateActive=false;document.getElementById('continuousBtn').textContent='AUTO-DETECT LOOP';document.getElementById('continuousBtn').className='btn btn-success';document.getElementById('autoUpdateStatus').textContent='OFF';log('Auto-detect loop stopped','warning');}-->
+<!--        try{const res=await fetch(`${API_BASE}/stop`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success){loopRunning=false;document.getElementById('robotState').textContent='IDLE';document.getElementById('grindStartBtn').disabled=true;setStep(0);log(data.message,'warning');-->
+<!--                await fetch(`${API_BASE}/detection`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_mm:0,y_mm:0,status:0})});-->
+<!--                setDetectionStatus(0);log('REG 136 STATUS=0 written','warning');}-->
+<!--            else log(data.message,'error');}-->
+<!--        catch(e){log(`Stop failed: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function sendGrindStart(){-->
+<!--        const x=parseFloat(document.getElementById('detectionX').value),y=parseFloat(document.getElementById('detectionY').value);-->
+<!--        const status=parseInt(document.getElementById('detectionStatus').value);-->
+<!--        log(`⚙️  Sending GRIND_START=1 (X=${x}mm Y=${y}mm)`,'info');document.getElementById('grindStartBtn').disabled=true;-->
+<!--        try{const res=await fetch(`${API_BASE}/grind_start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_mm:x, y_mm:y, status, depth_mm:lastDetectedDepthMm})});-->
+<!--            const data=await res.json();if(data.success){setStep(4);log(data.message,'success');}-->
+<!--            else{document.getElementById('grindStartBtn').disabled=false;log(data.message,'error');}}-->
+<!--        catch(e){document.getElementById('grindStartBtn').disabled=false;log(`GRIND_START failed: ${e.message}`,'error')}-->
+<!--    }-->
+
+<!--    async function sendDetection(){-->
+<!--        const x=document.getElementById('detectionX').value,y=document.getElementById('detectionY').value,status=document.getElementById('detectionStatus').value;-->
+<!--        log(`Writing detection: X=${x}mm Y=${y}mm STATUS=${status}`,'info');-->
+<!--        try{const res=await fetch(`${API_BASE}/detection`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_mm:x,y_mm:y,status})});-->
+<!--            const data=await res.json();if(data.success)log(data.message,'success');else log(data.message,'error');}-->
+<!--        catch(e){log(`Write failed: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function runDetection(){-->
+<!--        log('Running blade detection…','info');document.getElementById('detectionResult').innerHTML='<span style="color:var(&#45;&#45;warning)">⏳ Analysing…</span>';-->
+<!--        try{const res=await fetch(`${API_BASE}/detection/analyze`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success&&data.detection){const d=data.detection;-->
+<!--                document.getElementById('detectionX').value=d.x_mm;document.getElementById('detectionY').value=d.y_mm;setDetectionStatus(1);-->
+<!--                document.getElementById('detectionResult').innerHTML=`<span style="color:var(&#45;&#45;success)">✓ Valley ${d.valley_id||'N/A'}: (${d.x_mm}, ${d.y_mm})mm | ${d.num_teeth} teeth</span>`;-->
+<!--                lastDetectedDepthMm = d.depth_x_mm || 0;-->
+<!--                log(`Detected: Valley ${d.valley_id||'N/A'} at (${d.x_mm}, ${d.y_mm})mm`,'success');}-->
+<!--            else{setDetectionStatus(0);document.getElementById('detectionResult').innerHTML='<span style="color:var(&#45;&#45;danger)">✗ No teeth detected</span>';log(data.message||'No teeth','warning');}}-->
+<!--        catch(e){setDetectionStatus(2);document.getElementById('detectionResult').innerHTML='<span style="color:var(&#45;&#45;danger)">✗ Failed</span>';log(`Detection failed: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function detectAndSend(){-->
+<!--        log('Detecting & writing to robot…','info');document.getElementById('detectionResult').innerHTML='<span style="color:var(&#45;&#45;warning)">⏳ Detecting…</span>';-->
+<!--        try{const res=await fetch(`${API_BASE}/detection/send_auto`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success&&data.detection){const d=data.detection;-->
+<!--                document.getElementById('detectionX').value=d.x_mm;document.getElementById('detectionY').value=d.y_mm;setDetectionStatus(1);-->
+<!--                document.getElementById('detectionResult').innerHTML=`<span style="color:var(&#45;&#45;success)">✓ Written: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm</span>`;-->
+<!--                lastDetectedDepthMm = d.depth_x_mm || 0;-->
+<!--                log(`Detect & write: Valley ${d.valley_id||'N/A'} — ${d.num_teeth} teeth`,'success');}-->
+<!--            else{setDetectionStatus(0);document.getElementById('detectionResult').innerHTML='<span style="color:var(&#45;&#45;danger)">✗ Failed</span>';log(data.message||'Failed','error');}}-->
+<!--        catch(e){setDetectionStatus(2);log(`Error: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    function setDetectionStatus(value){document.getElementById('detectionStatus').value=value}-->
+
+<!--    let autoDetectFailCount=0,detectionRunning=false;-->
+<!--    function toggleContinuousUpdate(){-->
+<!--        const btn=document.getElementById('continuousBtn');-->
+<!--        if(!continuousUpdateActive){-->
+<!--            autoDetectFailCount=0;continuousUpdateActive=true;updateCount=0;-->
+<!--            btn.textContent='STOP AUTO-DETECT';btn.className='btn btn-danger';-->
+<!--            document.getElementById('autoUpdateStatus').innerHTML='<span class="indicator active"></span>ON (0)';-->
+<!--            log('Auto-detect enabled — will fire when GRINDER_READY=1 and GRIND_START=0','success');-->
+<!--        }else{-->
+<!--            continuousUpdateActive=false;btn.textContent='AUTO-DETECT LOOP';btn.className='btn btn-success';-->
+<!--            document.getElementById('autoUpdateStatus').textContent='OFF';-->
+<!--            log(`Auto-detect disabled after ${updateCount} detections`,'warning');-->
+<!--        }-->
+<!--    }-->
+<!--    // async function sendDetectionWithAnalysis(){-->
+<!--    //     if(detectionRunning)return; detectionRunning=true;-->
+<!--    //     try{const res=await fetch(`${API_BASE}/detection/send_auto`,{method:'POST'});const data=await res.json();-->
+<!--    //         if(data.success&&data.detection){const d=data.detection;autoDetectFailCount=0;-->
+<!--    //             document.getElementById('detectionX').value=d.x_mm;document.getElementById('detectionY').value=d.y_mm;setDetectionStatus(1);-->
+<!--    //             updateCount++;document.getElementById('autoUpdateStatus').innerHTML=`<span class="indicator active"></span>ON (${updateCount})`;-->
+<!--    //             if(d.all_valleys&&d.all_valleys.length>1){-->
+<!--    //                 const others=d.all_valleys-->
+<!--    //                     .filter(v=>v.valley_id!==d.valley_id)-->
+<!--    //                     .map(v=>`Valley ${v.valley_id} (${v.x_mm}, ${v.y_mm})mm`)-->
+<!--    //                     .join(' | ');-->
+<!--    //                 if(others) log(`Auto-detect: other valleys — ${others}`,'info');-->
+<!--    //             }-->
+<!--    //             log(`Auto-detect: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm — sending GRIND_START`,'success');sendGrindStart();}-->
+<!--    //         else{autoDetectFailCount++;setDetectionStatus(0);-->
+<!--    //             await fetch(`${API_BASE}/detection`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_mm:0,y_mm:0,status:0})});-->
+<!--    //             log(`Auto-detect miss ×${autoDetectFailCount} — status=0 written`,'warning');}}-->
+<!--    //     catch(e){autoDetectFailCount++;setDetectionStatus(2);-->
+<!--    //         try{await fetch(`${API_BASE}/detection`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_mm:0,y_mm:0,status:2})});}catch(_){}-->
+<!--    //         log(`Auto-detect error: ${e.message}`,'error');}-->
+<!--    //     finally{detectionRunning=false}-->
+<!--    // }-->
+<!--    async function sendDetectionWithAnalysis(maxAttempts=10, retryDelayMs=200){-->
+<!--        if(detectionRunning)return; detectionRunning=true;-->
+<!--        try{-->
+<!--            for(let attempt=1; attempt<=maxAttempts; attempt++){-->
+<!--                try{-->
+<!--                    const res=await fetch(`${API_BASE}/detection/send_auto`,{method:'POST'});-->
+<!--                    const data=await res.json();-->
+<!--                    if(data.success&&data.detection){-->
+<!--                        const d=data.detection; autoDetectFailCount=0;-->
+<!--                        document.getElementById('detectionX').value=d.x_mm;-->
+<!--                        document.getElementById('detectionY').value=d.y_mm;-->
+<!--                        setDetectionStatus(1);-->
+<!--                        lastDetectedDepthMm = d.depth_x_mm || 0;-->
+<!--                        updateCount++;-->
+<!--                        document.getElementById('autoUpdateStatus').innerHTML=`<span class="indicator active"></span>ON (${updateCount})`;-->
+<!--                        if(d.all_valleys&&d.all_valleys.length>1){-->
+<!--                            const others=d.all_valleys-->
+<!--                                .filter(v=>v.valley_id!==d.valley_id)-->
+<!--                                .map(v=>`Valley ${v.valley_id} (${v.x_mm}, ${v.y_mm})mm`)-->
+<!--                                .join(' | ');-->
+<!--                            if(others) log(`Auto-detect: other valleys — ${others}`,'info');-->
+<!--                        }-->
+<!--                        log(`Auto-detect: Valley ${d.valley_id||'N/A'} (${d.x_mm}, ${d.y_mm})mm  ` + `depth=${d.depth_x_mm}mm on attempt ${attempt}/${maxAttempts} — sending GRIND_START`, 'success');-->
+<!--                        sendGrindStart();-->
+<!--                        return;                                  // ← stop on first hit-->
+<!--                    }-->
+<!--                    autoDetectFailCount++;-->
+<!--                    log(`Auto-detect miss ${attempt}/${maxAttempts}`,'warning');-->
+<!--                }catch(e){-->
+<!--                    autoDetectFailCount++;-->
+<!--                    log(`Auto-detect error ${attempt}/${maxAttempts}: ${e.message}`,'error');-->
+<!--                }-->
+<!--                if(attempt<maxAttempts) await new Promise(r=>setTimeout(r,retryDelayMs));-->
+<!--            }-->
+<!--            // ── All attempts exhausted ──-->
+<!--            setDetectionStatus(0);-->
+<!--            try{-->
+<!--                await fetch(`${API_BASE}/detection`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x_mm:0,y_mm:0,status:0})});-->
+<!--            }catch(_){}-->
+<!--            log(`Auto-detect: gave up after ${maxAttempts} attempts — status=0 written`,'error');-->
+<!--        }finally{-->
+<!--            detectionRunning=false;-->
+<!--        }-->
+<!--    }-->
+<!--    async function updateCalibration(){-->
+<!--        const v=document.getElementById('calibration').value;-->
+<!--        try{const res=await fetch(`${API_BASE}/detection/calibrate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pixels_per_mm:parseFloat(v)})});-->
+<!--            const data=await res.json();if(data.success)log(`Calibration: ${v} px/mm`,'success');}-->
+<!--        catch(e){log(`Calibration error: ${e.message}`,'error')}-->
+<!--    }-->
+<!--    async function updateGrinderPosition(){-->
+<!--        log('Detecting grinder position…','info');document.getElementById('grinderInfo').innerHTML='<span style="color:var(&#45;&#45;warning)">⏳ Updating…</span>';-->
+<!--        try{const res=await fetch(`${API_BASE}/detection/update_grinder`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success&&data.grinder_tip){document.getElementById('grinderInfo').innerHTML=`<span style="color:var(&#45;&#45;success)">✓ Grinder: (${data.grinder_tip.x}, ${data.grinder_tip.y})</span>`;log(`Grinder set: (${data.grinder_tip.x}, ${data.grinder_tip.y})`,'success');}-->
+<!--            else{document.getElementById('grinderInfo').innerHTML='<span style="color:var(&#45;&#45;danger)">✗ Not found</span>';log(data.message||'Could not detect grinder','error');}}-->
+<!--        catch(e){log(`Grinder update failed: ${e.message}`,'error')}-->
+<!--    }-->
+
+<!--    // ── Calibration Inspection (REG 141/142) ─────────────────────────────────-->
+<!--    function startInspectionPolling(){-->
+<!--        if(inspectionPollId)return;-->
+<!--        inspectionPollId=setInterval(pollInspection,400);-->
+<!--    }-->
+<!--    function stopInspectionPolling(){-->
+<!--        if(inspectionPollId){clearInterval(inspectionPollId);inspectionPollId=null;}-->
+<!--    }-->
+
+<!--    async function pollInspection(){-->
+<!--        try{-->
+<!--            const res=await fetch(`${API_BASE}/inspection/status`);-->
+<!--            const data=await res.json();-->
+<!--            const active=data.active, result=data.result, currentAngle=data.current_angle;-->
+<!--            const btn=document.getElementById('inspToggleBtn');-->
+
+<!--            // Update blade angle everywhere-->
+<!--            if(currentAngle!==undefined){-->
+<!--                document.getElementById('angleStatusBar').textContent=currentAngle.toFixed(1)+'°';-->
+<!--                document.getElementById('reg-angle').textContent=currentAngle.toFixed(1);-->
+<!--            }-->
+
+<!--            // ── Stream new event_log lines to dashboard log ───────────────────-->
+<!--            // (runs regardless of active/idle so lines keep appearing until done)-->
+<!--            if(result&&result.event_log&&result.event_log.length>_inspLoggedLines){-->
+<!--                const newLines=result.event_log.slice(_inspLoggedLines);-->
+<!--                newLines.forEach(line=>{-->
+<!--                    const tag=line.includes('OK   ')?'success':-->
+<!--                              line.includes('sharpness ')||line.includes('SKIP ')?'warning':-->
+<!--                              line.includes('ERR  ')?'error':'info';-->
+<!--                    log(`[INSP] ${line}`,'info'===tag?'info':tag);-->
+<!--                });-->
+<!--                _inspLoggedLines=result.event_log.length;-->
+<!--            }-->
+
+<!--            if(active){-->
+<!--                // ── RECORDING ────────────────────────────────────────────────-->
+<!--                if(!_inspRunning){-->
+<!--                    // rising edge — just started-->
+<!--                    _inspResultLogged=false;-->
+<!--                    _inspLoggedLines=0;-->
+<!--                    document.getElementById('inspectionResults').style.display='none';-->
+<!--                    document.getElementById('inspLive').style.display='grid';-->
+<!--                    document.getElementById('inspSampleCount').style.display='block';-->
+<!--                    document.getElementById('inspectionOverlay').style.display='block';-->
+<!--                    document.getElementById('inspectStatusItem').style.borderColor='hsl(280 70% 55%)';-->
+<!--                    log('🔬 Calibration inspection recording started…','info');-->
+<!--                }-->
+<!--                _inspRunning=true;-->
+<!--                btn.textContent='⏹ STOP INSPECTION';-->
+<!--                btn.className='btn btn-danger';-->
+<!--                document.getElementById('inspectStatusBar').innerHTML='<span class="indicator" style="background:hsl(280 70% 55%);box-shadow:0 0 6px hsl(280 70% 55%);animation:blink .6s ease-in-out infinite"></span>RECORDING';-->
+<!--                document.getElementById('inspectionStatus').innerHTML=-->
+<!--                    `<span style="color:hsl(280 70% 75%)">⏺ Recording… angle: ${(currentAngle||0).toFixed(1)}°</span>`;-->
+<!--                if(result&&result.status==='running'){-->
+<!--                    document.getElementById('live-angle').textContent=(result.live_angle||0).toFixed(1)+'°';-->
+<!--                    document.getElementById('live-depth').textContent=(result.live_depth||0).toFixed(3);-->
+<!--                    document.getElementById('live-pitch').textContent=(result.live_pitch||0).toFixed(3);-->
+<!--                    // Show blur score in the live strip if element exists-->
+<!--                    const blurEl=document.getElementById('live-blur');-->
+<!--                    if(blurEl)blurEl.textContent=result.live_blur!=null?result.live_blur.toFixed(0):'—';-->
+<!--                    const sc=result.samples||0, sk=result.skipped_blur||0;-->
+<!--                    document.getElementById('inspLiveSamples').textContent=`${sc} accepted  ${sk} blurry`;-->
+<!--                }-->
+<!--            }else{-->
+<!--                // ── IDLE / COMPLETE ───────────────────────────────────────────-->
+<!--                if(_inspRunning){-->
+<!--                    // falling edge — just finished-->
+<!--                    document.getElementById('inspectionOverlay').style.display='none';-->
+<!--                    document.getElementById('inspLive').style.display='none';-->
+<!--                    document.getElementById('inspSampleCount').style.display='none';-->
+<!--                    document.getElementById('inspectStatusItem').style.borderColor='hsl(0 0% 14.9%)';-->
+<!--                }-->
+<!--                _inspRunning=false;-->
+<!--                btn.textContent='🔬 START INSPECTION';-->
+<!--                btn.className='btn btn-purple';-->
+
+<!--                if(result&&result.status==='complete'){-->
+<!--                    document.getElementById('inspectStatusBar').innerHTML='<span class="indicator connected"></span>DONE';-->
+<!--                    document.getElementById('inspectionStatus').innerHTML=-->
+<!--                        `<span style="color:limegreen">✓ Transition @ ${result.transition_angle}° — ${result.samples} sharp, ${result.skipped_blur||0} blurry</span>`;-->
+<!--                    document.getElementById('insp-angle').textContent=result.transition_angle.toFixed(2);-->
+<!--                    document.getElementById('insp-depth').textContent=result.transition_depth_mm.toFixed(3);-->
+<!--                    document.getElementById('insp-pitch').textContent=result.transition_pitch_mm.toFixed(3);-->
+<!--                    document.getElementById('insp-samples').textContent=-->
+<!--                        `${result.samples} sharp  |  ${result.skipped_blur||0} blurry  |  blur@transition=${result.transition_blur||'—'}`;-->
+<!--                    document.getElementById('inspectionResults').style.display='block';-->
+<!--                    // ── LOG SUMMARY EXACTLY ONCE ──────────────────────────────-->
+<!--                    if(!_inspResultLogged){-->
+<!--                        _inspResultLogged=true;-->
+<!--                        log(`🔬 Inspection complete: transition @ ${result.transition_angle}° | `+-->
+<!--                            `depth=${result.transition_depth_mm}mm | pitch=${result.transition_pitch_mm}mm | `+-->
+<!--                            `Sharpness=${result.transition_blur} | ${result.samples} sharp, ${result.skipped_blur||0} blurry`,'success');-->
+<!--                    }-->
+<!--                }else if(result&&result.status==='error'){-->
+<!--                    document.getElementById('inspectStatusBar').innerHTML='<span class="indicator disconnected"></span>ERROR';-->
+<!--                    document.getElementById('inspectionStatus').innerHTML=-->
+<!--                        `<span style="color:hsl(0 84% 60%)">✗ ${result.message||'Failed'} (${result.skipped_blur||0} blurry rejected)</span>`;-->
+<!--                    if(!_inspResultLogged){-->
+<!--                        _inspResultLogged=true;-->
+<!--                        log(`🔬 Inspection error: ${result.message||'No sharp samples'} — ${result.skipped_blur||0} Sharpness rejected`,'error');-->
+<!--                    }-->
+<!--                }else{-->
+<!--                    document.getElementById('inspectStatusBar').innerHTML='<span class="indicator disconnected" style="background:hsl(0 0% 40%);box-shadow:none"></span>IDLE';-->
+<!--                    document.getElementById('inspectionStatus').textContent='Waiting for REG 141 = 1, or use button below…';-->
+<!--                }-->
+<!--            }-->
+<!--        }catch(_){}-->
+<!--    }-->
+
+<!--    async function toggleInspection(){-->
+<!--        if(_inspRunning){-->
+<!--            // Stop-->
+<!--            log('⏹ Stopping inspection…','warning');-->
+<!--            try{-->
+<!--                const res=await fetch(`${API_BASE}/inspection/stop`,{method:'POST'});-->
+<!--                const data=await res.json();-->
+<!--                if(data.success)log(data.message,'warning'); else log(data.message,'error');-->
+<!--            }catch(e){log(`Stop inspection error: ${e.message}`,'error')}-->
+<!--        }else{-->
+<!--            // Start-->
+<!--            if(!cameraActive){log('Camera must be active for inspection','error');return;}-->
+<!--            log('🔬 Manual calibration inspection started…','info');-->
+<!--            document.getElementById('inspectionResults').style.display='none';-->
+<!--            try{-->
+<!--                const res=await fetch(`${API_BASE}/inspection/start`,{method:'POST'});-->
+<!--                const data=await res.json();-->
+<!--                if(data.success)log(data.message,'success'); else log(data.message,'error');-->
+<!--            }catch(e){log(`Start inspection error: ${e.message}`,'error')}-->
+<!--        }-->
+<!--    }-->
+
+<!--    // ── Camera ────────────────────────────────────────────────────────────────-->
+<!--    async function toggleCamera(){-->
+<!--        if(!cameraActive){-->
+<!--            log('Starting camera…','info');-->
+<!--            try{-->
+<!--                const res=await fetch(`${API_BASE}/camera/start`,{-->
+<!--                    method:'POST',headers:{'Content-Type':'application/json'},-->
+<!--                    body:JSON.stringify({grinder_id:currentGrinderId})});-->
+<!--                const data=await res.json();-->
+<!--                if(data.success){-->
+<!--                    cameraActive=true;frameCount=0;fpsStart=Date.now();fpsFrameCount=0;-->
+<!--                    if(data.grinder_id){currentGrinderId=data.grinder_id;updateGrinderButtonStyles();}-->
+<!--                    document.getElementById('cameraStatus').innerHTML='<span class="indicator active"></span>LIVE';-->
+<!--                    ['analyzeBtn','autoSendBtn','updateGrinderBtn','inspToggleBtn']-->
+<!--                        .forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});-->
+<!--                    document.getElementById('cameraFeed').style.display='block';-->
+<!--                    document.getElementById('cameraPlaceholder').style.display='none';-->
+<!--                    document.getElementById('cameraOverlay').style.display='block';-->
+<!--                    fetchCameraFrame();cameraIntervalId=setInterval(fetchCameraFrame,33);-->
+<!--                    injectOverlayToggle();startOverlayPolling();-->
+<!--                    log(data.message,'success');-->
+<!--                }else log(data.message||'Camera failed','error');-->
+<!--            }catch(e){log(`Camera start: ${e.message}`,'error')}-->
+<!--        }else{-->
+<!--            cameraActive=false;-->
+<!--            if(cameraIntervalId){clearInterval(cameraIntervalId);cameraIntervalId=null;}-->
+<!--            stopOverlayPolling();-->
+<!--            try{-->
+<!--                await fetch(`${API_BASE}/camera/stop`,{method:'POST'});-->
+<!--                document.getElementById('cameraStatus').textContent='OFF';-->
+<!--                ['analyzeBtn','autoSendBtn','updateGrinderBtn']-->
+<!--                    .forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});-->
+<!--                document.getElementById('cameraFeed').style.display='none';-->
+<!--                document.getElementById('cameraPlaceholder').style.display='flex';-->
+<!--                document.getElementById('cameraOverlay').style.display='none';-->
+<!--                log(`Camera stopped (${frameCount} frames)`,'warning');-->
+<!--            }catch(e){log(`Camera stop: ${e.message}`,'error')}-->
+<!--        }-->
+<!--    }-->
+<!--    async function fetchCameraFrame(){-->
+<!--        if(!cameraActive)return;-->
+<!--        try{const res=await fetch(`${API_BASE}/camera/frame?t=${Date.now()}`);-->
+<!--            if(res.ok){const blob=await res.blob();const url=URL.createObjectURL(blob);-->
+<!--                const img=document.getElementById('cameraFeed');-->
+<!--                if(img.src&&img.src.startsWith('blob:'))URL.revokeObjectURL(img.src);-->
+<!--                img.src=url;frameCount++;fpsFrameCount++;document.getElementById('frameCounter').textContent=frameCount;-->
+<!--                const now=Date.now();-->
+<!--                if(now-fpsStart>=1000){document.getElementById('fpsCounter').textContent=(fpsFrameCount/((now-fpsStart)/1000)).toFixed(1);fpsStart=now;fpsFrameCount=0;}}}-->
+<!--        catch(e){if(cameraActive)console.warn(e.message)}-->
+<!--    }-->
+<!--    async function captureFrame(){-->
+<!--        log('Capturing frame…','info');-->
+<!--        try{const res=await fetch(`${API_BASE}/camera/capture`,{method:'POST'});const data=await res.json();-->
+<!--            if(data.success)log(`Captured: ${data.filename}`,'success');else log(data.message||'Capture failed','error');}-->
+<!--        catch(e){log(`Capture: ${e.message}`,'error')}-->
+<!--    }-->
+
+<!--    // ── DB lookup ─────────────────────────────────────────────────────────────-->
+<!--    async function loadBladeFromDB(){-->
+<!--        const bladeId=document.getElementById('dbBladeID').value.trim();-->
+<!--        if(!bladeId){showDbStatus('Please enter a Blade ID','error');return;}-->
+<!--        const btn=document.getElementById('dbLoadBtn');btn.disabled=true;btn.textContent='…';showDbStatus('Loading…','loading');-->
+<!--        try{const res=await fetch(`${API_BASE}/blade/${encodeURIComponent(bladeId)}`);const data=await res.json();-->
+<!--            if(data.success&&data.blade){const b=data.blade;-->
+<!--                if(b.reach_angle!=null)document.getElementById('angle').value=b.reach_angle;-->
+<!--                if(b.depth1!=null)document.getElementById('depth').value=b.depth1;-->
+<!--                if(b.length!=null)document.getElementById('length').value=b.length;-->
+<!--                const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v!=null?v:'—'};-->
+<!--                set('dbDepth1',b.depth1);set('dbDepth2',b.depth2);set('dbThickness',b.thickness);-->
+<!--                set('dbTipAngle',b.tip_angle);set('dbReachAngle',b.reach_angle);set('dbDepthOfCut',b.depth_of_cut_from_angle);-->
+<!--                document.getElementById('dbExtraFields').classList.add('visible');-->
+<!--                showDbStatus(`✓ Loaded: ${bladeId}`,'loaded');-->
+<!--                log(`Blade "${bladeId}" loaded — angle=${b.reach_angle}° depth=${b.depth1}mm length=${b.length}mm`,'success');}-->
+<!--            else{document.getElementById('dbExtraFields').classList.remove('visible');showDbStatus(`✗ ${data.message||'Not found'}`,'error');log(`Blade lookup: ${data.message||'Not found'}`,'error');}}-->
+<!--        catch(e){showDbStatus('✗ Request failed','error');log(`DB request failed: ${e.message}`,'error')}-->
+<!--        finally{btn.disabled=false;btn.textContent='LOAD'}-->
+<!--    }-->
+<!--    function showDbStatus(msg,type){const el=document.getElementById('dbStatus');el.style.display='block';el.innerHTML=`<span class="db-blade-badge ${type}">${msg}</span>`;}-->
+
+<!--    // ── Canvas overlay ────────────────────────────────────────────────────────-->
+<!--    let overlayPollId=null,lastOverlayResult=null,lastTeethData=null,overlayMode='teeth';-->
+<!--    function injectOverlayToggle(){-->
+<!--        if(document.getElementById('overlayToggleBtn'))return;-->
+<!--        const anchor=document.getElementById('gridSelG1');-->
+<!--        if(!anchor)return;-->
+<!--        const cpanel=anchor.closest('.control-panel');-->
+<!--        if(!cpanel)return;-->
+<!--        const row=document.createElement('div');row.className='control-panel';row.style.marginTop='8px';-->
+<!--        const modeBtn=document.createElement('button');-->
+<!--        modeBtn.id='overlayToggleBtn';modeBtn.className='btn btn-info';-->
+<!--        modeBtn.style.fontSize='12px';modeBtn.textContent='🦷 OVERLAY: TEETH';-->
+<!--        modeBtn.onclick=cycleOverlayMode;-->
+<!--        row.appendChild(modeBtn);-->
+<!--        cpanel.parentNode.insertBefore(row,cpanel.nextSibling);-->
+<!--    }-->
+<!--    const OVERLAY_MODES=['teeth','vectors','both','none'];-->
+<!--    const OVERLAY_LABELS={teeth:'🦷 OVERLAY: TEETH',vectors:'➡ OVERLAY: VECTORS',both:'🦷➡ OVERLAY: BOTH',none:'⬜ OVERLAY: OFF'};-->
+<!--    function cycleOverlayMode(){-->
+<!--        const idx=OVERLAY_MODES.indexOf(overlayMode);overlayMode=OVERLAY_MODES[(idx+1)%OVERLAY_MODES.length];-->
+<!--        const btn=document.getElementById('overlayToggleBtn');if(btn)btn.textContent=OVERLAY_LABELS[overlayMode];-->
+<!--        drawOverlay(lastTeethData,lastOverlayResult);-->
+<!--    }-->
+<!--    function startOverlayPolling(){-->
+<!--        if(overlayPollId)return;document.getElementById('detectionCanvas').style.display='block';-->
+<!--        overlayPollId=setInterval(async()=>{-->
+<!--            if(!cameraActive)return;-->
+<!--            try{const[tRes,sRes]=await Promise.all([fetch(`${API_BASE}/detection/teeth_profiles`),fetch(`${API_BASE}/detection/status`)]);-->
+<!--                const[tData,sData]=await Promise.all([tRes.json(),sRes.json()]);-->
+<!--                if(tData.success)lastTeethData=tData;lastOverlayResult=sData.last_result||null;drawOverlay(lastTeethData,lastOverlayResult);}catch(_){}-->
+<!--        },300);-->
+<!--    }-->
+<!--    function stopOverlayPolling(){-->
+<!--        if(overlayPollId){clearInterval(overlayPollId);overlayPollId=null;}-->
+<!--        const canvas=document.getElementById('detectionCanvas');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);canvas.style.display='none';-->
+<!--    }-->
+<!--    function drawOverlay(teethData,closestDet){-->
+<!--        const canvas=document.getElementById('detectionCanvas'),img=document.getElementById('cameraFeed');-->
+<!--        if(!img||img.naturalWidth===0)return;-->
+<!--        const rect=img.getBoundingClientRect();if(rect.width===0||rect.height===0)return;-->
+<!--        canvas.width=rect.width;canvas.height=rect.height;-->
+<!--        const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);-->
+<!--        if(overlayMode==='none')return;-->
+<!--        const natW=img.naturalWidth||640,natH=img.naturalHeight||480;-->
+<!--        const scale=Math.min(rect.width/natW,rect.height/natH);-->
+<!--        const offX=(rect.width-natW*scale)/2,offY=(rect.height-natH*scale)/2;-->
+<!--        function px(x,y){return[offX+x*scale,offY+y*scale]}-->
+<!--        const lw=Math.max(1,2*scale);ctx.font=`${Math.max(9,11*scale)}px "JetBrains Mono",monospace`;-->
+<!--        const teeth=(teethData&&teethData.teeth)||[],grinderTip=(teethData&&teethData.grinder_tip)||null;-->
+<!--        if(overlayMode==='teeth'||overlayMode==='both'){-->
+<!--            for(const tooth of teeth){-->
+<!--                const[tx,ty]=px(tooth.tip.x,tooth.tip.y),[tvx,tvy]=px(tooth.top_valley.x,tooth.top_valley.y),[bvx,bvy]=px(tooth.bottom_valley.x,tooth.bottom_valley.y);-->
+<!--                ctx.beginPath();ctx.moveTo(tvx,tvy);ctx.lineTo(tx,ty);ctx.lineTo(bvx,bvy);ctx.strokeStyle='yellow';ctx.lineWidth=lw;ctx.stroke();-->
+<!--                filledCircle(ctx,tvx,tvy,Math.max(3,5*scale),'red');filledCircle(ctx,bvx,bvy,Math.max(3,5*scale),'red');-->
+<!--                filledCircle(ctx,tx,ty,Math.max(5,8*scale),'cyan');strokedCircle(ctx,tx,ty,Math.max(6,10*scale),'white',lw);-->
+<!--                ctx.fillStyle='white';ctx.fillText(`#${tooth.tooth_id}`,tx+Math.max(8,15*scale),ty+4*scale);-->
+<!--            }-->
+<!--        }-->
+<!--        if(overlayMode==='vectors'||overlayMode==='both'){-->
+<!--            const gt=grinderTip||(closestDet?{x:closestDet.grinder_tip_x_px,y:closestDet.grinder_tip_y_px}:null);-->
+<!--            for(const tooth of teeth){-->
+<!--                const[tx,ty]=px(tooth.tip.x,tooth.tip.y);-->
+<!--                filledCircle(ctx,tx,ty,Math.max(5,8*scale),'cyan');strokedCircle(ctx,tx,ty,Math.max(6,10*scale),'white',lw);-->
+<!--                if(gt&&gt.x>0){const[gx,gy]=px(gt.x,gt.y);drawArrow(ctx,tx,ty,gx,gy,'cyan',lw*1.5,scale);}-->
+<!--            }-->
+<!--            if(gt&&gt.x>0){const[gx,gy]=px(gt.x,gt.y);strokedCircle(ctx,gx,gy,Math.max(8,15*scale),'rgb(255,128,0)',Math.max(2,4*scale));drawCross(ctx,gx,gy,Math.max(12,30*scale),'yellow',Math.max(2,4*scale));}-->
+<!--        }-->
+<!--        if(closestDet||(teethData&&teethData.num_teeth>0)){-->
+<!--            const numTeeth=(teethData&&teethData.num_teeth)||0,valleyId=(closestDet&&closestDet.valley_id)||'N/A';-->
+<!--            const distMm=closestDet?(closestDet.distance_mm||0).toFixed(1):'—',xmm=closestDet?(closestDet.x_mm||0).toFixed(1):'—',ymm=closestDet?(closestDet.y_mm||0).toFixed(1):'—';-->
+<!--            const fs=Math.max(9,11*scale),bx=offX+8*scale,by=offY+8*scale,bw=220*scale,bh=110*scale;-->
+<!--            ctx.font=`${fs}px "JetBrains Mono",monospace`;ctx.fillStyle='rgba(0,0,0,.65)';ctx.strokeStyle='white';ctx.lineWidth=lw;-->
+<!--            roundRect(ctx,bx,by,bw,bh,6*scale);ctx.fill();ctx.stroke();-->
+<!--            ctx.font=`bold ${fs*1.1}px "JetBrains Mono",monospace`;ctx.fillStyle='cyan';ctx.fillText('DETECTION',bx+8*scale,by+fs*1.4);-->
+<!--            ctx.font=`${fs}px "JetBrains Mono",monospace`;-->
+<!--            ctx.fillStyle='white';ctx.fillText(`Teeth:  ${numTeeth}`,bx+8*scale,by+fs*2.9);-->
+<!--            ctx.fillStyle='magenta';ctx.fillText(`Valley: ${valleyId}`,bx+8*scale,by+fs*4.2);-->
+<!--            ctx.fillStyle='limegreen';ctx.fillText(`Dist:   ${distMm}mm`,bx+8*scale,by+fs*5.5);-->
+<!--            ctx.fillStyle='hsl(217,91%,75%)';ctx.fillText(`Move:   (${xmm}, ${ymm})mm`,bx+8*scale,by+fs*6.8);-->
+<!--        }-->
+<!--        if(closestDet&&closestDet.valley_x_px&&closestDet.valley_y_px){-->
+<!--            const[vpx,vpy]=px(closestDet.valley_x_px,closestDet.valley_y_px);-->
+<!--            filledCircle(ctx,vpx,vpy,Math.max(5,9*scale),'magenta');strokedCircle(ctx,vpx,vpy,Math.max(6,12*scale),'white',lw);-->
+<!--            const sign=v=>(v>=0?'+':'')+parseFloat(v).toFixed(1);-->
+<!--            ctx.font=`${Math.max(9,11*scale)}px "JetBrains Mono",monospace`;ctx.fillStyle='magenta';-->
+<!--            ctx.fillText(`(${sign(closestDet.x_mm)}, ${sign(closestDet.y_mm)})mm`,vpx+Math.max(8,14*scale),vpy-6*scale);-->
+<!--        }-->
+<!--    }-->
+<!--    function filledCircle(ctx,x,y,r,color){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill()}-->
+<!--    function strokedCircle(ctx,x,y,r,color,lw){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.stroke()}-->
+<!--    function drawArrow(ctx,x1,y1,x2,y2,color,lw,scale){-->
+<!--        const headLen=Math.max(8,14*scale),angle=Math.atan2(y2-y1,x2-x1);-->
+<!--        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.stroke();-->
+<!--        ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-headLen*Math.cos(angle-Math.PI/7),y2-headLen*Math.sin(angle-Math.PI/7));ctx.lineTo(x2-headLen*Math.cos(angle+Math.PI/7),y2-headLen*Math.sin(angle+Math.PI/7));ctx.closePath();ctx.fillStyle=color;ctx.fill();-->
+<!--    }-->
+<!--    function drawCross(ctx,x,y,size,color,lw){const half=size/2;ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(x-half,y);ctx.lineTo(x+half,y);ctx.stroke();ctx.beginPath();ctx.moveTo(x,y-half);ctx.lineTo(x,y+half);ctx.stroke()}-->
+<!--    function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath()}-->
+
+<!--    // ── Init ──────────────────────────────────────────────────────────────────-->
+<!--    document.addEventListener('DOMContentLoaded',()=>{-->
+<!--        document.getElementById('dbBladeID').addEventListener('keydown',e=>{if(e.key==='Enter')loadBladeFromDB()});-->
+<!--        document.getElementById('calibration').addEventListener('change',updateCalibration);-->
+<!--        document.querySelectorAll('input[type="number"]').forEach(input=>{-->
+<!--            const wrapper=document.createElement('div');wrapper.className='number-input-wrapper';-->
+<!--            input.parentNode.insertBefore(wrapper,input);wrapper.appendChild(input);-->
+<!--            const spinners=document.createElement('div');spinners.className='number-input-spinners';-->
+<!--            ['up','down'].forEach(dir=>{-->
+<!--                const b=document.createElement('button');b.type='button';b.className='number-spin-btn';b.tabIndex=-1;-->
+<!--                b.innerHTML=dir==='up'?'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>':'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';-->
+<!--                b.addEventListener('click',()=>{dir==='up'?input.stepUp():input.stepDown();input.dispatchEvent(new Event('change'))});-->
+<!--                spinners.appendChild(b);-->
+<!--            });wrapper.appendChild(spinners);-->
+<!--        });-->
+<!--        updateGrinderButtonStyles();-->
+<!--        refreshCameraMapping();-->
+<!--    });-->
+<!--    window.addEventListener('beforeunload',()=>{-->
+<!--        if(cameraActive)clearInterval(cameraIntervalId);-->
+<!--        if(registerPollId)clearInterval(registerPollId);-->
+<!--        if(overlayPollId)clearInterval(overlayPollId);-->
+<!--        if(inspectionPollId)clearInterval(inspectionPollId);-->
+<!--    });-->
+<!--    async function loadGrinderStatus(){-->
+<!--        try{-->
+<!--            const res=await fetch(`${API_BASE}/detection/grinder_status`);-->
+<!--            const data=await res.json();-->
+<!--            if(data.grinder_id){-->
+<!--                currentGrinderId=data.grinder_id;-->
+<!--                updateGrinderButtonStyles();-->
+<!--            }-->
+<!--            const m=data.mapping||{};-->
+<!--            const mg1=document.getElementById('mapG1'), mg2=document.getElementById('mapG2');-->
+<!--            if(mg1)mg1.textContent=`G1→${m[1]||m['1']||'auto-idx0'}`;-->
+<!--            if(mg2)mg2.textContent=`G2→${m[2]||m['2']||'auto-idx1'}`;-->
+<!--            if(data.success&&data.grinder_tip){-->
+<!--                document.getElementById('grinderInfo').innerHTML=-->
+<!--                    `<span style="color:var(&#45;&#45;success)">G${data.grinder_id} grinder: (${data.grinder_tip.x}, ${data.grinder_tip.y})</span>`;-->
+<!--            }else{-->
+<!--                document.getElementById('grinderInfo').innerHTML=-->
+<!--                    `<span style="color:var(&#45;&#45;muted-foreground)">G${data.grinder_id||'?'} grinder: not set</span>`;-->
+<!--            }-->
+<!--        }catch(_){}-->
+<!--    }-->
+<!--    async function updatePitch() {-->
+<!--        const v = parseFloat(document.getElementById('pitchMm').value) || 0;-->
+<!--        try {-->
+<!--            const res = await fetch(`${API_BASE}/detection/pitch`, {-->
+<!--                method: 'POST',-->
+<!--                headers: { 'Content-Type': 'application/json' },-->
+<!--                body: JSON.stringify({ pitch_mm: v })-->
+<!--            });-->
+<!--            const data = await res.json();-->
+<!--            if (data.success) {-->
+<!--                _refreshPitchStatus(v);-->
+<!--                log(data.message, 'success');-->
+<!--            } else {-->
+<!--                log(data.message || 'Failed to set pitch', 'error');-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            log(`Pitch error: ${e.message}`, 'error');-->
+<!--        }-->
+<!--    }-->
+
+<!--    function _refreshPitchStatus(v) {-->
+<!--        const el = document.getElementById('pitchStatus');-->
+<!--        if (!el) return;-->
+<!--        if (v > 0) {-->
+<!--            el.textContent = `Sine-fit: ENABLED   pitch = ${v.toFixed(2)} mm`;-->
+<!--            el.style.color  = 'hsl(142,74%,46%)';-->
+<!--        } else {-->
+<!--            el.textContent  = 'Sine-fit: DISABLED  (raw detection)';-->
+<!--            el.style.color  = 'var(&#45;&#45;muted-foreground)';-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function loadPitchFromBackend() {-->
+<!--        try {-->
+<!--            const res  = await fetch(`${API_BASE}/detection/status`);-->
+<!--            const data = await res.json();-->
+<!--            if (data.pitch_mm !== undefined) {-->
+<!--                const inp = document.getElementById('pitchMm');-->
+<!--                if (inp) inp.value = data.pitch_mm;-->
+<!--                _refreshPitchStatus(data.pitch_mm);-->
+<!--            }-->
+<!--        } catch (_) {}-->
+<!--    }-->
+
+<!--    log('Dashboard loaded – waiting for connection','info');loadGrinderStatus();-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
 <!DOCTYPE html>
 <html lang="en">
 <link rel="icon" type="image/webp" sizes="32x32" href="mka-163w.webp">
@@ -62,7 +1356,26 @@
         .right-col .camera-panel{flex:none}
         .right-col .log-panel{flex:1;display:flex;flex-direction:column;min-height:0}
         .right-col .log-panel .log{flex:1;max-height:none}
+        .log-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+        .log-panel-actions{display:flex;gap:6px;flex-shrink:0}
+        .log-panel-actions .btn{padding:5px 9px;font-size:10px;font-weight:600}
         @media(max-width:1100px){.main-grid{grid-template-columns:1fr}.right-col{min-height:auto}.right-col .log-panel .log{max-height:400px}}
+        /* Fullscreen: camera left, system log docked right */
+        #rightCol:fullscreen,#rightCol:-webkit-full-screen{
+            flex-direction:row;background:var(--background);padding:14px;gap:14px;
+            width:100vw;height:100vh;box-sizing:border-box}
+        #rightCol:fullscreen .camera-panel,#rightCol:-webkit-full-screen .camera-panel{
+            flex:1;min-width:0;display:flex;flex-direction:column;margin:0}
+        #rightCol:fullscreen .camera-panel #cameraWrap,#rightCol:-webkit-full-screen .camera-panel #cameraWrap{
+            flex:1;min-height:0}
+        #rightCol:fullscreen .log-panel,#rightCol:-webkit-full-screen .log-panel{
+            flex:0 0 380px;max-width:38vw;display:flex;flex-direction:column;min-height:0;margin:0}
+        #rightCol:fullscreen .log-panel .log,#rightCol:-webkit-full-screen .log-panel .log{
+            flex:1;max-height:none}
+        @media(max-width:900px){
+            #rightCol:fullscreen,#rightCol:-webkit-full-screen{flex-direction:column}
+            #rightCol:fullscreen .log-panel,#rightCol:-webkit-full-screen .log-panel{flex:0 0 30vh;max-width:none}
+        }
         @media(max-width:700px){.left-grid{grid-template-columns:1fr}}
         .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;box-shadow:0 1px 0 0 hsl(0 0% 20%) inset,0 4px 6px -1px hsl(0 0% 0%/.4)}
         .panel-title{font-size:14px;font-weight:800;letter-spacing:-.01em;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)}
@@ -212,7 +1525,7 @@
                 <button class="btn btn-primary btn-connect" id="connectBtn" onclick="toggleConnection()">CONNECT TO ROBOT</button>
                 <div style="background:hsl(240,10%,5%);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-foreground);line-height:1.9">
                     <div style="color:var(--foreground);font-weight:600;margin-bottom:6px;font-size:11px">Register Map</div>
-                    <div><span style="color:hsl(280 80% 70%)">128-133</span> Config (Bay/Grinder/Angle/Depth/Len)</div>
+                    <div><span style="color:hsl(280 80% 70%)">128-133</span> Config (Bay/Grinder/Angle/Depth/Len/Ver)</div>
                     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
                     <div><span style="color:hsl(217 91% 70%)">134</span> DETECTION_X &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot ×10)</span></div>
                     <div><span style="color:hsl(217 91% 70%)">135</span> DETECTION_Y &nbsp;<span style="color:var(--muted-foreground)">(PC→Robot ×10)</span></div>
@@ -288,7 +1601,7 @@
                 </div>
                 <div class="form-row"><div class="form-group"><label class="form-label">Bay ID</label><input type="number" id="bayID" class="form-input" value="5"></div><div class="form-group"><label class="form-label">Grinder ID</label><input type="number" id="grinderID" class="form-input" value="2"></div></div>
                 <div class="form-row"><div class="form-group"><label class="form-label">Angle (°)</label><input type="number" step="0.1" id="angle" class="form-input" value="45.5"></div><div class="form-group"><label class="form-label">Depth (mm)</label><input type="number" step="0.01" id="depth" class="form-input" value="1.25"></div></div>
-                <div class="form-row"><div class="form-group"><label class="form-label">Length (mm)</label><input type="number" id="length" class="form-input" value="150"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Length (mm)</label><input type="number" id="length" class="form-input" value="150"></div><div class="form-group"><label class="form-label">Config Ver.</label><input type="number" id="configVersion" class="form-input" value="1"></div></div>
                 <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="sendConfiguration()" disabled id="configBtn">SEND CONFIGURATION (REG 128–133)</button>
             </div>
 
@@ -430,7 +1743,7 @@
         </div><!-- /.left-grid -->
 
         <!-- Right column: camera pinned on top, log fills the rest -->
-        <div class="right-col">
+        <div class="right-col" id="rightCol">
 
             <!-- Camera Panel -->
             <div class="panel camera-panel">
@@ -462,7 +1775,13 @@
 
             <!-- Log Panel -->
             <div class="panel log-panel">
-                <div class="panel-title">📋 System Log</div>
+                <div class="log-panel-head">
+                    <div class="panel-title" style="margin-bottom:0">📋 System Log</div>
+                    <div class="log-panel-actions">
+                        <button class="btn btn-info" id="logExportBtn" onclick="exportLog()" title="Download the log as a .txt file">⭳ EXPORT</button>
+                        <button class="btn btn-info" id="logClearBtn"  onclick="clearLog()"  title="Clear the on-screen log">🗑 CLEAR</button>
+                    </div>
+                </div>
                 <div class="log" id="systemLog">
                     <div class="log-entry"><span class="log-time">[00:00:00]</span><span>System initialized. Ready for connection.</span></div>
                 </div>
@@ -1016,9 +2335,11 @@
         finally{ btn.textContent=orig; btn.disabled=!isController; }
     }
 
-    // ── Camera fullscreen ──────────────────────────────────────────────
+    // ── Camera fullscreen (camera + system log side by side) ───────────
+    // We fullscreen the whole right column so the log rides along; CSS
+    // (#rightCol:fullscreen) flips it to a row: feed left, log right.
     function toggleCameraFullscreen(){
-        const el=document.getElementById('cameraWrap');
+        const el=document.getElementById('rightCol');
         if(!el) return;
         const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
         if(!fsEl){
@@ -1029,18 +2350,23 @@
             if(exit) exit.call(document);
         }
     }
-    // Swap icon + fit the image to the screen while in fullscreen
+    // Swap icon + let the feed fill the available height while fullscreen
     function _onFsChange(){
+        const col=document.getElementById('rightCol');
         const wrap=document.getElementById('cameraWrap');
         const btn=document.getElementById('cameraFsBtn');
         const fsEl=document.fullscreenElement||document.webkitFullscreenElement;
-        const isFs=fsEl===wrap;
+        const isFs=(fsEl===col);
         if(btn) btn.textContent=isFs?'⛗':'⛶';
         if(wrap){
-            // In fullscreen, drop the 16:9 box so the feed fills the screen
+            // Drop the fixed 16:9 box in fullscreen so the feed uses the whole panel
             wrap.style.aspectRatio=isFs?'auto':'16/9';
-            wrap.style.width=isFs?'100%':'';
             wrap.style.height=isFs?'100%':'';
+        }
+        // Keep the log pinned to the newest entry after the layout change
+        if(isFs){
+            const lg=document.getElementById('systemLog');
+            if(lg) setTimeout(()=>{lg.scrollTop=lg.scrollHeight;},50);
         }
     }
     document.addEventListener('fullscreenchange',_onFsChange);
@@ -1069,15 +2395,57 @@
     let lastDetectedDepthMm = 0;
     let lastGrindCycleTs = 0;   // ms of the last GRIND_START we sent (throttles the reject safety-net)
     function getCurrentTime(){return new Date().toLocaleTimeString('en-US',{hour12:false})}
+    // Full log history for export. The on-screen list is capped at 150 entries
+    // for performance, so we keep a deeper buffer here (plain text, no markup).
+    const LOG_BUFFER_MAX = 5000;
+    let _logBuffer = [];
+
     function log(message,type='info'){
         const logDiv=document.getElementById('systemLog');
         const entry=document.createElement('div'); entry.className='log-entry';
         const cls={success:'log-success',error:'log-error',warning:'log-warning',info:'log-info'}[type]||'';
         const icon={success:'✓',error:'✗',warning:'⚠',info:'ℹ'}[type]||'';
-        entry.innerHTML=`<span class="log-time">[${getCurrentTime()}]</span><span class="${cls}">${icon} ${message}</span>`;
+        const ts=getCurrentTime();
+        entry.innerHTML=`<span class="log-time">[${ts}]</span><span class="${cls}">${icon} ${message}</span>`;
         logDiv.appendChild(entry); logDiv.scrollTop=logDiv.scrollHeight;
         const entries=logDiv.querySelectorAll('.log-entry');
         if(entries.length>150) entries[0].remove();
+        // Keep the plain-text history (strip any HTML the caller passed in)
+        const plain=String(message).replace(/<[^>]*>/g,'');
+        _logBuffer.push(`[${ts}] ${(type||'info').toUpperCase().padEnd(7)} ${plain}`);
+        if(_logBuffer.length>LOG_BUFFER_MAX) _logBuffer.shift();
+    }
+
+    function exportLog(){
+        if(!_logBuffer.length){ log('Nothing to export yet.','info'); return; }
+        const now=new Date();
+        const pad=n=>String(n).padStart(2,'0');
+        const stamp=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        const header=[
+            'MKA Blade Grinder — Dashboard Log',
+            'Exported : '+now.toString(),
+            'Device   : '+(typeof myName!=='undefined'?myName:'unknown')+(typeof isController!=='undefined'?(isController?' (controller)':' (viewer)'):''),
+            'Backend  : '+API_BASE,
+            'Grinder  : '+(typeof currentGrinderId!=='undefined'?currentGrinderId:'?'),
+            'Entries  : '+_logBuffer.length+(_logBuffer.length>=LOG_BUFFER_MAX?' (buffer full — older lines dropped)':''),
+            '='.repeat(60), ''
+        ].join('\n');
+        const blob=new Blob([header+_logBuffer.join('\n')+'\n'],{type:'text/plain;charset=utf-8'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download=`dashboard_log_${stamp}.txt`;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        log(`Log exported (${_logBuffer.length} entries).`,'success');
+    }
+
+    function clearLog(){
+        if(!confirm('Clear the system log?\n\nThis also clears the export history on this device.')) return;
+        _logBuffer=[];
+        const logDiv=document.getElementById('systemLog');
+        if(logDiv) logDiv.innerHTML='';
+        log('Log cleared.','info');
     }
     // ── Per-grinder camera switching ──────────────────────────────────────────
     let currentGrinderId = 1;
@@ -1349,12 +2717,12 @@
     async function sendConfiguration(){
         const bay_id=document.getElementById('bayID').value, grinder_id=document.getElementById('grinderID').value;
         const angle=document.getElementById('angle').value, depth=document.getElementById('depth').value;
-        const length=document.getElementById('length').value;
+        const length=document.getElementById('length').value, config_version=document.getElementById('configVersion').value;
         log(`Sending config: Bay=${bay_id}, Grinder=${grinder_id}, Angle=${angle}°, Depth=${depth}mm, Length=${length}mm`,'info');
         try{
             const res=await fetch(`${API_BASE}/configuration`,{method:'POST',
                 headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({bay_id,grinder_id,angle,depth,length})});
+                body:JSON.stringify({bay_id,grinder_id,angle,depth,length,config_version})});
             const data=await res.json();
             if(data.success){
                 log(data.message,'success');
