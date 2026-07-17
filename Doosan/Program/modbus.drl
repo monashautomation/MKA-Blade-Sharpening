@@ -198,6 +198,8 @@ def pick_v1():
     set_ref_coord(DR_WORLD)
     movel(blade_pos, vel=50, acc=20)
     set_analog_output(ch=1, val=hold_v)
+    movel(System_blades_top, 200, 100)
+
 
 def run_pick():
     if pick_variant == 1:
@@ -253,7 +255,7 @@ def approach_grinder():
     grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
     tp_log("Blade right: " + str(blade_right[0]))
     # Manually calibrated 18 - current cut
-    left_move = -(blade_right[0]-60-20+18 - 120)
+    left_move = -(blade_right[0]-60-20+18)
     movel(posx(left_move, 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     tp_log("Grind Ready 1")
@@ -374,10 +376,10 @@ def grind_v2():
     #Diagonal depth cuts, frame move
     # --- tuning (grind_v2) ---
     move_range = 20
-    offset = 8
+    offset = 0
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
-    cut_min = 0.1
-    cut_max = 0.2
+    cut_min = 0.2
+    cut_max = 0.3
     prev_depths = deque(maxlen=5)
     prev_pitch = deque(maxlen=5)
     cut_num = 0
@@ -396,6 +398,9 @@ def grind_v2():
                     depth = get_modbus_slave(REG_DEPTH)/100
                     detection_depth = get_modbus_slave(REG_DETECTION_DEPTH)/100
                     tp_log("X: " + str(val_x) + " Y: " + str(val_y) + " Depth: " + str(depth) + " DetD: " + str(detection_depth))
+                    if detection_depth > depth:
+                        detection_depth = max(0,depth - 0.5)
+                        tp_log("Invalid detection depth, defaulting to: " + str(detection_depth))
                     current_pos = get_current_posx(ref=grind_coord)[0]
                     #tp_log("Current_pos: " + str(current_pos))
                     if cut_num == 0:
@@ -433,8 +438,10 @@ def grind_v2():
                     safe_movel(posx(approach_frame_start), vel=250, acc=100, ref=grind_coord)
                     approach_frame_down = add_pose(approach_frame_start, delta_down)
                     approach_frame_y = add_pose(approach_frame_down, delta_y)
+                    safe_movel(posx(approach_frame_y), vel=50, acc=50, ref=grind_coord)
+                    wait(3)
                     approach_frame = add_pose(approach_frame_y, delta_detection)
-                    safe_movel(posx(approach_frame), vel=250, acc=100, ref=grind_coord)
+                    safe_movel(posx(approach_frame), vel=50, acc=50, ref=grind_coord)
                     # safe_movel(posx(delta_x), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
                     # start_cut_pos, sol = get_current_posx(ref=grind_coord)
                     # safe_movel(posx(delta_down), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
@@ -505,23 +512,24 @@ def grind_v2():
                         fin_acc = 10
 
                         fin_up   = add_pose(approach_frame_y,[0, final_depth - 0.05,  move_range, 0, 0, 0])
-                        fin_offset_depth = add_pose(approach_frame_y,[0, 2*current_depth - final_depth, move_range, 0, 0, 0])
+                        fin_offset_depth = add_pose(approach_frame_y,[0, min(2*current_depth - final_depth, current_depth*1.1), move_range, 0, 0, 0])
+                        tp_log("Offset: " + str(2*current_depth - final_depth) + " Limit: " + str(current_depth*1.1))
                         fin_down = add_pose(approach_frame_y,[0, min(2*current_depth - final_depth, current_depth*1.1), 0, 0, 0, 0])
 
                         safe_movel(posx(fin_up),   vel=fin_vel, acc=fin_acc, ref=grind_coord)
                         wait(0.1)
                         diag_now, diag_sol = get_current_posx(ref=grind_coord)
-                        tp_log("DIAG LIFT UP: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
+                        tp_log("DIAG LIFT UP: cmd_depth=" + str(final_depth - 0.05) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
 
-                        safe_movel(posx(fin_offset_depth), vel=fin_vel, acc=fin_acc, ref=grind_coord)
+                        safe_movel(posx(fin_offset_depth), vel=5, acc=5, ref=grind_coord)
                         wait(0.1)
                         diag_now, diag_sol = get_current_posx(ref=grind_coord)
-                        tp_log("DIAG SPARK OFFSET DEPTH: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
+                        tp_log("DIAG SPARK OFFSET DEPTH: cmd_depth=" + str(min(2*current_depth - final_depth, current_depth*1.1)) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
 
                         safe_movel(posx(fin_down), vel=fin_vel, acc=fin_acc, ref=grind_coord)
                         wait(0.1)
                         diag_now, diag_sol = get_current_posx(ref=grind_coord)
-                        tp_log("DIAG SPARK DOWN: cmd_depth=" + str(current_depth) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
+                        tp_log("DIAG SPARK DOWN: cmd_depth=" + str(min(2*current_depth - final_depth, current_depth*1.1)) + " actual_depth=" + str(diag_now[1]-diag_ref[1]-val_y))
 
                     else:
                         tp_log("0 depth cut")
