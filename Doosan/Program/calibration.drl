@@ -1,7 +1,7 @@
-set_tcp("Flange")
+set_tcp("Rot_flange")
 
 loading_val = False
-grinder_val = 2
+grinder_val = 1
 
 tp_log("Magnets On")
 set_mode_analog_output(ch=1, mod=DR_ANALOG_VOLTAGE)
@@ -12,7 +12,7 @@ if (loading_val):
     x1, sol = current_pos = get_current_posx(ref=DR_WORLD)
     tp_log("Current Pos: " + str(x1))
     
-    local_zones = [System_grinder_top,fkin(System_init_j), System_blades_top, System_grinder2_top]
+    local_zones = [System_grinder_top, System_blades_top, fkin(System_init_j), System_grinder2_top]
     dist = [0] * 4
     
     for i in range(0,len(local_zones)):
@@ -26,18 +26,18 @@ if (loading_val):
         if closest_zone == 0:
             movel(local_zones[0], 100, 20)
             # closest_zone += 1
-        elif closest_zone == 1:
+        elif closest_zone == 2:
             movej(System_init_j, time=5)
             # closest_zone += 1
-        elif closest_zone == 2:
-            movel(local_zones[2], 100, 20)
+        elif closest_zone == 1:
+            movel(local_zones[1], 100, 20)
             # closest_zone -= 1
         elif closest_zone == 3:
             movel(local_zones[3], 100, 20)
             # closest_zone -= 1
         closest_zone += 1 if closest_zone < loading_target else -1
 
-    if closest_zone == 1:
+    if closest_zone == 2:
         movej(System_init_j, time=5)
     else:
         movel(local_zones[closest_zone], 100, 20)
@@ -57,31 +57,35 @@ if (loading_val):
         if closest_zone == 0:
             movel(local_zones[0], 100, 20)
             # closest_zone += 1
-        elif closest_zone == 1:
+        elif closest_zone == 2:
             movej(System_init_j, time=5)
             # closest_zone += 1
-        elif closest_zone == 2:
-            movel(local_zones[2], 100, 20)
+        elif closest_zone == 1:
+            movel(local_zones[1], 100, 20)
             # closest_zone -= 1
         elif closest_zone == 3:
             movel(local_zones[3], 100, 20)
             # closest_zone -= 1
         closest_zone += 1 if closest_zone < loading_target else -1
 
-    if closest_zone == 1:
+    if closest_zone == 2:
         movej(System_init_j, time=5)
     else:
         movel(local_zones[closest_zone], 100, 20)
     
 else:
     tp_log("Skipped Loading")
+    
+set_ref_coord(DR_WORLD)   
+#movel(System_blades_top, 100, 20)
+#movel(System_grinder_top, 100, 20)
        
 
 REG_GRIND_READY = 138 # For camera
 set_modbus_slave(REG_GRIND_READY,1)
-wait(5)
+#wait(5)
 
-set_tcp("Flange")
+set_tcp("Rot_flange")
 REG_CALIBRATION = 141
 REG_CALIBRATION_ANGLE = 142
 
@@ -92,14 +96,14 @@ set_ref_coord(DR_WORLD)
 #movel(System_grinder_top, 50, 20)
 if (grinder_val == 1):
     tp_log("Grinder 1")
-    movel(System_grinder_app, 50, 20)
+    #movel(System_grinder_app, 50, 20)
     grind_coord = set_user_cart_coord(posx(0, 0, 0, 0, 0, 0), ref=DR_WORLD)
     
-    movel(System_angle_inspection, 20, 20)
+    #movel(System_grinder_invert, 20, 20)
 
-    inspection_depth = posx(System_angle_inspection)
+    inspection_depth = posx(System_grinder_invert)
     #41
-    inspection_depth[1] = (inspection_depth[1] + 39) - blade_depth
+    inspection_depth[2] = inspection_depth[2] - blade_depth
     tp_log("New Y: " + str(inspection_depth))
 
     movel(inspection_depth, 20, 20)
@@ -128,6 +132,7 @@ else:
 
     movel(inspection_depth, 20, 20)
 
+
 # STARTING INSPECTION
 set_tcp("Tool_v1")
 
@@ -146,29 +151,43 @@ def rotation(base, pivot, transformation):
     
     return final
 
-current_angle = 70
+current_angle = 0
 
 set_modbus_slave(REG_CALIBRATION, 1)
-set_modbus_slave(REG_CALIBRATION_ANGLE, 70 * 10)
+#set_modbus_slave(REG_CALIBRATION_ANGLE, current_angle * 10)
 
 # Local Pivot rotation
 
-for i in range(0,60,5):
-    current_rot = get_current_posx()[0]
-    pivot = [blade_depth,0,0]
-    transformation = posx(0, 0, 0, 0, 5, 0)
-    new_rot = rotation(current_rot, pivot, transformation)
-    movel(new_rot, time=2, ref=DR_BASE)
-    current_angle = current_angle - 5
+increment = 2.5
+start = 10
+final = 50
+
+for i in range(0,int((final-start)/increment),1):
+    if i == 0:
+        current_rot = get_current_posx()[0]
+        pivot = [blade_depth,0,0]
+        transformation = posx(0, 0, 0, 0, -start, 0)
+        new_rot = rotation(current_rot, pivot, transformation)
+        movel(new_rot, time=2, ref=DR_WORLD)
+        current_angle = start
+        
+    else:
+        current_rot = get_current_posx()[0]
+        pivot = [blade_depth,0,0]
+        transformation = posx(0, 0, 0, 0, -2.5, 0)
+        new_rot = rotation(current_rot, pivot, transformation)
+        movel(new_rot, time=2, ref=DR_WORLD)
+        current_angle = current_angle + 2.5
+        
     tp_log("Current angle: " + str(current_angle))
-    set_modbus_slave(REG_CALIBRATION_ANGLE, current_angle * 10)
+    set_modbus_slave(REG_CALIBRATION_ANGLE, int(current_angle * 10))
     wait(1)
     
        
-set_tcp("Flange")
+set_tcp("Rot_flange")
 
 if grinder_val == 1:
-    movel(System_angle_inspection, 20, 20)
+    movel(inspection_depth, 20, 20)
     movel(System_grinder_app, 50, 20)
 elif grinder_val == 2:
     movel(System_angle_inspection2, 20, 20)
