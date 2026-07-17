@@ -198,6 +198,8 @@ def pick_v1():
     set_ref_coord(DR_WORLD)
     movel(blade_pos, vel=50, acc=20)
     set_analog_output(ch=1, val=hold_v)
+    movel(System_blades_top, 200, 100)
+
 
 def run_pick():
     if pick_variant == 1:
@@ -253,7 +255,7 @@ def approach_grinder():
     grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
     tp_log("Blade right: " + str(blade_right[0]))
     # Manually calibrated 18 - current cut
-    left_move = -(blade_right[0]-60-20+18 - 140)
+    left_move = -(blade_right[0]-60-20+18)
     movel(posx(left_move, 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     tp_log("Grind Ready 1")
@@ -396,6 +398,9 @@ def grind_v2():
                     depth = get_modbus_slave(REG_DEPTH)/100
                     detection_depth = get_modbus_slave(REG_DETECTION_DEPTH)/100
                     tp_log("X: " + str(val_x) + " Y: " + str(val_y) + " Depth: " + str(depth) + " DetD: " + str(detection_depth))
+                    if detection_depth > depth:
+                        detection_depth = max(0,depth - 0.5)
+                        tp_log("Invalid detection depth, defaulting to: " + str(detection_depth))
                     current_pos = get_current_posx(ref=grind_coord)[0]
                     #tp_log("Current_pos: " + str(current_pos))
                     if cut_num == 0:
