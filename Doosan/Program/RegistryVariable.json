@@ -70,7 +70,7 @@
     "Type": "Registry",
     "Name": "System_blade1",
     "ValueType": "Posx",
-    "Value": "posx(516, 0, 55, 85.18, 180, -139.82)"
+    "Value": "posx(512, 0, 55, 85.18, 180, -139.82)"
   },
   "Variable12": {
     "Type": "Registry",
@@ -94,7 +94,7 @@
     "Type": "Registry",
     "Name": "blade_depth",
     "ValueType": "Float",
-    "Value": "20.6951904296875"
+    "Value": "26.1783447265625"
   },
   "Variable16": {
     "Type": "Registry",
