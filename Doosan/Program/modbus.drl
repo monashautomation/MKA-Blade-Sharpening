@@ -255,7 +255,7 @@ def approach_grinder():
     grind_coord = set_user_cart_coord(posx(0, 0, 0, grinder_rotation, 0, 0), ref=DR_WORLD)
     tp_log("Blade right: " + str(blade_right[0]))
     # Manually calibrated 18 - current cut
-    left_move = -(blade_right[0]-60-20+18)
+    left_move = -(blade_right[0]-60-20+18-3)
     movel(posx(left_move, 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     tp_log("Grind Ready 1")
@@ -264,7 +264,7 @@ def approach_grinder():
 def grind_v1():
     # Diagonal depth cuts, rel move
     # --- tuning (grind_v1) ---
-    move_range = 30
+    move_range = 5
     offset = 8
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.05
@@ -375,8 +375,8 @@ def grind_v1():
 def grind_v2():
     #Diagonal depth cuts, frame move
     # --- tuning (grind_v2) ---
-    move_range = 20
-    offset = 0
+    move_range = 5
+    offset = -2.67
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.2
     cut_max = 0.3
@@ -439,7 +439,7 @@ def grind_v2():
                     approach_frame_down = add_pose(approach_frame_start, delta_down)
                     approach_frame_y = add_pose(approach_frame_down, delta_y)
                     safe_movel(posx(approach_frame_y), vel=50, acc=50, ref=grind_coord)
-                    wait(3)
+                    #wait(3)
                     approach_frame = add_pose(approach_frame_y, delta_detection)
                     safe_movel(posx(approach_frame), vel=50, acc=50, ref=grind_coord)
                     # safe_movel(posx(delta_x), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
