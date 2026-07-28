@@ -1,0 +1,80 @@
+MKA Blade Inspection Log -- 2026-07-17T14:53:21.181402
+======================================================================
+
+EVENT LOG
+---------
+[14:51:11] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[14:51:11] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:11] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:11] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:11] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:11] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:11] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:12] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:12] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:12] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:12] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:12] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:12] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:13] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:14] SKIP  angle=0.00°  — no tooth pair detected
+[14:51:14] OK    angle=0.00°  depth=0.0130mm  pitch=2.9553mm  sharp=171.65
+[14:51:24] OK    angle=10.00°  depth=0.4166mm  pitch=3.0073mm  sharp=164.53
+[14:51:35] OK    angle=12.50°  depth=0.5468mm  pitch=3.0334mm  sharp=162.76
+[14:51:41] OK    angle=15.00°  depth=0.6900mm  pitch=2.9943mm  sharp=157.41
+[14:51:44] OK    angle=17.50°  depth=0.8072mm  pitch=2.9813mm  sharp=140.97
+[14:51:47] OK    angle=20.00°  depth=0.9243mm  pitch=3.0073mm  sharp=153.27
+[14:51:51] OK    angle=22.50°  depth=1.1196mm  pitch=3.0594mm  sharp=164.59
+[14:51:54] OK    angle=25.00°  depth=1.2238mm  pitch=3.0073mm  sharp=165.19
+[14:51:57] OK    angle=27.50°  depth=1.3279mm  pitch=3.0724mm  sharp=165.07
+[14:52:00] OK    angle=30.00°  depth=1.4190mm  pitch=3.0464mm  sharp=165.4
+[14:52:03] OK    angle=32.50°  depth=1.5232mm  pitch=3.0073mm  sharp=165.69
+[14:52:06] OK    angle=35.00°  depth=1.6273mm  pitch=3.0724mm  sharp=165.7
+[14:52:10] OK    angle=37.50°  depth=1.6013mm  pitch=3.0464mm  sharp=165.03
+[14:52:13] OK    angle=40.00°  depth=1.5753mm  pitch=3.0204mm  sharp=164.62
+[14:52:16] OK    angle=42.50°  depth=1.5102mm  pitch=3.0204mm  sharp=164.52
+[14:52:19] OK    angle=45.00°  depth=1.4060mm  pitch=3.0464mm  sharp=163.64
+[14:52:22] OK    angle=47.50°  depth=1.3930mm  pitch=3.0594mm  sharp=162.96
+[14:53:21] DONE  peak_sharpness: angle=0.0°  depth=0.013mm  pitch=2.9553mm  sharp=171.65  samples=17
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+   #     angle    depth_mm    pitch_mm  sharpness
+   1      0.00      0.0130      2.9553    171.65
+   2     10.00      0.4166      3.0073    164.53
+   3     12.50      0.5468      3.0334    162.76
+   4     15.00      0.6900      2.9943    157.41
+   5     17.50      0.8072      2.9813    140.97
+   6     20.00      0.9243      3.0073    153.27
+   7     22.50      1.1196      3.0594    164.59
+   8     25.00      1.2238      3.0073    165.19
+   9     27.50      1.3279      3.0724    165.07
+  10     30.00      1.4190      3.0464     165.4
+  11     32.50      1.5232      3.0073    165.69
+  12     35.00      1.6273      3.0724     165.7
+  13     37.50      1.6013      3.0464    165.03
+  14     40.00      1.5753      3.0204    164.62
+  15     42.50      1.5102      3.0204    164.52
+  16     45.00      1.4060      3.0464    163.64
+  17     47.50      1.3930      3.0594    162.96
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 17
+Blurry recorded: 0
+
+FIRST SHARP SAMPLE (no transition found)
+Angle      : 0.0 deg
+Depth      : 0.013 mm
+Pitch      : 2.9553 mm
+Sharpness : 171.65

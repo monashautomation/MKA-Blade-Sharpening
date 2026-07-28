@@ -2573,7 +2573,6 @@
 #         print(f"⚠ Spinnaker warm-up failed (camera will retry on first start): {e}")
 
 #     app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
-
 """
 Standalone Flask Backend for Robot Control Dashboard
 Blade grinder system – updated Modbus loop structure:
@@ -2606,6 +2605,7 @@ import PySpin
 import cv2
 import numpy as np
 from scipy import ndimage
+from scipy.stats import theilslopes   # robust line fit (median of pairwise slopes)
 from threading import Lock, Thread
 import time
 import atexit
@@ -2791,7 +2791,7 @@ GRINDER_SCAN_TOP_FRAC = 1.0 / 3.0   # top of scan band (fraction of image height
 GRINDER_SCAN_BOT_FRAC = 1.0         # bottom of scan band
 GRINDER_GAP_FRAC      = 0.02        # gap right of the blade edge (fraction of width)
 GRINDER_MIN_DARK_PX   = 5           # min dark pixels in a row to count as grinder
-BLADE_LIMIT_FRAC      = 0.45        # blade lives in the left N of the frame
+BLADE_LIMIT_FRAC      = 0.70        # blade lives in the left N of the frame
 
 # Threshold for "grinder dark". 'otsu' self-calibrates on the scan region and is
 # strongly recommended: the grinder is near-black (~18 grey) while the background
@@ -2851,6 +2851,27 @@ LATTICE_GRIND_IDEAL    = True
 LATTICE_GRIND_MISSING  = True   # still grind the groove beside a missing tooth?
 LATTICE_MAX_DAMAGED    = 0      # 0 = no limit; else refuse the blade above this many
                                 # BENT+MISSING+WORN teeth (scrap threshold)
+
+# What does the reported lateral position (robot Y) point AT?
+#   'tip_line'    = the tooth-tip line (what the legacy detector reported).
+#                   The robot positions to the tips and then plunges by the
+#                   depth sent on REG 143. Y and depth are INDEPENDENT.
+#   'valley_floor'= the bottom of the groove. Y then ALREADY INCLUDES the depth,
+#                   so the robot must NOT plunge by REG 143 as well or it will
+#                   over-cut by exactly the tooth depth (~0.6 mm on your blades).
+# Keep 'tip_line' unless the robot program is changed to match.
+LATTICE_VALLEY_X_REF = 'tip_line'
+
+# Which teeth may define the LATERAL model (tip line + tooth depth)?
+# Teeth at/below the grinder have already been cut and are shorter; including
+# them pulls the tip line inward at the grinder end and makes the extrapolated
+# valley X too shallow (this is why sine_fit_core filters to above-grinder,
+# full-height teeth — see its section 4). The Y model (pitch/phase) is NOT
+# filtered: grinding changes tooth depth, not tooth spacing, so every tooth in
+# frame is a valid vote for the lattice.
+LATTICE_FIT_ABOVE_GRINDER_ONLY = True
+LATTICE_FULL_HEIGHT_FRAC       = 0.85   # tooth must be >= this * median height to
+                                        # define the tip line / depth
 
 # ── Global state ──────────────────────────────────────────────────────────────
 modbus_client    = None
@@ -3948,20 +3969,57 @@ class SerratedBladeAnalyzer:
             teeth.append({'ty': float(y[j] + off), 'tx': float(x_s[j]),
                           'amp': float(dev[j]), 'observed': True})
 
+        # ── 5. Robust geometry + damage classification ────────────────────────
+        # The LATERAL model (tip line + depth) must come only from teeth that
+        # still have their full profile. Teeth at/below the grinder are already
+        # cut and are shorter — including them drags the tip line inward and
+        # makes the valley X too shallow. (Same reasoning as sine_fit_core's
+        # above-grinder + >=85%-of-median-height filter.)
         snapped = [t for t in teeth if t['observed']]
         snap_frac = len(snapped) / float(len(teeth))
         if snap_frac < LATTICE_MIN_SNAP_FRAC:
             print(f"⚠ Lattice: only {snap_frac*100:.0f}% of teeth visible")
             return None
 
-        # ── 5. Robust geometry + damage classification ────────────────────────
-        # Medians, not means: one broken tooth must not set the cut depth.
-        amps = np.array([t['amp'] for t in snapped], dtype=float)
-        A_tip = float(np.median(amps))
+        fit_pool = snapped
+        if LATTICE_FIT_ABOVE_GRINDER_ONLY:
+            above = [t for t in snapped if t['ty'] < gt_y]
+            if len(above) >= 2:
+                fit_pool = above
+            else:
+                print(f"⚠ Lattice: only {len(above)} teeth above grinder — "
+                      f"using all teeth for the lateral fit")
 
-        # Valley depth from the signal at the half-offset positions.
+        # Drop partially-ground / broken teeth from the model (but still classify
+        # them below). Medians throughout: one damaged tooth must not set depth.
+        _amps = np.array([t['amp'] for t in fit_pool], dtype=float)
+        _med = float(np.median(_amps)) if _amps.size else 0.0
+        full = [t for t in fit_pool if t['amp'] >= LATTICE_FULL_HEIGHT_FRAC * _med]
+        if len(full) < 2:
+            full = fit_pool
+        A_tip = float(np.median([t['amp'] for t in full]))
+
+        # Tip line: robust straight fit through the FULL-HEIGHT tip points only.
+        # (polyfit least-squares would let one bent tooth tilt the whole line.)
+        tip_line = None
+        if len(full) >= 3:
+            fx = np.array([t['tx'] for t in full], dtype=float)
+            fy = np.array([t['ty'] for t in full], dtype=float)
+            try:
+                _sl, _ic, _, _ = theilslopes(fx, fy)     # median of pairwise slopes
+                tip_line = (float(_sl), float(_ic))
+            except Exception:
+                tip_line = None
+
+        def _tip_x(yy):
+            if tip_line is not None:
+                return tip_line[0] * float(yy) + tip_line[1]
+            return float(baseline(yy)) + A_tip
+
+        # Valley depth from the signal at the half-offset positions (full-height
+        # teeth only, so an already-ground gullet doesn't shrink the depth).
         val_devs = []
-        for t in teeth:
+        for t in full:
             vy = t['ty'] + 0.5 * P
             m = np.abs(y - vy) <= tol
             if m.any():
@@ -3984,7 +4042,7 @@ class SerratedBladeAnalyzer:
         _res = []
         for t in teeth:
             if t['observed'] and (y_min + edge_guard) <= t['ty'] <= (y_max - edge_guard):
-                _res.append(t['tx'] - (float(baseline(t['ty'])) + A_tip))
+                _res.append(t['tx'] - _tip_x(t['ty']))
         if len(_res) >= 4:
             _res = np.asarray(_res, dtype=float)
             _mad = float(np.median(np.abs(_res - np.median(_res))))
@@ -4000,8 +4058,8 @@ class SerratedBladeAnalyzer:
             if not t['observed']:
                 t['status'] = 'MISSING'; n_missing += 1
                 continue
-            # Lateral deviation from the IDEAL tip line (baseline + median amplitude)
-            resid = t['tx'] - (float(baseline(t['ty'])) + A_tip)
+            # Lateral deviation from the IDEAL (robust) tip line
+            resid = t['tx'] - _tip_x(t['ty'])
             t['resid_x'] = resid
             if t['amp'] < worn_lim:
                 # NOTE: a tooth bent INWARD also reads as low amplitude from this
@@ -4022,12 +4080,22 @@ class SerratedBladeAnalyzer:
         # ── 6. Valleys = lattice + P/2 ────────────────────────────────────────
         # X from the model, not from the (possibly deformed) neighbouring teeth:
         # resharpening should restore the INTENDED geometry, not trace the damage.
+        #
+        # IMPORTANT — what X refers to (see LATTICE_VALLEY_X_REF):
+        # the legacy detector reported the TOOTH-TIP LINE here and sent the cut
+        # depth separately on REG 143, so the robot positions to the tips and
+        # then plunges. Reporting the valley FLOOR instead would fold the depth
+        # into Y, and the robot would plunge again on top of it — over-cutting
+        # every groove by the full tooth depth.
         cand_valleys = []
         for t in teeth:
             vy = t['ty'] + 0.5 * P
             if LATTICE_GRIND_IDEAL:
                 vy = (y0 + round((t['ty'] - y0) / P) * P) + 0.5 * P   # ideal lattice
-            vx = float(baseline(vy)) + A_val
+            if LATTICE_VALLEY_X_REF == 'tip_line':
+                vx = _tip_x(vy)                       # legacy semantics: Y excludes depth
+            else:
+                vx = _tip_x(vy) - depth_px            # groove floor: Y INCLUDES depth
             cand_valleys.append({'vx': vx, 'vy': vy, 'upper': t})
 
         # ── 7. Nearest valley to the grinder ──────────────────────────────────
@@ -4073,6 +4141,7 @@ class SerratedBladeAnalyzer:
             'sine_fit': False,
             # ── lattice extras ──
             'method': 'lattice',
+            'valley_x_ref': LATTICE_VALLEY_X_REF,   # 'tip_line' = Y excludes depth
             'pitch_mm':      round(float(P / pixels_per_mm), 4),
             'pitch_px':      round(float(P), 2),
             'pitch_quality': round(float(quality), 3),

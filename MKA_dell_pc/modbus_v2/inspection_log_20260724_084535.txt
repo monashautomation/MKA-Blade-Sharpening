@@ -1,0 +1,27 @@
+MKA Blade Inspection Log -- 2026-07-24T08:45:35.091939
+======================================================================
+
+EVENT LOG
+---------
+[08:45:34] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:34] SKIP  angle=0.00°  — no tooth pair detected
+[08:45:35] DONE  no samples collected
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+None.
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 0
+Blurry recorded: 0
