@@ -1,0 +1,90 @@
+MKA Blade Inspection Log -- 2026-07-17T14:39:33.132447
+======================================================================
+
+EVENT LOG
+---------
+[14:39:24] START Calibration inspection recording started (angle-change gated, peak-sharpness mode)
+[14:39:24] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:24] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:24] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:25] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:26] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:27] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:28] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:29] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:30] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:31] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:32] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:33] SKIP  angle=70.00°  — no tooth pair detected
+[14:39:33] DONE  no samples collected
+
+SHARP SAMPLES (blur >= threshold)
+----------------------------------
+None.
+
+BLURRY SAMPLES (blur < threshold)
+----------------------------------
+None.
+
+SUMMARY
+-------
+Sharp accepted : 0
+Blurry recorded: 0

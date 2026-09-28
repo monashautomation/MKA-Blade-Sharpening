@@ -268,7 +268,7 @@ def approach_grinder():
 def grind_v1():
     # Diagonal depth cuts, rel move
     # --- tuning (grind_v1) ---
-    move_range = 30
+    move_range = 5
     offset = 8
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.05
@@ -444,7 +444,7 @@ def grind_v2():
                     approach_frame_down = add_pose(approach_frame_start, delta_down)
                     approach_frame_y = add_pose(approach_frame_down, delta_y)
                     safe_movel(posx(approach_frame_y), vel=50, acc=50, ref=grind_coord)
-                    wait(3)
+                    #wait(3)
                     approach_frame = add_pose(approach_frame_y, delta_detection)
                     safe_movel(posx(approach_frame), vel=50, acc=50, ref=grind_coord)
                     # safe_movel(posx(delta_x), vel=250, acc=100, ref=grind_coord, mod=DR_MV_MOD_REL)
