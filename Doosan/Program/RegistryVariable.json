@@ -52,7 +52,7 @@
     "Type": "Registry",
     "Name": "blade_right",
     "ValueType": "Posx",
-    "Value": "[220.251,-363.732,339.959,116.881,179.988,-18.131]"
+    "Value": "[210,-363.732,339.959,116.881,179.988,-18.131]"
   },
   "Variable9": {
     "Type": "Registry",

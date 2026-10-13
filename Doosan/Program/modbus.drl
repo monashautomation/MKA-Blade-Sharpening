@@ -263,13 +263,13 @@ def approach_grinder():
     movel(posx(left_move, 0, 0, 0, 0, 0), 30, 10, ref=grind_coord, mod=DR_MV_MOD_REL)
     set_modbus_slave(REG_GRIND_READY, 1)
     tp_log("Grind Ready 1")
-    wait(5)
+    wait(3)
 
 def grind_v1():
     # Diagonal depth cuts, rel move
     # --- tuning (grind_v1) ---
     move_range = 5
-    offset = 8
+    offset = 5
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.05
     cut_max = 0.2
@@ -345,7 +345,7 @@ def grind_v1():
                             current_pos = get_current_posx(ref=grind_coord)[0]
                             rel_move = [0, step, direction * move_range, 0, 0, 0]
                             scaled_vel = 250 * (1.5 - cut_depth)
-                            scaled_acc = 0.7 * scaled_vel
+                            scaled_acc = 0.8 * scaled_vel
                             safe_movel(posx(rel_move), vel=scaled_vel, acc=scaled_acc, ref=grind_coord, mod=DR_MV_MOD_REL)
                             current_depth += step
                             direction *= -1
@@ -369,7 +369,7 @@ def grind_v1():
                         tp_log("0 depth cut")
                     safe_movel(posx(delta_neg_y), vel=400, acc=200, ref=grind_coord, mod=DR_MV_MOD_REL)
                     safe_movel(posx(start_cut_pos), vel=400, acc=200, ref=grind_coord)
-                    wait(1)
+                    wait(0.5)
                     set_modbus_slave(REG_GRIND, 0)
                     wait(0.5)
     except ProcessAborted:
@@ -379,11 +379,11 @@ def grind_v1():
 def grind_v2():
     #Diagonal depth cuts, frame move
     # --- tuning (grind_v2) ---
-    move_range = 10
+    move_range = 8
     offset = 0
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.2
-    cut_max = 0.3
+    cut_max = 0.4
     prev_depths = deque(maxlen=5)
     prev_pitch = deque(maxlen=5)
     cut_num = 0
@@ -439,7 +439,7 @@ def grind_v2():
                     # --- DIAGNOSTIC: capture arm reference position before cutting (actual vs commanded travel) ---
                     diag_ref, diag_sol = get_current_posx(ref=grind_coord)
                     approach_frame_start = add_pose(diag_ref, delta_x)
-                    wait(5)
+                    wait(1)
                     safe_movel(posx(approach_frame_start), vel=250, acc=100, ref=grind_coord)
                     approach_frame_down = add_pose(approach_frame_start, delta_down)
                     approach_frame_y = add_pose(approach_frame_down, delta_y)
@@ -560,6 +560,8 @@ def run_grind():
 
 
 def finish_return():
+    set_modbus_slave(REG_GRIND_READY, 0)
+
     tp_log("Finished grinding")
     #set_modbus_slave(REG_GRIND_READY, 0)
     set_ref_coord(DR_WORLD)
