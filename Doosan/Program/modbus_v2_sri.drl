@@ -35,7 +35,7 @@ REG_FINAL_DEPTH = 150
 
 # --- Whole-blade pre-grind scan ---------------------------------------------
 # PC -> Robot
-REG_SCAN_ENABLE = 160   # 1 = scan the blade before grinding
+REG_SCAN_ENABLE = 160   # (always 1 now: every blade is scanned; not read by this program)
 REG_SCAN_STEP = 161     # x100 mm, step between stops
 REG_SCAN_LENGTH = 162   # x10 mm, total +X travel of the scan
 REG_SCAN_PRE = 163      # x100 mm, back-off (-X) before the first stop
@@ -376,10 +376,11 @@ def scan_blade():
     length = get_modbus_slave(REG_SCAN_LENGTH) / 10.0
     pre = get_modbus_slave(REG_SCAN_PRE) / 100.0
     tp_log("Scan: step " + str(step) + " length " + str(length) + " pre " + str(pre))
-    if step < 0.5 or step > 20 or length <= 0 or length > 400 or pre < 0 or pre > 20:
+    if step < 0.5 or step > 20 or length <= 0 or length > 800 or pre < 0 or pre > 20:
         tp_log("Scan: invalid settings - not scanning")
         return False
     set_modbus_slave(REG_GRIND_READY, 0)
+    set_modbus_slave(REG_GRIND, 0)          # nothing is being cut: clear a GRIND_START left from before
     set_modbus_slave(REG_SCAN_RESULT, 0)
     set_modbus_slave(REG_SCAN_ACK, 0)
     set_modbus_slave(REG_SCAN_STATE, 0)
@@ -401,7 +402,9 @@ def scan_blade():
             set_modbus_slave(REG_SCAN_STATE, 1)        # PC starts recording
         t = 0.0
         while get_modbus_slave(REG_SCAN_ACK) != seq:
-            if get_modbus_slave(REG_SCAN_RESULT) == 2 or get_modbus_slave(REG_STATUS) == 0 or t > ack_timeout:
+            # NB: not REG_STATUS — it is 0 during every scan (the PC only sets it to 1
+            # when it sends a grind move). STOP on the dashboard writes START = 0.
+            if get_modbus_slave(REG_SCAN_RESULT) == 2 or get_modbus_slave(REG_START) == 0 or t > ack_timeout:
                 ok = False
                 break
             wait(0.02)
@@ -414,7 +417,12 @@ def scan_blade():
     movel(posx(add_pose(p0, ax(0, -scan_retract))), vel=scan_vel, acc=scan_acc, ref=grind_coord)
     movel(posx(p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]), vel=scan_vel, acc=scan_acc, ref=grind_coord)
     if not ok:
-        tp_log("Scan aborted (no ACK from PC, STATUS=0 or PC reported failure)")
+        if t > ack_timeout:
+            tp_log("Scan aborted: no ACK from the PC within " + str(ack_timeout) + " s")
+        elif get_modbus_slave(REG_START) == 0:
+            tp_log("Scan aborted: START = 0 (stopped from the dashboard)")
+        else:
+            tp_log("Scan aborted: the PC reported a failure (REG 165 = 2)")
         set_modbus_slave(REG_SCAN_STATE, 0)
         return False
 
@@ -464,6 +472,11 @@ def grind_v1():
                     if cut_num == 0:
                         # first tooth = grinder->tooth-1 gap, not a pitch: grind it, don't check, don't queue
                         tp_log("First tooth - no outlier check, not queued")
+                    elif get_modbus_slave(REG_SCAN_STATE) == 3:
+                        # Grinding from the scan plan: the PC has already checked every move
+                        # against the scanned blade, and per-valley spacing corrections make
+                        # moves legitimately differ from the average pitch -> no outlier check.
+                        pass
                     elif len(prev_pitch) >= WARMUP:
                         depth_pct = np.abs(val_y/np.mean(prev_depths) - 1)
                         pitch_pct = np.abs(val_x/np.mean(prev_pitch) - 1)
@@ -551,7 +564,7 @@ def grind_v1():
 def grind_v2():
     #Diagonal depth cuts, frame move
     # --- tuning (grind_v2) ---
-    move_range = 10
+    move_range = 15
     offset = 0
     pass_options = [30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     cut_min = 0.2
@@ -581,6 +594,11 @@ def grind_v2():
                     if cut_num == 0:
                         # first tooth = grinder->tooth-1 gap, not a pitch: grind it, don't check, don't queue
                         tp_log("First tooth - no outlier check, not queued")
+                    elif get_modbus_slave(REG_SCAN_STATE) == 3:
+                        # Grinding from the scan plan: the PC has already checked every move
+                        # against the scanned blade, and per-valley spacing corrections make
+                        # moves legitimately differ from the average pitch -> no outlier check.
+                        pass
                     elif len(prev_pitch) >= WARMUP:
                         depth_pct = np.abs(val_y/np.mean(prev_depths) - 1)
                         pitch_pct = np.abs(val_x/np.mean(prev_pitch) - 1)
@@ -768,12 +786,12 @@ def finish_return():
 homing_val    = False
 pick_variant  = 1
 grind_variant = 2
-scan_fail_grind_live = False   # True: if the scan fails, grind with live detection anyway
-                               # False: return the blade without grinding (safer)
+first_move_timeout = 120      # s to wait after GRINDER_READY for the first move (STATUS = 1)
 # ===========================================================================
 
 # ============================ REG CLEAR ====================================
 set_modbus_slave(REG_GRIND_READY, 0)
+set_modbus_slave(REG_GRIND, 0)       # a GRIND_START left at 1 blocks the PC's first cut
 set_modbus_slave(REG_SCAN_STATE, 0)
 set_modbus_slave(REG_POS_SEQ, 0)     # 0 = "no position published yet" for the PC
 
@@ -801,17 +819,27 @@ while (get_modbus_slave(REG_EMERGENCY) == 0):
             #measure_length()
             approach_grinder()
             set_pos_origin()                       # REG 168-170 are relative to this pose
-            if get_modbus_slave(REG_SCAN_ENABLE) == 1:
-                if not scan_blade():
-                    if not scan_fail_grind_live:
-                        tp_log("Scan failed - returning the blade without grinding")
-                        finish_return()
-                        continue
-                    tp_log("Scan failed - grinding with live detection")
+            # Scan + plan is the only grind program (live per-frame grinding removed).
+            if not scan_blade():
+                tp_log("Scan failed - returning the blade without grinding")
+                finish_return()
+                continue
             publish_pos()
             set_modbus_slave(REG_GRIND_READY, 1)
             tp_log("Grind Ready 1")
-            wait(5)
+            # Wait for the PC's first plan move (STATUS = 1). The PC sends it as soon
+            # as it sees GRINDER_READY = 1 (it drives every cut of the plan itself).
+            wait(2)
+            t = 0.0
+            # SCAN_RESULT = 2 here means the PC refused to start this plan (move out of limits)
+            while get_modbus_slave(REG_STATUS) != 1 and get_modbus_slave(REG_START) == 1 and get_modbus_slave(REG_SCAN_RESULT) != 2 and t < first_move_timeout:
+                wait(0.2)
+                t += 0.2
+            if get_modbus_slave(REG_STATUS) != 1:
+                if get_modbus_slave(REG_SCAN_RESULT) == 2:
+                    tp_log("PC stopped the plan (see the dashboard / PC log) - returning the blade")
+                else:
+                    tp_log("No move from the PC within " + str(first_move_timeout) + " s (STATUS=" + str(get_modbus_slave(REG_STATUS)) + " GRIND=" + str(get_modbus_slave(REG_GRIND)) + ") - returning the blade")
             run_grind()
             finish_return()
         set_modbus_slave(REG_START, 0)

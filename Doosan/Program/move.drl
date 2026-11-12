@@ -13,7 +13,7 @@ movel(System_grinder_top, 50, 20)
 movel(System_grinder_app, 50, 20)
 
 
-movel(System_grinder_invert, 50, 20)
+#movel(System_grinder_invert, 50, 20)
 #movel(System_grinder_app, 50, 20)
 #movel(System_grinder_invert, 50, 20)
 #movel(System_grinder_app, 50, 20)
